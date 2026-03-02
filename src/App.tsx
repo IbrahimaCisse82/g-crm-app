@@ -1,27 +1,44 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
+import { AppProvider, useApp } from '@/context/AppContext';
+import LoginPage from '@/pages/LoginPage';
+import AppLayout from '@/components/layout/AppLayout';
+import Dashboard from '@/pages/Dashboard';
+import ClientsPage from '@/pages/ClientsPage';
+import InvoicesPage from '@/pages/InvoicesPage';
+import QuotesPage from '@/pages/QuotesPage';
+import ProductsPage from '@/pages/ProductsPage';
+import JournalPage from '@/pages/JournalPage';
+import CashPage from '@/pages/CashPage';
+import CompanyPage from '@/pages/CompanyPage';
+import { Toaster } from '@/components/ui/sonner';
 
-const queryClient = new QueryClient();
+function AppContent() {
+  const { isLoggedIn, currentSection } = useApp();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
+  if (!isLoggedIn) return <LoginPage />;
+
+  const pages: Record<string, React.ReactNode> = {
+    dashboard: <Dashboard />,
+    clients: <ClientsPage />,
+    factures: <InvoicesPage />,
+    devis: <QuotesPage />,
+    produits: <ProductsPage />,
+    journal: <JournalPage />,
+    caisse: <CashPage />,
+    entreprise: <CompanyPage />,
+  };
+
+  return (
+    <AppLayout>
+      {pages[currentSection] || <Dashboard />}
+    </AppLayout>
+  );
+}
+
+export default function App() {
+  return (
+    <AppProvider>
+      <AppContent />
       <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
-
-export default App;
+    </AppProvider>
+  );
+}
