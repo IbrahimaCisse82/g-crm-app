@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { useApp } from '@/context/AppContext';
+import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
 
 export default function LoginPage() {
-  const { loginDemo } = useApp();
+  const { signIn, signUp } = useAuth();
   const [tab, setTab] = useState<'login' | 'signup'>('login');
   const [email, setEmail] = useState('');
   const [pw, setPw] = useState('');
@@ -11,6 +12,25 @@ export default function LoginPage() {
   const [company, setCompany] = useState('');
   const [suEmail, setSuEmail] = useState('');
   const [suPw, setSuPw] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleLogin = async () => {
+    if (!email || !pw) return toast.error('Veuillez remplir tous les champs');
+    setLoading(true);
+    const { error } = await signIn(email, pw);
+    setLoading(false);
+    if (error) toast.error(error);
+  };
+
+  const handleSignup = async () => {
+    if (!suEmail || !suPw || !name) return toast.error('Veuillez remplir les champs obligatoires');
+    if (suPw.length < 6) return toast.error('Le mot de passe doit contenir au moins 6 caractères');
+    setLoading(true);
+    const { error } = await signUp(suEmail, suPw, name, company);
+    setLoading(false);
+    if (error) toast.error(error);
+    else toast.success('Compte créé ! Vérifiez votre email pour confirmer.');
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center gradient-auth p-4">
@@ -53,6 +73,7 @@ export default function LoginPage() {
                 onChange={e => setEmail(e.target.value)}
                 placeholder="votre@email.com"
                 className="w-full h-[46px] border-[1.5px] border-border rounded-xl px-3.5 text-sm text-foreground bg-muted outline-none transition-all focus:border-primary focus:ring-[3px] focus:ring-primary/10 focus:bg-card"
+                onKeyDown={e => e.key === 'Enter' && handleLogin()}
               />
             </div>
             <div className="mb-4">
@@ -64,6 +85,7 @@ export default function LoginPage() {
                   onChange={e => setPw(e.target.value)}
                   placeholder="••••••••"
                   className="w-full h-[46px] border-[1.5px] border-border rounded-xl px-3.5 pr-11 text-sm text-foreground bg-muted outline-none transition-all focus:border-primary focus:ring-[3px] focus:ring-primary/10 focus:bg-card"
+                  onKeyDown={e => e.key === 'Enter' && handleLogin()}
                 />
                 <button
                   onClick={() => setShowPw(!showPw)}
@@ -73,12 +95,13 @@ export default function LoginPage() {
                 </button>
               </div>
             </div>
-            <button className="w-full h-12 gradient-primary rounded-xl text-primary-foreground text-[15px] font-bold shadow-primary hover:-translate-y-px hover:shadow-lg transition-all active:translate-y-0">
-              Connexion
+            <button
+              onClick={handleLogin}
+              disabled={loading}
+              className="w-full h-12 gradient-primary rounded-xl text-primary-foreground text-[15px] font-bold shadow-primary hover:-translate-y-px hover:shadow-lg transition-all active:translate-y-0 disabled:opacity-60"
+            >
+              {loading ? '⏳ Connexion...' : 'Connexion'}
             </button>
-            <div className="text-center mt-4">
-              <a href="#" className="text-sm text-primary font-semibold hover:underline">Mot de passe oublié ?</a>
-            </div>
           </div>
         )}
 
@@ -123,24 +146,18 @@ export default function LoginPage() {
                 onChange={e => setSuPw(e.target.value)}
                 placeholder="Min. 6 caractères"
                 className="w-full h-[46px] border-[1.5px] border-border rounded-xl px-3.5 text-sm text-foreground bg-muted outline-none transition-all focus:border-primary focus:ring-[3px] focus:ring-primary/10 focus:bg-card"
+                onKeyDown={e => e.key === 'Enter' && handleSignup()}
               />
             </div>
-            <button className="w-full h-12 gradient-primary rounded-xl text-primary-foreground text-[15px] font-bold shadow-primary hover:-translate-y-px hover:shadow-lg transition-all active:translate-y-0">
-              Créer mon compte
+            <button
+              onClick={handleSignup}
+              disabled={loading}
+              className="w-full h-12 gradient-primary rounded-xl text-primary-foreground text-[15px] font-bold shadow-primary hover:-translate-y-px hover:shadow-lg transition-all active:translate-y-0 disabled:opacity-60"
+            >
+              {loading ? '⏳ Création...' : 'Créer mon compte'}
             </button>
           </div>
         )}
-
-        {/* Demo */}
-        <div className="mt-5 p-3.5 bg-muted border-[1.5px] border-dashed border-border rounded-xl flex items-center justify-between gap-3">
-          <span className="text-xs text-muted-foreground">Tester sans inscription</span>
-          <button
-            onClick={loginDemo}
-            className="bg-gradient-to-r from-[hsl(271,76%,53%)] to-[hsl(280,72%,55%)] text-primary-foreground border-none rounded-lg px-3.5 py-2 text-xs font-bold cursor-pointer whitespace-nowrap shadow-md hover:-translate-y-px hover:shadow-lg transition-all"
-          >
-            ⚡ Accès démo instantané
-          </button>
-        </div>
 
         <div className="text-center mt-5 text-[11px] text-muted-foreground/50">
           © 2026 G-CRM — GROW HUB SARL

@@ -1,21 +1,24 @@
 import { useState } from 'react';
 import { useApp } from '@/context/AppContext';
-import { Produit } from '@/types';
+import { toast } from 'sonner';
 
 export default function ProductsPage() {
-  const { data, addProduit, updateProduit, deleteProduit } = useApp();
+  const { produits, fmt } = useApp();
   const [showModal, setShowModal] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
-  const [form, setForm] = useState({ nom: '', typ: 'Service', prix: 0, unit: 'forfait', desc: '' });
+  const [form, setForm] = useState({ nom: '', type: 'Service', prix: 0, unite: 'forfait', description: '' });
 
-  const openNew = () => { setEditId(null); setForm({ nom: '', typ: 'Service', prix: 0, unit: 'forfait', desc: '' }); setShowModal(true); };
-  const openEdit = (p: Produit) => { setEditId(p.id); setForm({ nom: p.nom, typ: p.typ, prix: p.prix, unit: p.unit, desc: p.desc }); setShowModal(true); };
+  const openNew = () => { setEditId(null); setForm({ nom: '', type: 'Service', prix: 0, unite: 'forfait', description: '' }); setShowModal(true); };
+  const openEdit = (p: typeof produits.data[0]) => { setEditId(p.id); setForm({ nom: p.nom, type: p.type || 'Service', prix: p.prix, unite: p.unite || 'forfait', description: p.description || '' }); setShowModal(true); };
 
-  const save = () => {
+  const save = async () => {
     if (!form.nom) return;
-    if (editId) updateProduit({ ...form, id: editId });
-    else addProduit({ ...form, id: 'pro-' + Date.now() });
-    setShowModal(false);
+    try {
+      if (editId) await produits.update(editId, form);
+      else await produits.add(form as any);
+      setShowModal(false);
+      toast.success(editId ? 'Produit modifié' : 'Produit ajouté');
+    } catch (e: any) { toast.error(e.message); }
   };
 
   return (
@@ -35,17 +38,17 @@ export default function ProductsPage() {
               </tr>
             </thead>
             <tbody>
-              {data.produits.length ? data.produits.map(p => (
+              {produits.data.length ? produits.data.map(p => (
                 <tr key={p.id} className="hover:bg-background transition-colors">
                   <td className="px-3.5 py-3 text-sm font-bold text-foreground border-b border-border">{p.nom}</td>
-                  <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{p.typ}</td>
-                  <td className="px-3.5 py-3 text-sm font-bold text-foreground border-b border-border">{new Intl.NumberFormat('fr-FR').format(p.prix)} FCFA</td>
-                  <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{p.unit}</td>
-                  <td className="px-3.5 py-3 text-sm text-muted-foreground border-b border-border">{p.desc}</td>
+                  <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{p.type}</td>
+                  <td className="px-3.5 py-3 text-sm font-bold text-foreground border-b border-border">{fmt(p.prix)}</td>
+                  <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{p.unite}</td>
+                  <td className="px-3.5 py-3 text-sm text-muted-foreground border-b border-border">{p.description}</td>
                   <td className="px-3.5 py-3 text-sm border-b border-border">
                     <div className="flex gap-1">
                       <button onClick={() => openEdit(p)} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-primary hover:text-primary transition-all">✏️</button>
-                      <button onClick={() => { if (confirm('Supprimer ?')) deleteProduit(p.id); }} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-destructive hover:text-destructive transition-all">🗑️</button>
+                      <button onClick={async () => { if (confirm('Supprimer ?')) { await produits.remove(p.id); toast.success('Supprimé'); } }} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-destructive hover:text-destructive transition-all">🗑️</button>
                     </div>
                   </td>
                 </tr>
@@ -79,12 +82,12 @@ export default function ProductsPage() {
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Unité</label>
-                  <input className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.unit} onChange={e => setForm({ ...form, unit: e.target.value })} />
+                  <input className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.unite} onChange={e => setForm({ ...form, unite: e.target.value })} />
                 </div>
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Description</label>
-                <textarea className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans resize-y min-h-[70px] focus:border-primary w-full" value={form.desc} onChange={e => setForm({ ...form, desc: e.target.value })} />
+                <textarea className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans resize-y min-h-[70px] focus:border-primary w-full" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
               </div>
             </div>
             <div className="px-5 py-3.5 border-t border-border flex gap-2 justify-end">

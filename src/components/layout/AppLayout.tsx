@@ -19,7 +19,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <div className="flex min-h-screen">
       <AppSidebar />
 
-      {/* Mobile topbar */}
       <div className="fixed top-0 left-0 right-0 h-[52px] bg-card border-b border-border flex items-center justify-between px-4 z-[90] shadow-card lg:hidden">
         <span className="font-black text-base text-primary tracking-tight">G-CRM</span>
         <button
@@ -32,27 +31,20 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </button>
       </div>
 
-      {/* Main content */}
       <div className="lg:ml-[252px] flex-1 flex flex-col min-h-screen pt-[52px] lg:pt-0">
-        {/* Desktop topbar */}
         <div className="hidden lg:flex h-14 bg-card border-b border-border items-center px-6 sticky top-0 z-[80] gap-3 shadow-card shrink-0">
           <h2 className="font-extrabold text-base flex-1 text-foreground tracking-tight">{sectionTitles[currentSection]}</h2>
           <input
             className="bg-background border-[1.5px] border-border rounded-lg py-1.5 px-3 text-xs text-foreground outline-none w-[200px] font-sans placeholder:text-muted-foreground focus:border-primary focus:ring-[3px] focus:ring-primary/10"
             placeholder="🔍 Rechercher..."
           />
-          <button className="gradient-primary text-primary-foreground border-none py-1.5 px-3.5 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-primary hover:-translate-y-px transition-all">
-            ＋ Nouveau
-          </button>
         </div>
 
-        {/* Content area */}
         <div className="flex-1 p-4 lg:p-6 pb-20 lg:pb-6">
           {children}
         </div>
       </div>
 
-      {/* Bottom nav mobile */}
       <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border z-[190] shadow-[0_-2px_20px_rgba(0,0,0,0.12)] lg:hidden pb-[env(safe-area-inset-bottom)]">
         <div className="flex items-center h-[58px]">
           {[
@@ -69,7 +61,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </button>
           ))}
           <button
-            onClick={() => {/* FAB action */}}
             className="w-[52px] h-[52px] rounded-full bg-gradient-to-br from-[hsl(90,71%,43%)] to-[hsl(145,77%,23%)] text-primary-foreground text-[28px] font-light border-none flex items-center justify-center shadow-lg shrink-0 -mt-1.5"
           >
             ＋

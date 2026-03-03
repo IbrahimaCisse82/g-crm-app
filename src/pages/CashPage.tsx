@@ -1,26 +1,24 @@
 import { useApp } from '@/context/AppContext';
+import { toast } from 'sonner';
 
 export default function CashPage() {
-  const { data, fmt, deleteMM } = useApp();
+  const { comptes, journal, fmt } = useApp();
   const mmModes = ['Wave', 'Orange Money', 'Yas Money'];
   const icons: Record<string, string> = { Wave: '🔵', 'Orange Money': '🟠', 'Yas Money': '🟣' };
 
-  // Caisse espèce
-  const eIn = data.journal.filter(j => j.type === 'Recette' && (j.mode === 'Espèce' || j.cpt === 'Caisse')).reduce((s, j) => s + j.mnt, 0);
-  const eOut = data.journal.filter(j => j.type === 'Dépense' && (j.mode === 'Espèce' || j.cpt === 'Caisse')).reduce((s, j) => s + j.mnt, 0);
+  const eIn = journal.data.filter(j => j.type === 'Recette' && (j.mode_paiement === 'Espèce' || j.compte === 'Caisse')).reduce((s, j) => s + (j.montant || 0), 0);
+  const eOut = journal.data.filter(j => j.type === 'Dépense' && (j.mode_paiement === 'Espèce' || j.compte === 'Caisse')).reduce((s, j) => s + (j.montant || 0), 0);
   const soldeCaisse = eIn - eOut;
 
-  // Banque
-  const bIn = data.journal.filter(j => j.type === 'Recette' && (j.mode === 'Virement' || j.mode === 'Chèque')).reduce((s, j) => s + j.mnt, 0);
-  const bOut = data.journal.filter(j => j.type === 'Dépense' && (j.mode === 'Virement' || j.mode === 'Chèque')).reduce((s, j) => s + j.mnt, 0);
+  const bIn = journal.data.filter(j => j.type === 'Recette' && (j.mode_paiement === 'Virement' || j.mode_paiement === 'Chèque')).reduce((s, j) => s + (j.montant || 0), 0);
+  const bOut = journal.data.filter(j => j.type === 'Dépense' && (j.mode_paiement === 'Virement' || j.mode_paiement === 'Chèque')).reduce((s, j) => s + (j.montant || 0), 0);
   const soldeBanque = bIn - bOut;
 
-  // Mobile Money
   let mmTot = 0;
-  const mmCards = data.mm.map(mm => {
-    const mIn = data.journal.filter(j => j.type === 'Recette' && mmModes.includes(j.mode) && j.cpt?.includes(mm.num)).reduce((s, j) => s + j.mnt, 0);
-    const mOut = data.journal.filter(j => j.type === 'Dépense' && mmModes.includes(j.mode) && j.cpt?.includes(mm.num)).reduce((s, j) => s + j.mnt, 0);
-    const sol = mm.sol + mIn - mOut;
+  const mmCards = comptes.data.map(mm => {
+    const mIn = journal.data.filter(j => j.type === 'Recette' && mmModes.includes(j.mode_paiement || '') && j.compte?.includes(mm.numero)).reduce((s, j) => s + (j.montant || 0), 0);
+    const mOut = journal.data.filter(j => j.type === 'Dépense' && mmModes.includes(j.mode_paiement || '') && j.compte?.includes(mm.numero)).reduce((s, j) => s + (j.montant || 0), 0);
+    const sol = mm.solde + mIn - mOut;
     mmTot += sol;
     return { mm, sol, mIn, mOut };
   });
@@ -29,7 +27,6 @@ export default function CashPage() {
 
   return (
     <div>
-      {/* Stats cards */}
       <div className="grid grid-cols-3 gap-3 mb-3.5">
         <div className="bg-card border border-border rounded-xl p-4 relative overflow-hidden shadow-card">
           <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-primary to-secondary" />
@@ -51,14 +48,12 @@ export default function CashPage() {
         </div>
       </div>
 
-      {/* Total banner */}
       <div className="gradient-primary rounded-xl p-4 px-5 flex justify-between items-center text-primary-foreground mb-4 shadow-primary">
         <div className="text-sm font-bold opacity-85">💰 Trésorerie totale</div>
         <div className="font-black text-xl">{fmt(total)}</div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Mobile Money accounts */}
         <div className="bg-card border border-border rounded-xl overflow-hidden shadow-card">
           <div className="px-4 py-3 border-b border-border flex items-center justify-between">
             <h3 className="font-extrabold text-sm text-foreground">📱 Comptes Mobile Money</h3>
@@ -67,26 +62,23 @@ export default function CashPage() {
             {mmCards.length ? mmCards.map(({ mm, sol, mIn, mOut }) => (
               <div key={mm.id} className="bg-background border-[1.5px] border-border rounded-xl p-3 flex items-center justify-between mb-2 hover:border-primary/30 transition-all">
                 <div>
-                  <div className="font-bold text-sm">{icons[mm.op] || '📱'} {mm.op}</div>
-                  <div className="text-[11px] text-muted-foreground">{mm.tit ? mm.tit + ' · ' : ''}{mm.num}</div>
+                  <div className="font-bold text-sm">{icons[mm.operateur] || '📱'} {mm.operateur}</div>
+                  <div className="text-[11px] text-muted-foreground">{mm.titulaire ? mm.titulaire + ' · ' : ''}{mm.numero}</div>
                   <div className="text-[10px] text-muted-foreground mt-1">
-                    Init: {fmt(mm.sol)} · +{fmt(mIn)} · -{fmt(mOut)}
+                    Init: {fmt(mm.solde)} · +{fmt(mIn)} · -{fmt(mOut)}
                   </div>
                 </div>
                 <div className="text-right">
                   <div className={`font-black text-base ${sol >= 0 ? 'text-success' : 'text-destructive'}`}>{fmt(sol)}</div>
-                  <button onClick={() => { if (confirm('Supprimer ?')) deleteMM(mm.id); }} className="text-[10.5px] text-muted-foreground hover:text-destructive mt-1">🗑 Supprimer</button>
+                  <button onClick={async () => { if (confirm('Supprimer ?')) { await comptes.remove(mm.id); toast.success('Supprimé'); } }} className="text-[10.5px] text-muted-foreground hover:text-destructive mt-1">🗑 Supprimer</button>
                 </div>
               </div>
             )) : (
-              <div className="text-center py-7 text-muted-foreground text-xs">
-                Aucun compte Mobile Money
-              </div>
+              <div className="text-center py-7 text-muted-foreground text-xs">Aucun compte Mobile Money</div>
             )}
           </div>
         </div>
 
-        {/* Account recap */}
         <div className="bg-card border border-border rounded-xl overflow-hidden shadow-card">
           <div className="px-4 py-3 border-b border-border">
             <h3 className="font-extrabold text-sm text-foreground">Récap par compte</h3>
@@ -108,7 +100,7 @@ export default function CashPage() {
                 </tr>
                 {mmCards.map(({ mm, sol }) => (
                   <tr key={mm.id} className="hover:bg-background">
-                    <td className="px-3.5 py-3 text-sm font-bold border-b border-border">{icons[mm.op] || '📱'} {mm.op}</td>
+                    <td className="px-3.5 py-3 text-sm font-bold border-b border-border">{icons[mm.operateur] || '📱'} {mm.operateur}</td>
                     <td className="px-3.5 py-3 text-[11.5px] text-muted-foreground border-b border-border">Mobile Money</td>
                     <td className={`px-3.5 py-3 text-sm font-bold border-b border-border ${sol >= 0 ? 'text-success' : 'text-destructive'}`}>{fmt(sol)}</td>
                   </tr>

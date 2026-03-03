@@ -1,17 +1,18 @@
 import { useState } from 'react';
 import { useApp } from '@/context/AppContext';
 import { StatusBadge } from './Dashboard';
+import { toast } from 'sonner';
 
 export default function QuotesPage() {
-  const { data, cliName, fmt, deleteDevis } = useApp();
+  const { devis, cliName, fmt } = useApp();
   const [search, setSearch] = useState('');
   const [statFilter, setStatFilter] = useState('');
 
-  let filtered = data.devis;
-  if (statFilter) filtered = filtered.filter(d => d.stat === statFilter);
+  let filtered = devis.data;
+  if (statFilter) filtered = filtered.filter(d => d.statut === statFilter);
   if (search) {
     const q = search.toLowerCase();
-    filtered = filtered.filter(d => d.num?.toLowerCase().includes(q) || cliName(d.cliId).toLowerCase().includes(q));
+    filtered = filtered.filter(d => d.numero?.toLowerCase().includes(q) || cliName(d.client_id).toLowerCase().includes(q));
   }
 
   return (
@@ -42,14 +43,14 @@ export default function QuotesPage() {
           <tbody>
             {filtered.length ? filtered.map(d => (
               <tr key={d.id} className="hover:bg-background transition-colors">
-                <td className="px-3.5 py-3 text-sm font-bold text-foreground border-b border-border">{d.num}</td>
-                <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{cliName(d.cliId)}</td>
-                <td className="px-3.5 py-3 text-sm font-bold text-foreground border-b border-border">{fmt(d.ttc)}</td>
-                <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{d.date}</td>
-                <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{d.val} jours</td>
-                <td className="px-3.5 py-3 text-sm border-b border-border"><StatusBadge status={d.stat} /></td>
+                <td className="px-3.5 py-3 text-sm font-bold text-foreground border-b border-border">{d.numero}</td>
+                <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{cliName(d.client_id)}</td>
+                <td className="px-3.5 py-3 text-sm font-bold text-foreground border-b border-border">{fmt(d.montant_ttc)}</td>
+                <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{d.date_devis}</td>
+                <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{d.validite_jours} jours</td>
+                <td className="px-3.5 py-3 text-sm border-b border-border"><StatusBadge status={d.statut} /></td>
                 <td className="px-3.5 py-3 text-sm border-b border-border">
-                  <button onClick={() => { if (confirm('Supprimer ce devis ?')) deleteDevis(d.id); }} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-destructive hover:text-destructive transition-all">🗑️</button>
+                  <button onClick={async () => { if (confirm('Supprimer ce devis ?')) { await devis.remove(d.id); toast.success('Devis supprimé'); } }} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-destructive hover:text-destructive transition-all">🗑️</button>
                 </td>
               </tr>
             )) : (
