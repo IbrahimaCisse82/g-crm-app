@@ -1,24 +1,24 @@
 import { useState } from 'react';
 import { useApp } from '@/context/AppContext';
+import { toast } from 'sonner';
 
 export default function JournalPage() {
-  const { data, fmt, deleteJournal } = useApp();
+  const { journal, fmt } = useApp();
   const [filter, setFilter] = useState('all');
 
-  const totR = data.journal.filter(j => j.type === 'Recette' && j.cat !== 'Transfert').reduce((s, j) => s + j.mnt, 0);
-  const totD = data.journal.filter(j => j.type === 'Dépense' && j.cat !== 'Transfert').reduce((s, j) => s + j.mnt, 0);
+  const totR = journal.data.filter(j => j.type === 'Recette' && j.categorie !== 'Transfert').reduce((s, j) => s + (j.montant || 0), 0);
+  const totD = journal.data.filter(j => j.type === 'Dépense' && j.categorie !== 'Transfert').reduce((s, j) => s + (j.montant || 0), 0);
   const bal = totR - totD;
 
-  let filtered = data.journal;
-  if (filter === 'Recette' || filter === 'Dépense') filtered = filtered.filter(j => j.type === filter && j.cat !== 'Transfert');
-  else if (filter !== 'all') filtered = filtered.filter(j => j.mode === filter);
+  let filtered = journal.data;
+  if (filter === 'Recette' || filter === 'Dépense') filtered = filtered.filter(j => j.type === filter && j.categorie !== 'Transfert');
+  else if (filter !== 'all') filtered = filtered.filter(j => j.mode_paiement === filter);
 
   const filters = ['all', 'Recette', 'Dépense', 'Espèce', 'Wave', 'Orange Money', 'Yas Money', 'Virement', 'Chèque'];
   const filterLabels: Record<string, string> = { all: 'Tous', Recette: '📥 Recettes', 'Dépense': '📤 Dépenses', Espèce: '💵 Espèce', Wave: 'Wave', 'Orange Money': '🟠 Orange', 'Yas Money': '🟣 Yas', Virement: '🏦 Virement', Chèque: '✉️ Chèque' };
 
   return (
     <div>
-      {/* Stats */}
       <div className="grid grid-cols-3 gap-3 mb-4">
         <div className="bg-card border border-border rounded-xl p-4 relative overflow-hidden shadow-card">
           <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-primary to-secondary" />
@@ -67,21 +67,21 @@ export default function JournalPage() {
             <tbody>
               {filtered.length ? filtered.map(j => (
                 <tr key={j.id} className="hover:bg-background transition-colors">
-                  <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{j.date || '—'}</td>
+                  <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{j.date_operation || '—'}</td>
                   <td className="px-3.5 py-3 text-sm border-b border-border">
-                    <div className="font-bold text-foreground">{j.lib || '—'}</div>
-                    <div className="text-[10.5px] text-muted-foreground">{j.cat || ''}</div>
+                    <div className="font-bold text-foreground">{j.libelle || '—'}</div>
+                    <div className="text-[10.5px] text-muted-foreground">{j.categorie || ''}</div>
                   </td>
                   <td className="px-3.5 py-3 text-sm border-b border-border">
                     <span className={`font-bold ${j.type === 'Recette' ? 'text-success' : 'text-destructive'}`}>{j.type}</span>
                   </td>
-                  <td className="px-3.5 py-3 text-sm border-b border-border text-muted-foreground">{j.mode || '—'}</td>
-                  <td className="px-3.5 py-3 text-[11.5px] border-b border-border text-muted-foreground">{j.cpt || '—'}</td>
+                  <td className="px-3.5 py-3 text-sm border-b border-border text-muted-foreground">{j.mode_paiement || '—'}</td>
+                  <td className="px-3.5 py-3 text-[11.5px] border-b border-border text-muted-foreground">{j.compte || '—'}</td>
                   <td className={`px-3.5 py-3 text-sm font-bold border-b border-border ${j.type === 'Recette' ? 'text-success' : 'text-destructive'}`}>
-                    {j.type === 'Recette' ? '+' : '-'}{fmt(j.mnt)}
+                    {j.type === 'Recette' ? '+' : '-'}{fmt(j.montant || 0)}
                   </td>
                   <td className="px-3.5 py-3 text-sm border-b border-border">
-                    <button onClick={() => { if (confirm('Supprimer ?')) deleteJournal(j.id); }} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-destructive hover:text-destructive transition-all">🗑️</button>
+                    <button onClick={async () => { if (confirm('Supprimer ?')) { await journal.remove(j.id); toast.success('Supprimé'); } }} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-destructive hover:text-destructive transition-all">🗑️</button>
                   </td>
                 </tr>
               )) : (

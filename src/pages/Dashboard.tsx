@@ -13,45 +13,42 @@ function StatCard({ icon, value, label, sub }: { icon: string; value: string; la
 }
 
 export default function Dashboard() {
-  const { data, cliName, fmt } = useApp();
+  const { clients, factures, journal, cliName, fmt } = useApp();
 
-  const actifs = data.clients.filter(c => c.stat === 'Actif').length;
-  const totR = data.journal.filter(j => j.type === 'Recette' && j.cat !== 'Transfert').reduce((s, j) => s + j.mnt, 0);
-  const totD = data.journal.filter(j => j.type === 'Dépense' && j.cat !== 'Transfert').reduce((s, j) => s + j.mnt, 0);
-  const pen = data.factures.filter(f => f.stat === 'En attente' || f.stat === 'En retard').length;
+  const actifs = clients.data.filter(c => c.statut === 'Actif').length;
+  const totR = journal.data.filter(j => j.type === 'Recette' && j.categorie !== 'Transfert').reduce((s, j) => s + (j.montant || 0), 0);
+  const totD = journal.data.filter(j => j.type === 'Dépense' && j.categorie !== 'Transfert').reduce((s, j) => s + (j.montant || 0), 0);
+  const pen = factures.data.filter(f => f.statut === 'En attente' || f.statut === 'En retard').length;
   const bal = totR - totD;
 
-  // Chart data - 6 last months
   const months: { key: string; label: string }[] = [];
   for (let i = 5; i >= 0; i--) {
     const d = new Date(); d.setMonth(d.getMonth() - i);
     months.push({ key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`, label: d.toLocaleString('fr-FR', { month: 'short' }) });
   }
-  const maxR = Math.max(1, ...months.map(m => data.journal.filter(j => j.type === 'Recette' && j.cat !== 'Transfert' && j.date?.startsWith(m.key)).reduce((s, j) => s + j.mnt, 0)));
+  const maxR = Math.max(1, ...months.map(m => journal.data.filter(j => j.type === 'Recette' && j.categorie !== 'Transfert' && j.date_operation?.startsWith(m.key)).reduce((s, j) => s + (j.montant || 0), 0)));
 
-  const last6Txns = data.journal.slice(0, 6);
-  const recentFacs = data.factures.slice(0, 5);
+  const last6Txns = journal.data.slice(0, 6);
+  const recentFacs = factures.data.slice(0, 5);
 
   return (
     <div>
-      {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 lg:gap-3.5 mb-5">
         <StatCard icon="👥" value={String(actifs)} label="Clients actifs" />
         <StatCard icon="💰" value={fmt(totR)} label="Recettes totales" />
-        <StatCard icon="🧾" value={String(data.factures.length)} label="Factures" sub={`En attente: ${pen}`} />
+        <StatCard icon="🧾" value={String(factures.data.length)} label="Factures" sub={`En attente: ${pen}`} />
         <StatCard icon="📊" value={fmt(Math.abs(bal))} label="Balance nette" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-        {/* Chart */}
         <div className="bg-card border border-border rounded-xl overflow-hidden shadow-card">
           <div className="px-4 py-3 border-b border-border">
             <h3 className="font-extrabold text-sm text-foreground">Évolution mensuelle</h3>
           </div>
           <div className="flex items-end gap-1.5 px-4 py-3 h-[140px]">
             {months.map(m => {
-              const r = data.journal.filter(j => j.type === 'Recette' && j.cat !== 'Transfert' && j.date?.startsWith(m.key)).reduce((s, j) => s + j.mnt, 0);
-              const d = data.journal.filter(j => j.type === 'Dépense' && j.cat !== 'Transfert' && j.date?.startsWith(m.key)).reduce((s, j) => s + j.mnt, 0);
+              const r = journal.data.filter(j => j.type === 'Recette' && j.categorie !== 'Transfert' && j.date_operation?.startsWith(m.key)).reduce((s, j) => s + (j.montant || 0), 0);
+              const d = journal.data.filter(j => j.type === 'Dépense' && j.categorie !== 'Transfert' && j.date_operation?.startsWith(m.key)).reduce((s, j) => s + (j.montant || 0), 0);
               const rh = Math.round((r / maxR) * 80);
               const dh = Math.round((d / maxR) * 80);
               return (
@@ -72,7 +69,6 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Recent transactions */}
         <div className="bg-card border border-border rounded-xl overflow-hidden shadow-card">
           <div className="px-4 py-3 border-b border-border">
             <h3 className="font-extrabold text-sm text-foreground">Dernières transactions</h3>
@@ -80,11 +76,11 @@ export default function Dashboard() {
           {last6Txns.length ? last6Txns.map(j => (
             <div key={j.id} className="flex justify-between px-4 py-2.5 border-b border-border text-xs">
               <div>
-                <div className="font-semibold text-foreground">{j.lib || '—'}</div>
-                <div className="text-[10.5px] text-muted-foreground">{j.date} · {j.mode}</div>
+                <div className="font-semibold text-foreground">{j.libelle || '—'}</div>
+                <div className="text-[10.5px] text-muted-foreground">{j.date_operation} · {j.mode_paiement}</div>
               </div>
               <div className={`font-bold ${j.type === 'Recette' ? 'text-success' : 'text-destructive'}`}>
-                {j.type === 'Recette' ? '+' : '-'}{fmt(j.mnt)}
+                {j.type === 'Recette' ? '+' : '-'}{fmt(j.montant || 0)}
               </div>
             </div>
           )) : (
@@ -93,7 +89,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Recent invoices */}
       <div className="bg-card border border-border rounded-xl overflow-hidden shadow-card">
         <div className="px-4 py-3 border-b border-border">
           <h3 className="font-extrabold text-sm text-foreground">Factures récentes</h3>
@@ -110,12 +105,12 @@ export default function Dashboard() {
             <tbody>
               {recentFacs.length ? recentFacs.map(f => (
                 <tr key={f.id} className="hover:bg-background transition-colors">
-                  <td className="px-3.5 py-3 text-sm font-bold text-foreground border-b border-border">{f.num}</td>
-                  <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{cliName(f.cliId)}</td>
-                  <td className="px-3.5 py-3 text-sm font-bold text-foreground border-b border-border">{fmt(f.ttc)}</td>
-                  <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{f.date}</td>
+                  <td className="px-3.5 py-3 text-sm font-bold text-foreground border-b border-border">{f.numero}</td>
+                  <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{cliName(f.client_id)}</td>
+                  <td className="px-3.5 py-3 text-sm font-bold text-foreground border-b border-border">{fmt(f.montant_ttc)}</td>
+                  <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{f.date_facture}</td>
                   <td className="px-3.5 py-3 text-sm border-b border-border">
-                    <StatusBadge status={f.stat} />
+                    <StatusBadge status={f.statut} />
                   </td>
                 </tr>
               )) : (

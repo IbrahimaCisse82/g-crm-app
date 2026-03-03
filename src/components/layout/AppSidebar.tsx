@@ -13,10 +13,11 @@ const navItems: { section: Section; icon: string; label: string; badge?: boolean
 ];
 
 export default function AppSidebar() {
-  const { currentSection, setCurrentSection, sidebarOpen, setSidebarOpen, data, userName, logout } = useApp();
+  const { currentSection, setCurrentSection, sidebarOpen, setSidebarOpen, clients, factures, entreprise, userName, logout } = useApp();
 
-  const pendingCount = data.factures.filter(f => f.stat === 'En attente' || f.stat === 'En retard').length;
+  const pendingCount = factures.data.filter(f => f.statut === 'En attente' || f.statut === 'En retard').length;
   const initials = userName.split(' ').map(w => w[0] || '').join('').slice(0, 2).toUpperCase() || 'U';
+  const companyName = entreprise.data?.nom || 'G-CRM';
 
   const goTo = (s: Section) => {
     setCurrentSection(s);
@@ -25,25 +26,22 @@ export default function AppSidebar() {
 
   return (
     <>
-      {/* Overlay mobile */}
       <div
         className={`fixed inset-0 z-[150] bg-foreground/40 backdrop-blur-sm transition-opacity lg:hidden ${sidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
         onClick={() => setSidebarOpen(false)}
       />
 
       <aside className={`w-[252px] h-screen bg-sidebar fixed top-0 left-0 z-[200] border-r border-sidebar-border flex flex-col transition-transform duration-300 shadow-lg lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        {/* Logo */}
         <div className="h-[60px] flex items-center gap-2.5 px-4 border-b border-sidebar-border shrink-0">
           <div className="w-[34px] h-[34px] rounded-[9px] gradient-primary flex items-center justify-center font-black text-[15px] text-primary-foreground shrink-0 shadow-primary animate-[logoPulse_3s_ease-in-out_infinite]">
             G
           </div>
           <div>
-            <div className="font-black text-base text-foreground tracking-tight">{data.co.nom || 'G-CRM'}</div>
+            <div className="font-black text-base text-foreground tracking-tight">{companyName}</div>
             <div className="text-[9px] text-muted-foreground uppercase tracking-[2px]">GROW HUB</div>
           </div>
         </div>
 
-        {/* Search */}
         <div className="p-2.5 px-3 border-b border-sidebar-border shrink-0">
           <div className="bg-sidebar-hover border-[1.5px] border-sidebar-border rounded-lg h-8 flex items-center gap-1.5 px-2.5 transition-all focus-within:border-primary focus-within:ring-[3px] focus-within:ring-primary/10">
             <span className="text-sm text-muted-foreground">🔍</span>
@@ -51,7 +49,6 @@ export default function AppSidebar() {
           </div>
         </div>
 
-        {/* Nav */}
         <nav className="flex-1 px-2.5 py-2 overflow-y-auto">
           <div className="text-[9px] font-bold tracking-[1.8px] uppercase text-muted-foreground px-2 pt-2.5 pb-1">Principal</div>
           {navItems.slice(0, 5).map(item => (
@@ -69,8 +66,8 @@ export default function AppSidebar() {
                 {item.icon}
               </span>
               <span className="flex-1 text-left text-[13px]">{item.label}</span>
-              {item.section === 'clients' && data.clients.length > 0 && (
-                <span className="min-w-[18px] h-[18px] bg-primary text-primary-foreground text-[10px] font-bold rounded-full px-1.5 inline-flex items-center justify-center">{data.clients.length}</span>
+              {item.section === 'clients' && clients.data.length > 0 && (
+                <span className="min-w-[18px] h-[18px] bg-primary text-primary-foreground text-[10px] font-bold rounded-full px-1.5 inline-flex items-center justify-center">{clients.data.length}</span>
               )}
               {item.section === 'factures' && pendingCount > 0 && (
                 <span className="min-w-[18px] h-[18px] bg-accent text-accent-foreground text-[10px] font-bold rounded-full px-1.5 inline-flex items-center justify-center">{pendingCount}</span>
@@ -115,7 +112,6 @@ export default function AppSidebar() {
           ))}
         </nav>
 
-        {/* User */}
         <div className="p-2.5 px-3 border-t border-sidebar-border shrink-0">
           <div className="flex items-center gap-2.5 p-1.5 rounded-lg cursor-pointer hover:bg-sidebar-hover transition-colors group" onClick={logout}>
             <div className="w-[34px] h-[34px] rounded-[9px] bg-gradient-to-br from-[hsl(239,84%,67%)] to-[hsl(263,70%,50%)] flex items-center justify-center font-bold text-xs text-primary-foreground relative shrink-0 shadow-md">

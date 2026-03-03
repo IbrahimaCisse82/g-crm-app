@@ -1,43 +1,51 @@
 import { useState } from 'react';
 import { useApp } from '@/context/AppContext';
-import { Client } from '@/types';
 import { StatusBadge } from './Dashboard';
+import { toast } from 'sonner';
 
 export default function ClientsPage() {
-  const { data, addClient, updateClient, deleteClient } = useApp();
+  const { clients } = useApp();
   const [filter, setFilter] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
-  const [form, setForm] = useState({ pre: '', nom: '', email: '', tel: '', ent: '', stat: 'Actif' as Client['stat'], adr: '', notes: '' });
+  const [form, setForm] = useState({ prenom: '', nom: '', email: '', telephone: '', entreprise: '', statut: 'Actif', adresse: '', notes: '' });
 
   const filtered = filter
-    ? data.clients.filter(c => c.stat === filter || (c.nom + c.pre + c.ent + c.email).toLowerCase().includes(filter.toLowerCase()))
-    : data.clients;
+    ? clients.data.filter(c => c.statut === filter || (c.nom + c.prenom + c.entreprise + c.email).toLowerCase().includes(filter.toLowerCase()))
+    : clients.data;
 
   const openNew = () => {
     setEditId(null);
-    setForm({ pre: '', nom: '', email: '', tel: '', ent: '', stat: 'Actif', adr: '', notes: '' });
+    setForm({ prenom: '', nom: '', email: '', telephone: '', entreprise: '', statut: 'Actif', adresse: '', notes: '' });
     setShowModal(true);
   };
 
-  const openEdit = (c: Client) => {
+  const openEdit = (c: typeof clients.data[0]) => {
     setEditId(c.id);
-    setForm({ pre: c.pre, nom: c.nom, email: c.email, tel: c.tel, ent: c.ent, stat: c.stat, adr: c.adr, notes: c.notes });
+    setForm({ prenom: c.prenom, nom: c.nom, email: c.email || '', telephone: c.telephone || '', entreprise: c.entreprise || '', statut: c.statut, adresse: c.adresse || '', notes: c.notes || '' });
     setShowModal(true);
   };
 
-  const save = () => {
-    if (!form.pre && !form.nom) return;
-    if (editId) {
-      updateClient({ ...form, id: editId });
-    } else {
-      addClient({ ...form, id: 'cli-' + Date.now() });
+  const save = async () => {
+    if (!form.prenom && !form.nom) return;
+    try {
+      if (editId) {
+        await clients.update(editId, form);
+      } else {
+        await clients.add(form);
+      }
+      setShowModal(false);
+      toast.success(editId ? 'Client modifié' : 'Client ajouté');
+    } catch (e: any) {
+      toast.error(e.message);
     }
-    setShowModal(false);
   };
 
-  const del = (id: string) => {
-    if (confirm('Supprimer ce client ?')) deleteClient(id);
+  const del = async (id: string) => {
+    if (confirm('Supprimer ce client ?')) {
+      await clients.remove(id);
+      toast.success('Client supprimé');
+    }
   };
 
   return (
@@ -73,11 +81,11 @@ export default function ClientsPage() {
             <tbody>
               {filtered.length ? filtered.map(c => (
                 <tr key={c.id} className="hover:bg-background transition-colors">
-                  <td className="px-3.5 py-3 text-sm font-bold text-foreground border-b border-border">{c.pre} {c.nom}</td>
+                  <td className="px-3.5 py-3 text-sm font-bold text-foreground border-b border-border">{c.prenom} {c.nom}</td>
                   <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{c.email || '—'}</td>
-                  <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{c.tel || '—'}</td>
-                  <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{c.ent || '—'}</td>
-                  <td className="px-3.5 py-3 text-sm border-b border-border"><StatusBadge status={c.stat} /></td>
+                  <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{c.telephone || '—'}</td>
+                  <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{c.entreprise || '—'}</td>
+                  <td className="px-3.5 py-3 text-sm border-b border-border"><StatusBadge status={c.statut} /></td>
                   <td className="px-3.5 py-3 text-sm border-b border-border">
                     <div className="flex gap-1">
                       <button onClick={() => openEdit(c)} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-primary hover:text-primary transition-all">✏️</button>
@@ -96,7 +104,6 @@ export default function ClientsPage() {
         </div>
       </div>
 
-      {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-foreground/50 backdrop-blur-sm z-[1000] flex items-center lg:items-center items-end justify-center">
           <div className="bg-card border border-border rounded-2xl lg:rounded-2xl rounded-b-none w-full lg:max-w-[560px] max-h-[90vh] overflow-y-auto shadow-2xl animate-[slideUp_0.22s_ease]">
@@ -106,17 +113,17 @@ export default function ClientsPage() {
             </div>
             <div className="p-5">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5">
-                <FormField label="Prénom *" value={form.pre} onChange={v => setForm({ ...form, pre: v })} />
+                <FormField label="Prénom *" value={form.prenom} onChange={v => setForm({ ...form, prenom: v })} />
                 <FormField label="Nom *" value={form.nom} onChange={v => setForm({ ...form, nom: v })} />
                 <FormField label="Email" value={form.email} onChange={v => setForm({ ...form, email: v })} type="email" />
-                <FormField label="Téléphone" value={form.tel} onChange={v => setForm({ ...form, tel: v })} />
-                <FormField label="Entreprise" value={form.ent} onChange={v => setForm({ ...form, ent: v })} />
+                <FormField label="Téléphone" value={form.telephone} onChange={v => setForm({ ...form, telephone: v })} />
+                <FormField label="Entreprise" value={form.entreprise} onChange={v => setForm({ ...form, entreprise: v })} />
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Statut</label>
                   <select
                     className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary focus:ring-[3px] focus:ring-primary/10 w-full"
-                    value={form.stat}
-                    onChange={e => setForm({ ...form, stat: e.target.value as Client['stat'] })}
+                    value={form.statut}
+                    onChange={e => setForm({ ...form, statut: e.target.value })}
                   >
                     <option>Actif</option>
                     <option>Prospect</option>
@@ -124,7 +131,7 @@ export default function ClientsPage() {
                   </select>
                 </div>
                 <div className="lg:col-span-2">
-                  <FormField label="Adresse" value={form.adr} onChange={v => setForm({ ...form, adr: v })} />
+                  <FormField label="Adresse" value={form.adresse} onChange={v => setForm({ ...form, adresse: v })} />
                 </div>
                 <div className="lg:col-span-2">
                   <div className="flex flex-col gap-1.5">
