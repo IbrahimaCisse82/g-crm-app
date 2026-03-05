@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import { StatusBadge } from './Dashboard';
 import { toast } from 'sonner';
@@ -19,6 +19,12 @@ export default function ClientsPage() {
     setForm({ prenom: '', nom: '', email: '', telephone: '', entreprise: '', statut: 'Actif', adresse: '', notes: '' });
     setShowModal(true);
   };
+
+  useEffect(() => {
+    const handler = () => openNew();
+    window.addEventListener('open-create-modal', handler);
+    return () => window.removeEventListener('open-create-modal', handler);
+  }, []);
 
   const openEdit = (c: typeof clients.data[0]) => {
     setEditId(c.id);

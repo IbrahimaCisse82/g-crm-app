@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import { toast } from 'sonner';
 
 export default function JournalPage() {
-  const { journal, fmt } = useApp();
+  const { journal, comptes, fmt } = useApp();
   const [filter, setFilter] = useState('all');
+  const [showModal, setShowModal] = useState(false);
+  const [form, setForm] = useState({ libelle: '', type: 'Recette', montant: 0, mode_paiement: 'Espèce', categorie: '', compte: '', date_operation: new Date().toISOString().slice(0, 10) });
 
   const totR = journal.data.filter(j => j.type === 'Recette' && j.categorie !== 'Transfert').reduce((s, j) => s + (j.montant || 0), 0);
   const totD = journal.data.filter(j => j.type === 'Dépense' && j.categorie !== 'Transfert').reduce((s, j) => s + (j.montant || 0), 0);
@@ -16,6 +18,31 @@ export default function JournalPage() {
 
   const filters = ['all', 'Recette', 'Dépense', 'Espèce', 'Wave', 'Orange Money', 'Yas Money', 'Virement', 'Chèque'];
   const filterLabels: Record<string, string> = { all: 'Tous', Recette: '📥 Recettes', 'Dépense': '📤 Dépenses', Espèce: '💵 Espèce', Wave: 'Wave', 'Orange Money': '🟠 Orange', 'Yas Money': '🟣 Yas', Virement: '🏦 Virement', Chèque: '✉️ Chèque' };
+
+  const openNew = () => {
+    setForm({ libelle: '', type: 'Recette', montant: 0, mode_paiement: 'Espèce', categorie: '', compte: '', date_operation: new Date().toISOString().slice(0, 10) });
+    setShowModal(true);
+  };
+
+  useEffect(() => {
+    const handler = () => openNew();
+    window.addEventListener('open-create-modal', handler);
+    return () => window.removeEventListener('open-create-modal', handler);
+  }, []);
+
+  const save = async () => {
+    if (!form.libelle || !form.montant) {
+      toast.error('Renseignez le libellé et le montant');
+      return;
+    }
+    try {
+      await journal.add(form);
+      setShowModal(false);
+      toast.success('Transaction ajoutée');
+    } catch (e: any) {
+      toast.error(e.message);
+    }
+  };
 
   return (
     <div>
@@ -41,8 +68,13 @@ export default function JournalPage() {
       </div>
 
       <div className="bg-card border border-border rounded-xl overflow-hidden shadow-card">
-        <div className="px-4 py-3 border-b border-border">
-          <h3 className="font-extrabold text-sm text-foreground mb-2">Journal</h3>
+        <div className="px-4 py-3 border-b border-border flex items-center justify-between flex-wrap gap-2">
+          <h3 className="font-extrabold text-sm text-foreground">Journal</h3>
+          <button onClick={openNew} className="gradient-primary text-primary-foreground border-none py-1.5 px-3 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all">
+            ＋ Transaction
+          </button>
+        </div>
+        <div className="px-4 py-2 border-b border-border">
           <div className="flex gap-2 flex-wrap">
             {filters.map(f => (
               <button
@@ -94,6 +126,62 @@ export default function JournalPage() {
           </table>
         </div>
       </div>
+
+      {showModal && (
+        <div className="fixed inset-0 bg-foreground/50 backdrop-blur-sm z-[1000] flex items-end lg:items-center justify-center">
+          <div className="bg-card border border-border rounded-2xl lg:rounded-2xl rounded-b-none w-full lg:max-w-[520px] max-h-[90vh] overflow-y-auto shadow-2xl animate-[slideUp_0.22s_ease]">
+            <div className="px-5 py-4 border-b border-border flex items-center justify-between">
+              <h3 className="font-extrabold text-[15px] text-foreground">Nouvelle Transaction</h3>
+              <button onClick={() => setShowModal(false)} className="text-muted-foreground text-xl bg-transparent border-none cursor-pointer">✕</button>
+            </div>
+            <div className="p-5 grid gap-3.5">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Libellé *</label>
+                <input className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.libelle} onChange={e => setForm({ ...form, libelle: e.target.value })} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Type</label>
+                  <select className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.type} onChange={e => setForm({ ...form, type: e.target.value })}>
+                    <option>Recette</option>
+                    <option>Dépense</option>
+                  </select>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Montant *</label>
+                  <input type="number" className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.montant} onChange={e => setForm({ ...form, montant: Number(e.target.value) })} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Mode paiement</label>
+                  <select className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.mode_paiement} onChange={e => setForm({ ...form, mode_paiement: e.target.value })}>
+                    {['Espèce', 'Wave', 'Orange Money', 'Yas Money', 'Virement', 'Chèque'].map(m => <option key={m}>{m}</option>)}
+                  </select>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Date</label>
+                  <input type="date" className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.date_operation} onChange={e => setForm({ ...form, date_operation: e.target.value })} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Catégorie</label>
+                  <input className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.categorie} onChange={e => setForm({ ...form, categorie: e.target.value })} placeholder="Ex: Vente, Loyer..." />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Compte</label>
+                  <input className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.compte} onChange={e => setForm({ ...form, compte: e.target.value })} placeholder="Caisse, Banque..." />
+                </div>
+              </div>
+            </div>
+            <div className="px-5 py-3.5 border-t border-border flex gap-2 justify-end">
+              <button onClick={() => setShowModal(false)} className="bg-card border-[1.5px] border-border text-muted-foreground py-2 px-4 rounded-lg text-xs font-bold hover:bg-background transition-all">Annuler</button>
+              <button onClick={save} className="gradient-primary text-primary-foreground border-none py-2 px-4 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all">💾 Enregistrer</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
