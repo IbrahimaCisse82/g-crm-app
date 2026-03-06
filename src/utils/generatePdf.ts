@@ -29,8 +29,19 @@ interface PdfData {
   } | null;
 }
 
+// Sanitize string to prevent XSS injection
+function esc(str: string | null | undefined): string {
+  if (!str) return '';
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 const fmt = (n: number, devise = 'FCFA') =>
-  new Intl.NumberFormat('fr-FR').format(Math.round(n || 0)) + ' ' + devise;
+  new Intl.NumberFormat('fr-FR').format(Math.round(n || 0)) + ' ' + esc(devise);
 
 export function downloadPdf(data: PdfData) {
   const devise = data.entreprise?.devise || 'FCFA';
@@ -41,7 +52,7 @@ export function downloadPdf(data: PdfData) {
 <html lang="fr">
 <head>
 <meta charset="UTF-8"/>
-<title>${title} ${data.numero}</title>
+<title>${esc(title)} ${esc(data.numero)}</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: 'Segoe UI', system-ui, sans-serif; color: #1a1a2e; padding: 40px; font-size: 13px; }
@@ -77,26 +88,26 @@ export function downloadPdf(data: PdfData) {
 <body>
   <div class="header">
     <div class="company">
-      <h1>${data.entreprise?.nom || 'Mon Entreprise'}</h1>
-      ${data.entreprise?.adresse ? `<p>${data.entreprise.adresse}</p>` : ''}
-      ${data.entreprise?.telephone ? `<p>Tél: ${data.entreprise.telephone}</p>` : ''}
-      ${data.entreprise?.email ? `<p>${data.entreprise.email}</p>` : ''}
-      ${data.entreprise?.ninea ? `<p>NINEA: ${data.entreprise.ninea}</p>` : ''}
-      ${data.entreprise?.rccm ? `<p>RCCM: ${data.entreprise.rccm}</p>` : ''}
+      <h1>${esc(data.entreprise?.nom) || 'Mon Entreprise'}</h1>
+      ${data.entreprise?.adresse ? `<p>${esc(data.entreprise.adresse)}</p>` : ''}
+      ${data.entreprise?.telephone ? `<p>Tél: ${esc(data.entreprise.telephone)}</p>` : ''}
+      ${data.entreprise?.email ? `<p>${esc(data.entreprise.email)}</p>` : ''}
+      ${data.entreprise?.ninea ? `<p>NINEA: ${esc(data.entreprise.ninea)}</p>` : ''}
+      ${data.entreprise?.rccm ? `<p>RCCM: ${esc(data.entreprise.rccm)}</p>` : ''}
     </div>
     <div class="doc-info">
-      <h2>${title}</h2>
-      <p class="num">${data.numero}</p>
-      <p>Date: ${data.date}</p>
-      ${data.type === 'facture' && data.echeance ? `<p>Échéance: ${data.echeance}</p>` : ''}
+      <h2>${esc(title)}</h2>
+      <p class="num">${esc(data.numero)}</p>
+      <p>Date: ${esc(data.date)}</p>
+      ${data.type === 'facture' && data.echeance ? `<p>Échéance: ${esc(data.echeance)}</p>` : ''}
       ${data.type === 'devis' && data.validite_jours ? `<p>Validité: ${data.validite_jours} jours</p>` : ''}
-      ${data.mode_paiement ? `<p>Paiement: ${data.mode_paiement}</p>` : ''}
+      ${data.mode_paiement ? `<p>Paiement: ${esc(data.mode_paiement)}</p>` : ''}
     </div>
   </div>
 
   <div class="client-box">
     <div class="label">Client</div>
-    <div class="name">${data.client}</div>
+    <div class="name">${esc(data.client)}</div>
   </div>
 
   <table>
@@ -111,7 +122,7 @@ export function downloadPdf(data: PdfData) {
     <tbody>
       ${articles.map(a => `
         <tr>
-          <td>${a.nom}</td>
+          <td>${esc(a.nom)}</td>
           <td class="right">${a.quantite}</td>
           <td class="right">${fmt(a.prix_unitaire, devise)}</td>
           <td class="right">${fmt(a.quantite * a.prix_unitaire, devise)}</td>
@@ -128,10 +139,10 @@ export function downloadPdf(data: PdfData) {
     </div>
   </div>
 
-  ${data.notes ? `<div class="notes"><strong>Notes:</strong> ${data.notes}</div>` : ''}
+  ${data.notes ? `<div class="notes"><strong>Notes:</strong> ${esc(data.notes)}</div>` : ''}
 
   <div class="footer">
-    ${data.entreprise?.nom || 'Mon Entreprise'} — Document généré automatiquement
+    ${esc(data.entreprise?.nom) || 'Mon Entreprise'} — Document généré automatiquement
   </div>
 </body>
 </html>`;

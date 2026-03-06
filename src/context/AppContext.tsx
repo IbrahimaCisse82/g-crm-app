@@ -1,19 +1,18 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useClients, useFactures, useDevis, useProduits, useJournal, useComptesTresorerie, useEntreprise } from '@/hooks/useSupabaseData';
 import type { Section } from '@/types';
+import { sectionPaths, pathToSection } from '@/types';
 
 interface AppContextType {
-  // Navigation
   currentSection: Section;
   setCurrentSection: (s: Section) => void;
   sidebarOpen: boolean;
   setSidebarOpen: (v: boolean) => void;
-  // Auth
   isLoggedIn: boolean;
   userName: string;
   logout: () => void;
-  // Data (from Supabase)
   clients: ReturnType<typeof useClients>;
   factures: ReturnType<typeof useFactures>;
   devis: ReturnType<typeof useDevis>;
@@ -21,7 +20,6 @@ interface AppContextType {
   journal: ReturnType<typeof useJournal>;
   comptes: ReturnType<typeof useComptesTresorerie>;
   entreprise: ReturnType<typeof useEntreprise>;
-  // Helpers
   cliName: (id: string | null) => string;
   fmt: (n: number) => string;
 }
@@ -30,8 +28,15 @@ const AppContext = createContext<AppContextType | null>(null);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const { user, signOut } = useAuth();
-  const [currentSection, setCurrentSection] = useState<Section>('dashboard');
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [sidebarOpen, setSidebarOpen] = React.useState(false);
+
+  const currentSection: Section = pathToSection[location.pathname] || 'dashboard';
+
+  const setCurrentSection = useCallback((s: Section) => {
+    navigate(sectionPaths[s]);
+  }, [navigate]);
 
   const clients = useClients();
   const factures = useFactures();
@@ -46,8 +51,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(async () => {
     await signOut();
-    setCurrentSection('dashboard');
-  }, [signOut]);
+    navigate('/');
+  }, [signOut, navigate]);
 
   const cliName = useCallback((id: string | null) => {
     if (!id) return '—';

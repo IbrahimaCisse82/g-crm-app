@@ -1,5 +1,6 @@
 import { useApp } from '@/context/AppContext';
-import { Section } from '@/types';
+import { useNavigate } from 'react-router-dom';
+import { Section, sectionPaths } from '@/types';
 
 const navItems: { section: Section; icon: string; label: string; badge?: boolean }[] = [
   { section: 'dashboard', icon: '📊', label: 'Tableau de bord' },
@@ -13,14 +14,15 @@ const navItems: { section: Section; icon: string; label: string; badge?: boolean
 ];
 
 export default function AppSidebar() {
-  const { currentSection, setCurrentSection, sidebarOpen, setSidebarOpen, clients, factures, entreprise, userName, logout } = useApp();
+  const { currentSection, sidebarOpen, setSidebarOpen, clients, factures, entreprise, userName, logout } = useApp();
+  const navigate = useNavigate();
 
   const pendingCount = factures.data.filter(f => f.statut === 'En attente' || f.statut === 'En retard').length;
   const initials = userName.split(' ').map(w => w[0] || '').join('').slice(0, 2).toUpperCase() || 'U';
   const companyName = entreprise.data?.nom || 'G-CRM';
 
   const goTo = (s: Section) => {
-    setCurrentSection(s);
+    navigate(sectionPaths[s]);
     setSidebarOpen(false);
   };
 
@@ -39,13 +41,6 @@ export default function AppSidebar() {
           <div>
             <div className="font-black text-base text-foreground tracking-tight">{companyName}</div>
             <div className="text-[9px] text-muted-foreground uppercase tracking-[2px]">GROW HUB</div>
-          </div>
-        </div>
-
-        <div className="p-2.5 px-3 border-b border-sidebar-border shrink-0">
-          <div className="bg-sidebar-hover border-[1.5px] border-sidebar-border rounded-lg h-8 flex items-center gap-1.5 px-2.5 transition-all focus-within:border-primary focus-within:ring-[3px] focus-within:ring-primary/10">
-            <span className="text-sm text-muted-foreground">🔍</span>
-            <input className="bg-transparent border-none outline-none text-xs text-foreground flex-1 font-sans placeholder:text-muted-foreground" placeholder="Rechercher..." />
           </div>
         </div>
 

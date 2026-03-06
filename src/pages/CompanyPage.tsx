@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect, forwardRef } from 'react';
 import { useApp } from '@/context/AppContext';
 import { toast } from 'sonner';
 
 export default function CompanyPage() {
   const { entreprise } = useApp();
   const [saving, setSaving] = useState(false);
+  const [prevId, setPrevId] = useState<string | null>(null);
 
   const co = entreprise.data;
   const [form, setForm] = useState({
@@ -16,23 +17,25 @@ export default function CompanyPage() {
     rccm: co?.rccm || '',
     slogan: co?.slogan || '',
     tva: co?.tva ?? 18,
+    devise: co?.devise || 'FCFA',
   });
 
-  // Sync form when data loads
-  const prevId = useState<string | null>(null);
-  if (co && co.id !== prevId[0]) {
-    prevId[1](co.id);
-    setForm({
-      nom: co.nom || '',
-      adresse: co.adresse || '',
-      telephone: co.telephone || '',
-      email: co.email || '',
-      ninea: co.ninea || '',
-      rccm: co.rccm || '',
-      slogan: co.slogan || '',
-      tva: co.tva ?? 18,
-    });
-  }
+  useEffect(() => {
+    if (co && co.id !== prevId) {
+      setPrevId(co.id);
+      setForm({
+        nom: co.nom || '',
+        adresse: co.adresse || '',
+        telephone: co.telephone || '',
+        email: co.email || '',
+        ninea: co.ninea || '',
+        rccm: co.rccm || '',
+        slogan: co.slogan || '',
+        tva: co.tva ?? 18,
+        devise: co.devise || 'FCFA',
+      });
+    }
+  }, [co, prevId]);
 
   const save = async () => {
     setSaving(true);
@@ -63,9 +66,22 @@ export default function CompanyPage() {
               <Field label="NINEA" value={form.ninea} onChange={v => setForm({ ...form, ninea: v })} />
               <Field label="RCCM" value={form.rccm} onChange={v => setForm({ ...form, rccm: v })} />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               <Field label="Site web / Slogan" value={form.slogan} onChange={v => setForm({ ...form, slogan: v })} />
               <Field label="TVA (%)" value={String(form.tva)} onChange={v => setForm({ ...form, tva: parseFloat(v) || 0 })} type="number" />
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Devise</label>
+                <select
+                  className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary focus:ring-[3px] focus:ring-primary/10 w-full"
+                  value={form.devise}
+                  onChange={e => setForm({ ...form, devise: e.target.value })}
+                >
+                  <option>FCFA</option>
+                  <option>EUR</option>
+                  <option>USD</option>
+                  <option>GNF</option>
+                </select>
+              </div>
             </div>
           </div>
           <div className="mt-3.5 flex items-center justify-between gap-3">
@@ -97,7 +113,7 @@ export default function CompanyPage() {
               </div>
             </div>
             <div className="text-[9px] text-muted-foreground">
-              NINEA : <b>{form.ninea || '—'}</b> &nbsp;|&nbsp; RCCM : <b>{form.rccm || '—'}</b>
+              NINEA : <b>{form.ninea || '—'}</b> &nbsp;|&nbsp; RCCM : <b>{form.rccm || '—'}</b> &nbsp;|&nbsp; Devise : <b>{form.devise}</b>
             </div>
           </div>
         </div>
@@ -106,16 +122,20 @@ export default function CompanyPage() {
   );
 }
 
-function Field({ label, value, onChange, type = 'text' }: { label: string; value: string; onChange: (v: string) => void; type?: string }) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">{label}</label>
-      <input
-        type={type}
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary focus:ring-[3px] focus:ring-primary/10 w-full"
-      />
-    </div>
-  );
-}
+const Field = forwardRef<HTMLInputElement, { label: string; value: string; onChange: (v: string) => void; type?: string }>(
+  ({ label, value, onChange, type = 'text' }, ref) => {
+    return (
+      <div className="flex flex-col gap-1.5">
+        <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">{label}</label>
+        <input
+          ref={ref}
+          type={type}
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary focus:ring-[3px] focus:ring-primary/10 w-full"
+        />
+      </div>
+    );
+  }
+);
+Field.displayName = 'Field';

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
+import { useNavigate } from 'react-router-dom';
 import { StatusBadge } from './Dashboard';
 import { toast } from 'sonner';
 import { downloadPdf } from '@/utils/generatePdf';
@@ -11,10 +12,12 @@ interface ArticleLine {
 }
 
 export default function QuotesPage() {
-  const { devis, clients, produits, entreprise, cliName, fmt } = useApp();
+  const { devis, factures, clients, produits, entreprise, cliName, fmt } = useApp();
+  const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [statFilter, setStatFilter] = useState('');
   const [showModal, setShowModal] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({ client_id: '', date_devis: new Date().toISOString().slice(0, 10), validite_jours: 30, notes: '' });
   const [articles, setArticles] = useState<ArticleLine[]>([{ nom: '', quantite: 1, prix_unitaire: 0 }]);
 
@@ -31,8 +34,24 @@ export default function QuotesPage() {
   const totalTTC = totalHT + totalTVA;
 
   const openNew = () => {
+    setEditId(null);
     setForm({ client_id: '', date_devis: new Date().toISOString().slice(0, 10), validite_jours: 30, notes: '' });
     setArticles([{ nom: '', quantite: 1, prix_unitaire: 0 }]);
+    setShowModal(true);
+  };
+
+  const openEdit = (d: typeof devis.data[0]) => {
+    setEditId(d.id);
+    const arts = Array.isArray(d.articles) ? (d.articles as any[]).map((a: any) => ({
+      nom: a.nom || '', quantite: a.quantite || 1, prix_unitaire: a.prix_unitaire || 0
+    })) : [{ nom: '', quantite: 1, prix_unitaire: 0 }];
+    setForm({
+      client_id: d.client_id || '',
+      date_devis: d.date_devis,
+      validite_jours: d.validite_jours,
+      notes: d.notes || '',
+    });
+    setArticles(arts);
     setShowModal(true);
   };
 
@@ -59,22 +78,73 @@ export default function QuotesPage() {
       toast.error('Sélectionnez un client et au moins un article');
       return;
     }
-    const numero = `DEV-${Date.now().toString(36).toUpperCase()}`;
+    const validArticles = articles.filter(a => a.nom);
+    const ht = validArticles.reduce((s, a) => s + a.quantite * a.prix_unitaire, 0);
+    const tvaMontant = Math.round(ht * tva / 100);
+    const ttc = ht + tvaMontant;
+
     try {
-      await devis.add({
+      if (editId) {
+        await devis.update(editId, {
+          client_id: form.client_id,
+          articles: validArticles,
+          montant_ht: ht,
+          montant_tva: tvaMontant,
+          montant_ttc: ttc,
+          date_devis: form.date_devis,
+          validite_jours: form.validite_jours,
+          notes: form.notes || null,
+        });
+        toast.success('Devis modifié');
+      } else {
+        const numero = `DEV-${Date.now().toString(36).toUpperCase()}`;
+        await devis.add({
+          numero,
+          client_id: form.client_id,
+          articles: validArticles,
+          montant_ht: ht,
+          montant_tva: tvaMontant,
+          montant_ttc: ttc,
+          date_devis: form.date_devis,
+          validite_jours: form.validite_jours,
+          notes: form.notes || null,
+          statut: 'En attente',
+        });
+        toast.success('Devis créé');
+      }
+      setShowModal(false);
+    } catch (e: any) {
+      toast.error(e.message);
+    }
+  };
+
+  const updateStatus = async (id: string, statut: string) => {
+    try {
+      await devis.update(id, { statut });
+      toast.success(`Devis marqué "${statut}"`);
+    } catch (e: any) {
+      toast.error(e.message);
+    }
+  };
+
+  const convertToInvoice = async (d: typeof devis.data[0]) => {
+    try {
+      const numero = `FAC-${Date.now().toString(36).toUpperCase()}`;
+      await factures.add({
         numero,
-        client_id: form.client_id,
-        articles: articles.filter(a => a.nom),
-        montant_ht: totalHT,
-        montant_tva: totalTVA,
-        montant_ttc: totalTTC,
-        date_devis: form.date_devis,
-        validite_jours: form.validite_jours,
-        notes: form.notes || null,
+        client_id: d.client_id,
+        articles: d.articles as any,
+        montant_ht: d.montant_ht,
+        montant_tva: d.montant_tva,
+        montant_ttc: d.montant_ttc,
+        montant_regle: 0,
+        mode_paiement: 'Espèce',
+        date_facture: new Date().toISOString().slice(0, 10),
         statut: 'En attente',
       });
-      setShowModal(false);
-      toast.success('Devis créé');
+      await devis.update(d.id, { statut: 'Converti' });
+      toast.success('Devis converti en facture !');
+      navigate('/factures');
     } catch (e: any) {
       toast.error(e.message);
     }
@@ -101,7 +171,7 @@ export default function QuotesPage() {
           </div>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full border-collapse min-w-[560px]">
+          <table className="w-full border-collapse min-w-[700px]">
             <thead>
               <tr>
                 {['N°', 'Client', 'TTC', 'Date', 'Validité', 'Statut', 'Actions'].map(h => (
@@ -132,7 +202,17 @@ export default function QuotesPage() {
                         className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-primary hover:text-primary transition-all"
                         title="Télécharger PDF"
                       >📄</button>
-                      <button onClick={async () => { if (confirm('Supprimer ce devis ?')) { await devis.remove(d.id); toast.success('Devis supprimé'); } }} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-destructive hover:text-destructive transition-all">🗑️</button>
+                      <button onClick={() => openEdit(d)} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-primary hover:text-primary transition-all" title="Modifier">✏️</button>
+                      {d.statut === 'En attente' && (
+                        <>
+                          <button onClick={() => updateStatus(d.id, 'Accepté')} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-success hover:text-success transition-all" title="Accepter">✅</button>
+                          <button onClick={() => updateStatus(d.id, 'Refusé')} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-destructive hover:text-destructive transition-all" title="Refuser">❌</button>
+                        </>
+                      )}
+                      {d.statut === 'Accepté' && (
+                        <button onClick={() => convertToInvoice(d)} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-primary hover:text-primary transition-all" title="Convertir en facture">🧾→</button>
+                      )}
+                      <button onClick={async () => { if (confirm('Supprimer ce devis ?')) { await devis.remove(d.id); toast.success('Devis supprimé'); } }} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-destructive hover:text-destructive transition-all" title="Supprimer">🗑️</button>
                     </div>
                   </td>
                 </tr>
@@ -151,7 +231,7 @@ export default function QuotesPage() {
         <div className="fixed inset-0 bg-foreground/50 backdrop-blur-sm z-[1000] flex items-end lg:items-center justify-center">
           <div className="bg-card border border-border rounded-2xl lg:rounded-2xl rounded-b-none w-full lg:max-w-[640px] max-h-[90vh] overflow-y-auto shadow-2xl animate-[slideUp_0.22s_ease]">
             <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-              <h3 className="font-extrabold text-[15px] text-foreground">Nouveau Devis</h3>
+              <h3 className="font-extrabold text-[15px] text-foreground">{editId ? 'Modifier Devis' : 'Nouveau Devis'}</h3>
               <button onClick={() => setShowModal(false)} className="text-muted-foreground text-xl bg-transparent border-none cursor-pointer">✕</button>
             </div>
             <div className="p-5">
@@ -217,7 +297,7 @@ export default function QuotesPage() {
             </div>
             <div className="px-5 py-3.5 border-t border-border flex gap-2 justify-end">
               <button onClick={() => setShowModal(false)} className="bg-card border-[1.5px] border-border text-muted-foreground py-2 px-4 rounded-lg text-xs font-bold hover:bg-background transition-all">Annuler</button>
-              <button onClick={save} className="gradient-primary text-primary-foreground border-none py-2 px-4 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all">💾 Créer le devis</button>
+              <button onClick={save} className="gradient-primary text-primary-foreground border-none py-2 px-4 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all">💾 {editId ? 'Modifier' : 'Créer le devis'}</button>
             </div>
           </div>
         </div>

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useApp } from '@/context/AppContext';
+import { useNavigate } from 'react-router-dom';
 import AppSidebar from './AppSidebar';
 
 const sectionTitles: Record<string, string> = {
@@ -14,20 +15,20 @@ const sectionTitles: Record<string, string> = {
 };
 
 const quickActions = [
-  { key: 'factures', label: '🧾 Facture', icon: '🧾' },
-  { key: 'devis', label: '📋 Devis', icon: '📋' },
-  { key: 'journal', label: '📒 Transaction', icon: '📒' },
-  { key: 'clients', label: '👥 Client', icon: '👥' },
+  { path: '/factures', label: '🧾 Facture' },
+  { path: '/devis', label: '📋 Devis' },
+  { path: '/journal', label: '📒 Transaction' },
+  { path: '/clients', label: '👥 Client' },
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const { currentSection, sidebarOpen, setSidebarOpen, setCurrentSection } = useApp();
+  const { currentSection, sidebarOpen, setSidebarOpen } = useApp();
+  const navigate = useNavigate();
   const [showFabMenu, setShowFabMenu] = useState(false);
 
-  const handleFabAction = (section: string) => {
+  const handleFabAction = (path: string) => {
     setShowFabMenu(false);
-    setCurrentSection(section as any);
-    // Dispatch a custom event so each page can open its creation modal
+    navigate(path);
     setTimeout(() => window.dispatchEvent(new CustomEvent('open-create-modal')), 100);
   };
 
@@ -50,10 +51,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <div className="lg:ml-[252px] flex-1 flex flex-col min-h-screen pt-[52px] lg:pt-0">
         <div className="hidden lg:flex h-14 bg-card border-b border-border items-center px-6 sticky top-0 z-[80] gap-3 shadow-card shrink-0">
           <h2 className="font-extrabold text-base flex-1 text-foreground tracking-tight">{sectionTitles[currentSection]}</h2>
-          <input
-            className="bg-background border-[1.5px] border-border rounded-lg py-1.5 px-3 text-xs text-foreground outline-none w-[200px] font-sans placeholder:text-muted-foreground focus:border-primary focus:ring-[3px] focus:ring-primary/10"
-            placeholder="🔍 Rechercher..."
-          />
         </div>
 
         <div className="flex-1 p-4 lg:p-6 pb-20 lg:pb-6">
@@ -61,14 +58,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
       </div>
 
-      {/* FAB Menu overlay */}
       {showFabMenu && (
         <div className="fixed inset-0 bg-foreground/30 backdrop-blur-sm z-[180] lg:hidden" onClick={() => setShowFabMenu(false)}>
           <div className="absolute bottom-[80px] left-1/2 -translate-x-1/2 flex flex-col gap-2 items-center animate-[slideUp_0.15s_ease]" onClick={e => e.stopPropagation()}>
             {quickActions.map(a => (
               <button
-                key={a.key}
-                onClick={() => handleFabAction(a.key)}
+                key={a.path}
+                onClick={() => handleFabAction(a.path)}
                 className="bg-card border border-border rounded-full px-4 py-2.5 text-sm font-bold shadow-elevated flex items-center gap-2 hover:bg-background transition-all whitespace-nowrap"
               >
                 {a.label}
@@ -81,13 +77,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border z-[190] shadow-[0_-2px_20px_rgba(0,0,0,0.12)] lg:hidden pb-[env(safe-area-inset-bottom)]">
         <div className="flex items-center h-[58px]">
           {[
-            { key: 'dashboard', icon: '📊', label: 'Accueil' },
-            { key: 'factures', icon: '🧾', label: 'Factures' },
+            { path: '/', icon: '📊', label: 'Accueil', section: 'dashboard' },
+            { path: '/factures', icon: '🧾', label: 'Factures', section: 'factures' },
           ].map(item => (
             <button
-              key={item.key}
-              onClick={() => setCurrentSection(item.key as any)}
-              className={`flex-1 flex flex-col items-center justify-center gap-1 border-none bg-transparent font-sans transition-colors ${currentSection === item.key ? 'text-primary' : 'text-muted-foreground'}`}
+              key={item.path}
+              onClick={() => navigate(item.path)}
+              className={`flex-1 flex flex-col items-center justify-center gap-1 border-none bg-transparent font-sans transition-colors ${currentSection === item.section ? 'text-primary' : 'text-muted-foreground'}`}
             >
               <span className="text-[22px] leading-none">{item.icon}</span>
               <span className="text-[10px] font-semibold">{item.label}</span>
@@ -100,13 +96,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             ＋
           </button>
           {[
-            { key: 'caisse', icon: '💰', label: 'Tréso' },
-            { key: 'clients', icon: '👥', label: 'Plus' },
+            { path: '/caisse', icon: '💰', label: 'Tréso', section: 'caisse' },
+            { path: '/clients', icon: '👥', label: 'Plus', section: 'clients' },
           ].map(item => (
             <button
-              key={item.key}
-              onClick={() => setCurrentSection(item.key as any)}
-              className={`flex-1 flex flex-col items-center justify-center gap-1 border-none bg-transparent font-sans transition-colors ${currentSection === item.key ? 'text-primary' : 'text-muted-foreground'}`}
+              key={item.path}
+              onClick={() => navigate(item.path)}
+              className={`flex-1 flex flex-col items-center justify-center gap-1 border-none bg-transparent font-sans transition-colors ${currentSection === item.section ? 'text-primary' : 'text-muted-foreground'}`}
             >
               <span className="text-[22px] leading-none">{item.icon}</span>
               <span className="text-[10px] font-semibold">{item.label}</span>

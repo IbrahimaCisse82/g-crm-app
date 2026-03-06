@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
+import { useNavigate } from 'react-router-dom';
 import { StatusBadge } from './Dashboard';
 import { toast } from 'sonner';
 import { downloadPdf } from '@/utils/generatePdf';
@@ -19,10 +20,11 @@ const defaultForm = {
 };
 
 export default function InvoicesPage() {
-  const { factures, clients, produits, entreprise, cliName, fmt } = useApp();
+  const { factures, clients, produits, entreprise, journal, cliName, fmt } = useApp();
   const [search, setSearch] = useState('');
   const [statFilter, setStatFilter] = useState('');
   const [showModal, setShowModal] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(defaultForm);
   const [articles, setArticles] = useState<ArticleLine[]>([{ nom: '', quantite: 1, prix_unitaire: 0 }]);
 
@@ -39,8 +41,25 @@ export default function InvoicesPage() {
   const totalTTC = totalHT + totalTVA;
 
   const openNew = () => {
+    setEditId(null);
     setForm(defaultForm);
     setArticles([{ nom: '', quantite: 1, prix_unitaire: 0 }]);
+    setShowModal(true);
+  };
+
+  const openEdit = (f: typeof factures.data[0]) => {
+    setEditId(f.id);
+    const arts = Array.isArray(f.articles) ? (f.articles as any[]).map((a: any) => ({
+      nom: a.nom || '', quantite: a.quantite || 1, prix_unitaire: a.prix_unitaire || 0
+    })) : [{ nom: '', quantite: 1, prix_unitaire: 0 }];
+    setForm({
+      client_id: f.client_id || '',
+      mode_paiement: f.mode_paiement || 'Espèce',
+      date_facture: f.date_facture,
+      date_echeance: f.date_echeance || '',
+      notes: f.notes || '',
+    });
+    setArticles(arts);
     setShowModal(true);
   };
 
@@ -60,7 +79,7 @@ export default function InvoicesPage() {
 
   const selectProduct = (i: number, produitId: string) => {
     const p = produits.data.find(x => x.id === produitId);
-    if (p) updateArticle(i, 'nom', p.nom), updateArticle(i, 'prix_unitaire', p.prix);
+    if (p) { updateArticle(i, 'nom', p.nom); updateArticle(i, 'prix_unitaire', p.prix); }
   };
 
   const save = async () => {
@@ -68,24 +87,44 @@ export default function InvoicesPage() {
       toast.error('Sélectionnez un client et au moins un article');
       return;
     }
-    const numero = `FAC-${Date.now().toString(36).toUpperCase()}`;
+    const validArticles = articles.filter(a => a.nom);
+    const ht = validArticles.reduce((s, a) => s + a.quantite * a.prix_unitaire, 0);
+    const tvaMontant = Math.round(ht * tva / 100);
+    const ttc = ht + tvaMontant;
+
     try {
-      await factures.add({
-        numero,
-        client_id: form.client_id,
-        articles: articles.filter(a => a.nom),
-        montant_ht: totalHT,
-        montant_tva: totalTVA,
-        montant_ttc: totalTTC,
-        montant_regle: 0,
-        mode_paiement: form.mode_paiement,
-        date_facture: form.date_facture,
-        date_echeance: form.date_echeance || null,
-        notes: form.notes || null,
-        statut: 'En attente',
-      });
+      if (editId) {
+        await factures.update(editId, {
+          client_id: form.client_id,
+          articles: validArticles,
+          montant_ht: ht,
+          montant_tva: tvaMontant,
+          montant_ttc: ttc,
+          mode_paiement: form.mode_paiement,
+          date_facture: form.date_facture,
+          date_echeance: form.date_echeance || null,
+          notes: form.notes || null,
+        });
+        toast.success('Facture modifiée');
+      } else {
+        const numero = `FAC-${Date.now().toString(36).toUpperCase()}`;
+        await factures.add({
+          numero,
+          client_id: form.client_id,
+          articles: validArticles,
+          montant_ht: ht,
+          montant_tva: tvaMontant,
+          montant_ttc: ttc,
+          montant_regle: 0,
+          mode_paiement: form.mode_paiement,
+          date_facture: form.date_facture,
+          date_echeance: form.date_echeance || null,
+          notes: form.notes || null,
+          statut: 'En attente',
+        });
+        toast.success('Facture créée');
+      }
       setShowModal(false);
-      toast.success('Facture créée');
     } catch (e: any) {
       toast.error(e.message);
     }
@@ -99,8 +138,22 @@ export default function InvoicesPage() {
   };
 
   const markPaid = async (f: typeof factures.data[0]) => {
-    await factures.update(f.id, { statut: 'Payée', montant_regle: f.montant_ttc });
-    toast.success('Facture marquée comme payée');
+    try {
+      await factures.update(f.id, { statut: 'Payée', montant_regle: f.montant_ttc });
+      // Write journal entry for payment
+      await journal.add({
+        libelle: `Paiement facture ${f.numero}`,
+        type: 'Recette',
+        montant: f.montant_ttc,
+        mode_paiement: f.mode_paiement || 'Espèce',
+        categorie: 'Vente',
+        date_operation: new Date().toISOString().slice(0, 10),
+        facture_id: f.id,
+      });
+      toast.success('Facture marquée comme payée + écriture journal');
+    } catch (e: any) {
+      toast.error(e.message);
+    }
   };
 
   return (
@@ -167,13 +220,15 @@ export default function InvoicesPage() {
                         className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-primary hover:text-primary transition-all"
                         title="Télécharger PDF"
                       >📄</button>
+                      <button onClick={() => openEdit(f)} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-primary hover:text-primary transition-all" title="Modifier">✏️</button>
                       {(f.statut === 'En attente' || f.statut === 'En retard') && (
                         <button
                           onClick={() => markPaid(f)}
                           className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-success hover:text-success transition-all"
+                          title="Marquer payée"
                         >💳</button>
                       )}
-                      <button onClick={() => del(f.id)} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-destructive hover:text-destructive transition-all">🗑️</button>
+                      <button onClick={() => del(f.id)} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-destructive hover:text-destructive transition-all" title="Supprimer">🗑️</button>
                     </div>
                   </td>
                 </tr>
@@ -192,7 +247,7 @@ export default function InvoicesPage() {
         <div className="fixed inset-0 bg-foreground/50 backdrop-blur-sm z-[1000] flex items-end lg:items-center justify-center">
           <div className="bg-card border border-border rounded-2xl lg:rounded-2xl rounded-b-none w-full lg:max-w-[640px] max-h-[90vh] overflow-y-auto shadow-2xl animate-[slideUp_0.22s_ease]">
             <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-              <h3 className="font-extrabold text-[15px] text-foreground">Nouvelle Facture</h3>
+              <h3 className="font-extrabold text-[15px] text-foreground">{editId ? 'Modifier Facture' : 'Nouvelle Facture'}</h3>
               <button onClick={() => setShowModal(false)} className="text-muted-foreground text-xl bg-transparent border-none cursor-pointer">✕</button>
             </div>
             <div className="p-5">
@@ -230,7 +285,7 @@ export default function InvoicesPage() {
                     <div className="flex-1 flex flex-col gap-1">
                       {i === 0 && <span className="text-[10px] text-muted-foreground">Produit</span>}
                       <select className="bg-background border-[1.5px] border-border rounded-lg py-2 px-2 text-xs text-foreground outline-none font-sans focus:border-primary w-full" value="" onChange={e => selectProduct(i, e.target.value)}>
-                        <option value="">Choisir un produit...</option>
+                        <option value="">Choisir...</option>
                         {produits.data.map(p => <option key={p.id} value={p.id}>{p.nom} — {fmt(p.prix)}</option>)}
                       </select>
                     </div>
@@ -266,7 +321,7 @@ export default function InvoicesPage() {
             </div>
             <div className="px-5 py-3.5 border-t border-border flex gap-2 justify-end">
               <button onClick={() => setShowModal(false)} className="bg-card border-[1.5px] border-border text-muted-foreground py-2 px-4 rounded-lg text-xs font-bold hover:bg-background transition-all">Annuler</button>
-              <button onClick={save} className="gradient-primary text-primary-foreground border-none py-2 px-4 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all">💾 Créer la facture</button>
+              <button onClick={save} className="gradient-primary text-primary-foreground border-none py-2 px-4 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all">💾 {editId ? 'Modifier' : 'Créer la facture'}</button>
             </div>
           </div>
         </div>
