@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import { StatusBadge } from './Dashboard';
 import { toast } from 'sonner';
+import { downloadPdf } from '@/utils/generatePdf';
 
 interface ArticleLine {
   nom: string;
@@ -154,6 +155,18 @@ export default function InvoicesPage() {
                   <td className="px-3.5 py-3 text-sm border-b border-border"><StatusBadge status={f.statut} /></td>
                   <td className="px-3.5 py-3 text-sm border-b border-border">
                     <div className="flex gap-1">
+                      <button
+                        onClick={() => downloadPdf({
+                          type: 'facture', numero: f.numero, date: f.date_facture,
+                          echeance: f.date_echeance, client: cliName(f.client_id),
+                          articles: (f.articles as any) || [], montant_ht: f.montant_ht,
+                          montant_tva: f.montant_tva, montant_ttc: f.montant_ttc,
+                          tva_pct: entreprise.data?.tva ?? 18, mode_paiement: f.mode_paiement,
+                          notes: f.notes, entreprise: entreprise.data,
+                        })}
+                        className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-primary hover:text-primary transition-all"
+                        title="Télécharger PDF"
+                      >📄</button>
                       {(f.statut === 'En attente' || f.statut === 'En retard') && (
                         <button
                           onClick={() => markPaid(f)}
