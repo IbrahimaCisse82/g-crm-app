@@ -1,6 +1,7 @@
 import { AuthProvider, useAuth } from '@/hooks/useAuth';
-import { AppProvider, useApp } from '@/context/AppContext';
+import { AppProvider } from '@/context/AppContext';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from '@/pages/LoginPage';
 import AppLayout from '@/components/layout/AppLayout';
 import Dashboard from '@/pages/Dashboard';
@@ -11,6 +12,7 @@ import ProductsPage from '@/pages/ProductsPage';
 import JournalPage from '@/pages/JournalPage';
 import CashPage from '@/pages/CashPage';
 import CompanyPage from '@/pages/CompanyPage';
+import NotFound from '@/pages/NotFound';
 import { Toaster } from '@/components/ui/sonner';
 
 const queryClient = new QueryClient();
@@ -32,39 +34,32 @@ function AppContent() {
 
   return (
     <AppProvider>
-      <AppRouter />
+      <AppLayout>
+        <Routes>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/clients" element={<ClientsPage />} />
+          <Route path="/factures" element={<InvoicesPage />} />
+          <Route path="/devis" element={<QuotesPage />} />
+          <Route path="/produits" element={<ProductsPage />} />
+          <Route path="/journal" element={<JournalPage />} />
+          <Route path="/caisse" element={<CashPage />} />
+          <Route path="/entreprise" element={<CompanyPage />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </AppLayout>
     </AppProvider>
-  );
-}
-
-function AppRouter() {
-  const { currentSection } = useApp();
-
-  const pages: Record<string, React.ReactNode> = {
-    dashboard: <Dashboard />,
-    clients: <ClientsPage />,
-    factures: <InvoicesPage />,
-    devis: <QuotesPage />,
-    produits: <ProductsPage />,
-    journal: <JournalPage />,
-    caisse: <CashPage />,
-    entreprise: <CompanyPage />,
-  };
-
-  return (
-    <AppLayout>
-      {pages[currentSection] || <Dashboard />}
-    </AppLayout>
   );
 }
 
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <AppContent />
-        <Toaster />
-      </AuthProvider>
+      <BrowserRouter>
+        <AuthProvider>
+          <AppContent />
+          <Toaster />
+        </AuthProvider>
+      </BrowserRouter>
     </QueryClientProvider>
   );
 }

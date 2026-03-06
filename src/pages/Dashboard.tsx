@@ -1,4 +1,5 @@
 import { useApp } from '@/context/AppContext';
+import { useNavigate } from 'react-router-dom';
 
 function StatCard({ icon, value, label, sub }: { icon: string; value: string; label: string; sub?: string }) {
   return (
@@ -14,6 +15,7 @@ function StatCard({ icon, value, label, sub }: { icon: string; value: string; la
 
 export default function Dashboard() {
   const { clients, factures, journal, cliName, fmt } = useApp();
+  const navigate = useNavigate();
 
   const actifs = clients.data.filter(c => c.statut === 'Actif').length;
   const totR = journal.data.filter(j => j.type === 'Recette' && j.categorie !== 'Transfert').reduce((s, j) => s + (j.montant || 0), 0);
@@ -70,8 +72,9 @@ export default function Dashboard() {
         </div>
 
         <div className="bg-card border border-border rounded-xl overflow-hidden shadow-card">
-          <div className="px-4 py-3 border-b border-border">
+          <div className="px-4 py-3 border-b border-border flex items-center justify-between">
             <h3 className="font-extrabold text-sm text-foreground">Dernières transactions</h3>
+            <button onClick={() => navigate('/journal')} className="text-[10.5px] text-primary font-semibold hover:underline">Voir tout →</button>
           </div>
           {last6Txns.length ? last6Txns.map(j => (
             <div key={j.id} className="flex justify-between px-4 py-2.5 border-b border-border text-xs">
@@ -90,8 +93,9 @@ export default function Dashboard() {
       </div>
 
       <div className="bg-card border border-border rounded-xl overflow-hidden shadow-card">
-        <div className="px-4 py-3 border-b border-border">
+        <div className="px-4 py-3 border-b border-border flex items-center justify-between">
           <h3 className="font-extrabold text-sm text-foreground">Factures récentes</h3>
+          <button onClick={() => navigate('/factures')} className="text-[10.5px] text-primary font-semibold hover:underline">Voir tout →</button>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full border-collapse min-w-[560px]">
@@ -104,7 +108,7 @@ export default function Dashboard() {
             </thead>
             <tbody>
               {recentFacs.length ? recentFacs.map(f => (
-                <tr key={f.id} className="hover:bg-background transition-colors">
+                <tr key={f.id} className="hover:bg-background transition-colors cursor-pointer" onClick={() => navigate('/factures')}>
                   <td className="px-3.5 py-3 text-sm font-bold text-foreground border-b border-border">{f.numero}</td>
                   <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{cliName(f.client_id)}</td>
                   <td className="px-3.5 py-3 text-sm font-bold text-foreground border-b border-border">{fmt(f.montant_ttc)}</td>
