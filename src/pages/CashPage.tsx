@@ -86,24 +86,24 @@ export default function CashPage() {
 
   return (
     <div>
-      <div className="grid grid-cols-3 gap-3 mb-3.5">
-        <div className="bg-card border border-border rounded-xl p-4 relative overflow-hidden shadow-card">
+      <div className="grid grid-cols-3 gap-2 lg:gap-3 mb-3.5">
+        <div className="bg-card border border-border rounded-xl p-2.5 lg:p-4 relative overflow-hidden shadow-card">
           <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-primary to-secondary" />
-          <div className="text-2xl mb-2">💵</div>
-          <div className={`font-black text-lg ${soldeCaisse >= 0 ? '' : 'text-destructive'}`}>{fmt(soldeCaisse)}</div>
-          <div className="text-[11px] text-muted-foreground">Caisse — Espèce</div>
+          <div className="text-lg lg:text-2xl mb-1 lg:mb-2">💵</div>
+          <div className={`font-black text-xs lg:text-lg truncate ${soldeCaisse >= 0 ? '' : 'text-destructive'}`}>{fmt(soldeCaisse)}</div>
+          <div className="text-[9px] lg:text-[11px] text-muted-foreground">Caisse</div>
         </div>
-        <div className="bg-card border border-border rounded-xl p-4 relative overflow-hidden shadow-card">
+        <div className="bg-card border border-border rounded-xl p-2.5 lg:p-4 relative overflow-hidden shadow-card">
           <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-secondary to-primary" />
-          <div className="text-2xl mb-2">📱</div>
-          <div className="font-black text-lg">{fmt(mmTot)}</div>
-          <div className="text-[11px] text-muted-foreground">Mobile Money (total)</div>
+          <div className="text-lg lg:text-2xl mb-1 lg:mb-2">📱</div>
+          <div className="font-black text-xs lg:text-lg truncate">{fmt(mmTot)}</div>
+          <div className="text-[9px] lg:text-[11px] text-muted-foreground">Mobile Money</div>
         </div>
-        <div className="bg-card border border-border rounded-xl p-4 relative overflow-hidden shadow-card">
+        <div className="bg-card border border-border rounded-xl p-2.5 lg:p-4 relative overflow-hidden shadow-card">
           <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-primary to-success" />
-          <div className="text-2xl mb-2">🏦</div>
-          <div className="font-black text-lg">{fmt(soldeBanque)}</div>
-          <div className="text-[11px] text-muted-foreground">Banque</div>
+          <div className="text-lg lg:text-2xl mb-1 lg:mb-2">🏦</div>
+          <div className="font-black text-xs lg:text-lg truncate">{fmt(soldeBanque)}</div>
+          <div className="text-[9px] lg:text-[11px] text-muted-foreground">Banque</div>
         </div>
       </div>
 

@@ -62,24 +62,24 @@ export default function JournalPage() {
 
   return (
     <div>
-      <div className="grid grid-cols-3 gap-3 mb-4">
-        <div className="bg-card border border-border rounded-xl p-4 relative overflow-hidden shadow-card">
+      <div className="grid grid-cols-3 gap-2 lg:gap-3 mb-4">
+        <div className="bg-card border border-border rounded-xl p-2.5 lg:p-4 relative overflow-hidden shadow-card">
           <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-primary to-secondary" />
-          <div className="text-2xl mb-2">📥</div>
-          <div className="font-black text-lg text-success">{fmt(totR)}</div>
-          <div className="text-[11px] text-muted-foreground">Recettes</div>
+          <div className="text-lg lg:text-2xl mb-1 lg:mb-2">📥</div>
+          <div className="font-black text-xs lg:text-lg text-success truncate">{fmt(totR)}</div>
+          <div className="text-[9px] lg:text-[11px] text-muted-foreground">Recettes</div>
         </div>
-        <div className="bg-card border border-border rounded-xl p-4 relative overflow-hidden shadow-card">
+        <div className="bg-card border border-border rounded-xl p-2.5 lg:p-4 relative overflow-hidden shadow-card">
           <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-destructive to-accent" />
-          <div className="text-2xl mb-2">📤</div>
-          <div className="font-black text-lg text-destructive">{fmt(totD)}</div>
-          <div className="text-[11px] text-muted-foreground">Dépenses</div>
+          <div className="text-lg lg:text-2xl mb-1 lg:mb-2">📤</div>
+          <div className="font-black text-xs lg:text-lg text-destructive truncate">{fmt(totD)}</div>
+          <div className="text-[9px] lg:text-[11px] text-muted-foreground">Dépenses</div>
         </div>
-        <div className="bg-card border border-border rounded-xl p-4 relative overflow-hidden shadow-card">
+        <div className="bg-card border border-border rounded-xl p-2.5 lg:p-4 relative overflow-hidden shadow-card">
           <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-primary to-success" />
-          <div className="text-2xl mb-2">⚖️</div>
-          <div className={`font-black text-lg ${bal >= 0 ? 'text-success' : 'text-destructive'}`}>{fmt(Math.abs(bal))}</div>
-          <div className="text-[11px] text-muted-foreground">Balance</div>
+          <div className="text-lg lg:text-2xl mb-1 lg:mb-2">⚖️</div>
+          <div className={`font-black text-xs lg:text-lg truncate ${bal >= 0 ? 'text-success' : 'text-destructive'}`}>{fmt(Math.abs(bal))}</div>
+          <div className="text-[9px] lg:text-[11px] text-muted-foreground">Balance</div>
         </div>
       </div>
 
@@ -103,7 +103,33 @@ export default function JournalPage() {
             ))}
           </div>
         </div>
-        <div className="overflow-x-auto">
+        {/* Mobile card view */}
+        <div className="lg:hidden">
+          {journal.isLoading ? <TableSkeleton rows={5} cols={3} /> : (
+            filtered.length ? filtered.map(j => (
+              <div key={j.id} className="px-4 py-3 border-b border-border flex items-center justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <div className="font-bold text-xs text-foreground truncate">{j.libelle || '—'}</div>
+                  <div className="text-[10px] text-muted-foreground truncate">{j.date_operation} · {j.mode_paiement} {j.categorie ? `· ${j.categorie}` : ''}</div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className={`font-bold text-sm ${j.type === 'Recette' ? 'text-success' : 'text-destructive'}`}>
+                    {j.type === 'Recette' ? '+' : '-'}{fmt(j.montant || 0)}
+                  </span>
+                  <button onClick={() => setDeleteTarget({ id: j.id, libelle: j.libelle })} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs">🗑️</button>
+                </div>
+              </div>
+            )) : (
+              <div className="text-center py-10 text-muted-foreground">
+                <div className="text-4xl opacity-30 mb-2">📒</div>
+                <div className="text-sm">Aucune transaction</div>
+              </div>
+            )
+          )}
+        </div>
+
+        {/* Desktop table */}
+        <div className="hidden lg:block overflow-x-auto">
           {journal.isLoading ? <TableSkeleton rows={5} cols={7} /> : (
             <table className="w-full border-collapse min-w-[560px]">
               <thead>

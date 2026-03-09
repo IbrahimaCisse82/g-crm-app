@@ -196,7 +196,45 @@ export default function QuotesPage() {
             </button>
           </div>
         </div>
-        <div className="overflow-x-auto">
+        {/* Mobile card view */}
+        <div className="lg:hidden">
+          {devis.isLoading ? <TableSkeleton rows={5} cols={3} /> : (
+            filtered.length ? filtered.map(d => (
+              <div key={d.id} className="px-4 py-3 border-b border-border">
+                <div className="flex items-center justify-between mb-1">
+                  <div className="font-bold text-xs text-foreground">{d.numero}</div>
+                  <StatusBadge status={d.statut} />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="text-[10.5px] text-muted-foreground truncate">{cliName(d.client_id)} · {d.date_devis}</div>
+                  <span className="font-bold text-sm text-foreground">{fmt(d.montant_ttc)}</span>
+                </div>
+                <div className="flex gap-1 mt-2">
+                  <button onClick={() => downloadPdf({ type: 'devis', numero: d.numero, date: d.date_devis, validite_jours: d.validite_jours, client: cliName(d.client_id), articles: (d.articles as unknown as ArticleLine[]) || [], montant_ht: d.montant_ht, montant_tva: d.montant_tva, montant_ttc: d.montant_ttc, tva_pct: entreprise.data?.tva ?? 18, notes: d.notes, entreprise: entreprise.data })} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs">📄</button>
+                  <button onClick={() => openEdit(d)} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs">✏️</button>
+                  {d.statut === 'En attente' && (
+                    <>
+                      <button onClick={() => updateStatus(d.id, 'Accepté')} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs">✅</button>
+                      <button onClick={() => updateStatus(d.id, 'Refusé')} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs">❌</button>
+                    </>
+                  )}
+                  {d.statut === 'Accepté' && (
+                    <button onClick={() => convertToInvoice(d)} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs">🧾→</button>
+                  )}
+                  <button onClick={() => setDeleteTarget({ id: d.id, numero: d.numero })} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs">🗑️</button>
+                </div>
+              </div>
+            )) : (
+              <div className="text-center py-10 text-muted-foreground">
+                <div className="text-4xl opacity-30 mb-2">📋</div>
+                <div className="text-sm">Aucun devis</div>
+              </div>
+            )
+          )}
+        </div>
+
+        {/* Desktop table */}
+        <div className="hidden lg:block overflow-x-auto">
           {devis.isLoading ? <TableSkeleton rows={5} cols={7} /> : (
             <table className="w-full border-collapse min-w-[700px]">
               <thead>
@@ -217,18 +255,7 @@ export default function QuotesPage() {
                     <td className="px-3.5 py-3 text-sm border-b border-border"><StatusBadge status={d.statut} /></td>
                     <td className="px-3.5 py-3 text-sm border-b border-border">
                       <div className="flex gap-1">
-                        <button
-                          onClick={() => downloadPdf({
-                            type: 'devis', numero: d.numero, date: d.date_devis,
-                            validite_jours: d.validite_jours, client: cliName(d.client_id),
-                            articles: (d.articles as unknown as ArticleLine[]) || [], montant_ht: d.montant_ht,
-                            montant_tva: d.montant_tva, montant_ttc: d.montant_ttc,
-                            tva_pct: entreprise.data?.tva ?? 18, notes: d.notes,
-                            entreprise: entreprise.data,
-                          })}
-                          className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-primary hover:text-primary transition-all"
-                          title="Télécharger PDF"
-                        >📄</button>
+                        <button onClick={() => downloadPdf({ type: 'devis', numero: d.numero, date: d.date_devis, validite_jours: d.validite_jours, client: cliName(d.client_id), articles: (d.articles as unknown as ArticleLine[]) || [], montant_ht: d.montant_ht, montant_tva: d.montant_tva, montant_ttc: d.montant_ttc, tva_pct: entreprise.data?.tva ?? 18, notes: d.notes, entreprise: entreprise.data })} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-primary hover:text-primary transition-all" title="Télécharger PDF">📄</button>
                         <button onClick={() => openEdit(d)} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-primary hover:text-primary transition-all" title="Modifier">✏️</button>
                         {d.statut === 'En attente' && (
                           <>
