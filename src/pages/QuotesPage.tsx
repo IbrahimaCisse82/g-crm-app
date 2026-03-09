@@ -71,6 +71,7 @@ export default function QuotesPage() {
     const handler = () => openNew();
     window.addEventListener('open-create-modal', handler);
     return () => window.removeEventListener('open-create-modal', handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const addLine = () => setArticles([...articles, { nom: '', quantite: 1, prix_unitaire: 0 }]);

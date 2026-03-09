@@ -35,7 +35,13 @@ export default function Dashboard() {
   const maxR = Math.max(1, ...months.map(m => journal.data.filter(j => j.type === 'Recette' && j.categorie !== 'Transfert' && j.date_operation?.startsWith(m.key)).reduce((s, j) => s + (j.montant || 0), 0)));
 
   const last6Txns = journal.data.slice(0, 6);
-  const recentFacs = factures.data.slice(0, 5);
+  const today = new Date().toISOString().slice(0, 10);
+  const recentFacs = factures.data.slice(0, 5).map(f => {
+    if (f.statut === 'En attente' && f.date_echeance && f.date_echeance < today) {
+      return { ...f, statut: 'En retard' };
+    }
+    return f;
+  });
 
   if (isLoading) {
     return (
