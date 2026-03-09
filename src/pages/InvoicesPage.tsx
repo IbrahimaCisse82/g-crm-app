@@ -86,7 +86,9 @@ export default function InvoicesPage() {
 
   const selectProduct = (i: number, produitId: string) => {
     const p = produits.data.find(x => x.id === produitId);
-    if (p) { updateArticle(i, 'nom', p.nom); updateArticle(i, 'prix_unitaire', p.prix); }
+    if (p) {
+      setArticles(prev => prev.map((a, idx) => idx === i ? { ...a, nom: p.nom, prix_unitaire: p.prix } : a));
+    }
   };
 
   const save = async () => {
