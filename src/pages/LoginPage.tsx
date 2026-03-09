@@ -26,6 +26,7 @@ export default function LoginPage() {
 
   const handleSignup = async () => {
     if (!suEmail || !suPw || !name) return toast.error('Veuillez remplir les champs obligatoires');
+    if (!acceptedTerms) return toast.error('Veuillez accepter les conditions d\'utilisation');
     if (suPw.length < 6) return toast.error('Le mot de passe doit contenir au moins 6 caractères');
     setLoading(true);
     const { error } = await signUp(suEmail, suPw, name, company);
