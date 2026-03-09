@@ -27,6 +27,7 @@ export default function ClientsPage() {
     const handler = () => openNew();
     window.addEventListener('open-create-modal', handler);
     return () => window.removeEventListener('open-create-modal', handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const openEdit = (c: typeof clients.data[0]) => {

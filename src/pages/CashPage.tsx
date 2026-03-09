@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { CardSkeleton } from '@/components/LoadingSkeleton';
 import { toast } from 'sonner';
 
 export default function CashPage() {
@@ -40,7 +41,23 @@ export default function CashPage() {
     const handler = () => openNew();
     window.addEventListener('open-create-modal', handler);
     return () => window.removeEventListener('open-create-modal', handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  if (comptes.isLoading || journal.isLoading) {
+    return (
+      <div>
+        <div className="grid grid-cols-3 gap-3 mb-3.5">
+          {[1,2,3].map(i => <CardSkeleton key={i} />)}
+        </div>
+        <div className="h-16 bg-card border border-border rounded-xl animate-pulse mb-4" />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="bg-card border border-border rounded-xl h-48 animate-pulse" />
+          <div className="bg-card border border-border rounded-xl h-48 animate-pulse" />
+        </div>
+      </div>
+    );
+  }
 
   const save = async () => {
     if (!form.numero) {

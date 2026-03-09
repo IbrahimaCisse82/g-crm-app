@@ -71,6 +71,7 @@ export default function QuotesPage() {
     const handler = () => openNew();
     window.addEventListener('open-create-modal', handler);
     return () => window.removeEventListener('open-create-modal', handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const addLine = () => setArticles([...articles, { nom: '', quantite: 1, prix_unitaire: 0 }]);
@@ -81,7 +82,9 @@ export default function QuotesPage() {
   };
   const selectProduct = (i: number, pid: string) => {
     const p = produits.data.find(x => x.id === pid);
-    if (p) { updateArticle(i, 'nom', p.nom); updateArticle(i, 'prix_unitaire', p.prix); }
+    if (p) {
+      setArticles(prev => prev.map((a, idx) => idx === i ? { ...a, nom: p.nom, prix_unitaire: p.prix } : a));
+    }
   };
 
   const save = async () => {

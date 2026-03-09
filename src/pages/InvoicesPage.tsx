@@ -75,6 +75,7 @@ export default function InvoicesPage() {
     const handler = () => openNew();
     window.addEventListener('open-create-modal', handler);
     return () => window.removeEventListener('open-create-modal', handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const addArticleLine = () => setArticles([...articles, { nom: '', quantite: 1, prix_unitaire: 0 }]);
@@ -86,7 +87,9 @@ export default function InvoicesPage() {
 
   const selectProduct = (i: number, produitId: string) => {
     const p = produits.data.find(x => x.id === produitId);
-    if (p) { updateArticle(i, 'nom', p.nom); updateArticle(i, 'prix_unitaire', p.prix); }
+    if (p) {
+      setArticles(prev => prev.map((a, idx) => idx === i ? { ...a, nom: p.nom, prix_unitaire: p.prix } : a));
+    }
   };
 
   const save = async () => {
@@ -242,7 +245,9 @@ export default function InvoicesPage() {
                           className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-primary hover:text-primary transition-all"
                           title="Télécharger PDF"
                         >📄</button>
-                        <button onClick={() => openEdit(f)} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-primary hover:text-primary transition-all" title="Modifier">✏️</button>
+                        {f.statut !== 'Payée' && (
+                          <button onClick={() => openEdit(f)} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-primary hover:text-primary transition-all" title="Modifier">✏️</button>
+                        )}
                         {(f.statut === 'En attente' || f.statut === 'En retard') && (
                           <button
                             onClick={() => markPaid(f)}

@@ -18,6 +18,7 @@ export default function ProductsPage() {
     const handler = () => openNew();
     window.addEventListener('open-create-modal', handler);
     return () => window.removeEventListener('open-create-modal', handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const save = async () => {

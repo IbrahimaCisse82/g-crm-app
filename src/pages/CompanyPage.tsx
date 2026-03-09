@@ -42,8 +42,8 @@ export default function CompanyPage() {
     try {
       await entreprise.upsert(form);
       toast.success('Sauvegardé !');
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Erreur');
     }
     setSaving(false);
   };

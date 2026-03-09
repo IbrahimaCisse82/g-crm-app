@@ -35,7 +35,13 @@ export default function Dashboard() {
   const maxR = Math.max(1, ...months.map(m => journal.data.filter(j => j.type === 'Recette' && j.categorie !== 'Transfert' && j.date_operation?.startsWith(m.key)).reduce((s, j) => s + (j.montant || 0), 0)));
 
   const last6Txns = journal.data.slice(0, 6);
-  const recentFacs = factures.data.slice(0, 5);
+  const today = new Date().toISOString().slice(0, 10);
+  const recentFacs = factures.data.slice(0, 5).map(f => {
+    if (f.statut === 'En attente' && f.date_echeance && f.date_echeance < today) {
+      return { ...f, statut: 'En retard' };
+    }
+    return f;
+  });
 
   if (isLoading) {
     return (
@@ -57,7 +63,7 @@ export default function Dashboard() {
         <StatCard icon="👥" value={String(actifs)} label="Clients actifs" />
         <StatCard icon="💰" value={fmt(totR)} label="Recettes totales" />
         <StatCard icon="🧾" value={String(factures.data.length)} label="Factures" sub={`En attente: ${pen}`} />
-        <StatCard icon="📊" value={fmt(Math.abs(bal))} label="Balance nette" />
+        <StatCard icon="📊" value={`${bal >= 0 ? '+' : '-'}${fmt(Math.abs(bal))}`} label="Balance nette" sub={bal >= 0 ? '✅ Positif' : '⚠️ Négatif'} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
