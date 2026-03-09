@@ -139,7 +139,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </button>
           {[
             { path: '/caisse', icon: '💰', label: 'Tréso', section: 'caisse' },
-            { path: '/clients', icon: '👥', label: 'Plus', section: 'clients' },
+            { path: '/journal', icon: '📒', label: 'Transaction', section: 'journal' },
           ].map(item => (
             <button
               key={item.path}
