@@ -81,7 +81,9 @@ export default function QuotesPage() {
   };
   const selectProduct = (i: number, pid: string) => {
     const p = produits.data.find(x => x.id === pid);
-    if (p) { updateArticle(i, 'nom', p.nom); updateArticle(i, 'prix_unitaire', p.prix); }
+    if (p) {
+      setArticles(prev => prev.map((a, idx) => idx === i ? { ...a, nom: p.nom, prix_unitaire: p.prix } : a));
+    }
   };
 
   const save = async () => {
