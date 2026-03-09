@@ -57,7 +57,7 @@ export default function Dashboard() {
         <StatCard icon="👥" value={String(actifs)} label="Clients actifs" />
         <StatCard icon="💰" value={fmt(totR)} label="Recettes totales" />
         <StatCard icon="🧾" value={String(factures.data.length)} label="Factures" sub={`En attente: ${pen}`} />
-        <StatCard icon="📊" value={fmt(Math.abs(bal))} label="Balance nette" />
+        <StatCard icon="📊" value={`${bal >= 0 ? '+' : '-'}${fmt(Math.abs(bal))}`} label="Balance nette" sub={bal >= 0 ? '✅ Positif' : '⚠️ Négatif'} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
