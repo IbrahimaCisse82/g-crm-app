@@ -103,7 +103,33 @@ export default function JournalPage() {
             ))}
           </div>
         </div>
-        <div className="overflow-x-auto">
+        {/* Mobile card view */}
+        <div className="lg:hidden">
+          {journal.isLoading ? <TableSkeleton rows={5} cols={3} /> : (
+            filtered.length ? filtered.map(j => (
+              <div key={j.id} className="px-4 py-3 border-b border-border flex items-center justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <div className="font-bold text-xs text-foreground truncate">{j.libelle || '—'}</div>
+                  <div className="text-[10px] text-muted-foreground truncate">{j.date_operation} · {j.mode_paiement} {j.categorie ? `· ${j.categorie}` : ''}</div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className={`font-bold text-sm ${j.type === 'Recette' ? 'text-success' : 'text-destructive'}`}>
+                    {j.type === 'Recette' ? '+' : '-'}{fmt(j.montant || 0)}
+                  </span>
+                  <button onClick={() => setDeleteTarget({ id: j.id, libelle: j.libelle })} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs">🗑️</button>
+                </div>
+              </div>
+            )) : (
+              <div className="text-center py-10 text-muted-foreground">
+                <div className="text-4xl opacity-30 mb-2">📒</div>
+                <div className="text-sm">Aucune transaction</div>
+              </div>
+            )
+          )}
+        </div>
+
+        {/* Desktop table */}
+        <div className="hidden lg:block overflow-x-auto">
           {journal.isLoading ? <TableSkeleton rows={5} cols={7} /> : (
             <table className="w-full border-collapse min-w-[560px]">
               <thead>

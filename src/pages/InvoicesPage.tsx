@@ -208,7 +208,44 @@ export default function InvoicesPage() {
             </button>
           </div>
         </div>
-        <div className="overflow-x-auto">
+        {/* Mobile card view */}
+        <div className="lg:hidden">
+          {factures.isLoading ? <TableSkeleton rows={5} cols={3} /> : (
+            filtered.length ? filtered.map(f => (
+              <div key={f.id} className="px-4 py-3 border-b border-border">
+                <div className="flex items-center justify-between mb-1">
+                  <div className="font-bold text-xs text-foreground">{f.numero}</div>
+                  <StatusBadge status={f.statut} />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="text-[10.5px] text-muted-foreground truncate">{cliName(f.client_id)} · {f.date_facture}</div>
+                  <span className="font-bold text-sm text-foreground">{fmt(f.montant_ttc)}</span>
+                </div>
+                <div className="flex gap-1 mt-2">
+                  <button
+                    onClick={() => downloadPdf({ type: 'facture', numero: f.numero, date: f.date_facture, echeance: f.date_echeance, client: cliName(f.client_id), articles: (f.articles as unknown as ArticleLine[]) || [], montant_ht: f.montant_ht, montant_tva: f.montant_tva, montant_ttc: f.montant_ttc, tva_pct: entreprise.data?.tva ?? 18, mode_paiement: f.mode_paiement, notes: f.notes, entreprise: entreprise.data })}
+                    className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs"
+                  >📄</button>
+                  {f.statut !== 'Payée' && (
+                    <button onClick={() => openEdit(f)} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs">✏️</button>
+                  )}
+                  {(f.statut === 'En attente' || f.statut === 'En retard') && (
+                    <button onClick={() => markPaid(f)} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs">💳</button>
+                  )}
+                  <button onClick={() => setDeleteTarget({ id: f.id, numero: f.numero })} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs">🗑️</button>
+                </div>
+              </div>
+            )) : (
+              <div className="text-center py-10 text-muted-foreground">
+                <div className="text-4xl opacity-30 mb-2">🧾</div>
+                <div className="text-sm">Aucune facture</div>
+              </div>
+            )
+          )}
+        </div>
+
+        {/* Desktop table */}
+        <div className="hidden lg:block overflow-x-auto">
           {factures.isLoading ? <TableSkeleton rows={5} cols={9} /> : (
             <table className="w-full border-collapse min-w-[700px]">
               <thead>
@@ -234,14 +271,7 @@ export default function InvoicesPage() {
                     <td className="px-3.5 py-3 text-sm border-b border-border">
                       <div className="flex gap-1">
                         <button
-                          onClick={() => downloadPdf({
-                            type: 'facture', numero: f.numero, date: f.date_facture,
-                            echeance: f.date_echeance, client: cliName(f.client_id),
-                            articles: (f.articles as unknown as ArticleLine[]) || [], montant_ht: f.montant_ht,
-                            montant_tva: f.montant_tva, montant_ttc: f.montant_ttc,
-                            tva_pct: entreprise.data?.tva ?? 18, mode_paiement: f.mode_paiement,
-                            notes: f.notes, entreprise: entreprise.data,
-                          })}
+                          onClick={() => downloadPdf({ type: 'facture', numero: f.numero, date: f.date_facture, echeance: f.date_echeance, client: cliName(f.client_id), articles: (f.articles as unknown as ArticleLine[]) || [], montant_ht: f.montant_ht, montant_tva: f.montant_tva, montant_ttc: f.montant_ttc, tva_pct: entreprise.data?.tva ?? 18, mode_paiement: f.mode_paiement, notes: f.notes, entreprise: entreprise.data })}
                           className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-primary hover:text-primary transition-all"
                           title="Télécharger PDF"
                         >📄</button>
@@ -249,11 +279,7 @@ export default function InvoicesPage() {
                           <button onClick={() => openEdit(f)} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-primary hover:text-primary transition-all" title="Modifier">✏️</button>
                         )}
                         {(f.statut === 'En attente' || f.statut === 'En retard') && (
-                          <button
-                            onClick={() => markPaid(f)}
-                            className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-success hover:text-success transition-all"
-                            title="Marquer payée"
-                          >💳</button>
+                          <button onClick={() => markPaid(f)} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-success hover:text-success transition-all" title="Marquer payée">💳</button>
                         )}
                         <button onClick={() => setDeleteTarget({ id: f.id, numero: f.numero })} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-destructive hover:text-destructive transition-all" title="Supprimer">🗑️</button>
                       </div>

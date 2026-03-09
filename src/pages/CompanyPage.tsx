@@ -66,7 +66,7 @@ export default function CompanyPage() {
               <Field label="NINEA" value={form.ninea} onChange={v => setForm({ ...form, ninea: v })} />
               <Field label="RCCM" value={form.rccm} onChange={v => setForm({ ...form, rccm: v })} />
             </div>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <Field label="Site web / Slogan" value={form.slogan} onChange={v => setForm({ ...form, slogan: v })} />
               <Field label="TVA (%)" value={String(form.tva)} onChange={v => setForm({ ...form, tva: parseFloat(v) || 0 })} type="number" />
               <div className="flex flex-col gap-1.5">

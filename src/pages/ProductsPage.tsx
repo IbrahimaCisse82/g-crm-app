@@ -49,7 +49,32 @@ export default function ProductsPage() {
           <h3 className="font-extrabold text-sm text-foreground">Produits & Services</h3>
           <button onClick={openNew} className="gradient-primary text-primary-foreground border-none py-1.5 px-3 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all">＋ Nouveau</button>
         </div>
-        <div className="overflow-x-auto">
+        {/* Mobile card view */}
+        <div className="lg:hidden">
+          {produits.isLoading ? <TableSkeleton rows={5} cols={3} /> : (
+            produits.data.length ? produits.data.map(p => (
+              <div key={p.id} className="px-4 py-3 border-b border-border flex items-center justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <div className="font-bold text-sm text-foreground truncate">{p.nom}</div>
+                  <div className="text-[10.5px] text-muted-foreground truncate">{p.type} · {p.unite} {p.description ? `· ${p.description}` : ''}</div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="font-bold text-sm text-foreground">{fmt(p.prix)}</span>
+                  <button onClick={() => openEdit(p)} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs">✏️</button>
+                  <button onClick={() => setDeleteTarget({ id: p.id, nom: p.nom })} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs">🗑️</button>
+                </div>
+              </div>
+            )) : (
+              <div className="text-center py-10 text-muted-foreground">
+                <div className="text-4xl opacity-30 mb-2">📦</div>
+                <div className="text-sm">Aucun produit</div>
+              </div>
+            )
+          )}
+        </div>
+
+        {/* Desktop table */}
+        <div className="hidden lg:block overflow-x-auto">
           {produits.isLoading ? <TableSkeleton rows={5} cols={6} /> : (
             <table className="w-full border-collapse min-w-[560px]">
               <thead>

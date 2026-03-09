@@ -91,7 +91,32 @@ export default function ClientsPage() {
             </button>
           </div>
         </div>
-        <div className="overflow-x-auto">
+        {/* Mobile card view */}
+        <div className="lg:hidden">
+          {clients.isLoading ? <TableSkeleton rows={5} cols={3} /> : (
+            filtered.length ? filtered.map(c => (
+              <div key={c.id} className="px-4 py-3 border-b border-border flex items-center justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <div className="font-bold text-sm text-foreground truncate">{c.prenom} {c.nom}</div>
+                  <div className="text-[10.5px] text-muted-foreground truncate">{c.entreprise || c.email || c.telephone || '—'}</div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <StatusBadge status={c.statut} />
+                  <button onClick={() => openEdit(c)} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs">✏️</button>
+                  <button onClick={() => setDeleteTarget({ id: c.id, name: `${c.prenom} ${c.nom}` })} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs">🗑️</button>
+                </div>
+              </div>
+            )) : (
+              <div className="text-center py-10 text-muted-foreground">
+                <div className="text-4xl opacity-30 mb-2">👥</div>
+                <div className="text-sm">Aucun client</div>
+              </div>
+            )
+          )}
+        </div>
+
+        {/* Desktop table */}
+        <div className="hidden lg:block overflow-x-auto">
           {clients.isLoading ? <TableSkeleton rows={5} cols={6} /> : (
             <table className="w-full border-collapse min-w-[560px]">
               <thead>
