@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import { useNavigate } from 'react-router-dom';
+import { Building2, BookOpen, LogOut } from 'lucide-react';
 import AppSidebar from './AppSidebar';
 
 const sectionTitles: Record<string, string> = {
@@ -22,9 +23,21 @@ const quickActions = [
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const { currentSection, sidebarOpen, setSidebarOpen } = useApp();
+  const { currentSection, sidebarOpen, setSidebarOpen, logout } = useApp();
   const navigate = useNavigate();
   const [showFabMenu, setShowFabMenu] = useState(false);
+  const [showTopMenu, setShowTopMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setShowTopMenu(false);
+      }
+    };
+    if (showTopMenu) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showTopMenu]);
 
   const handleFabAction = (path: string) => {
     setShowFabMenu(false);
@@ -38,14 +51,42 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
       <div className="fixed top-0 left-0 right-0 h-[52px] bg-card border-b border-border flex items-center justify-between px-4 z-[90] shadow-card lg:hidden">
         <span className="font-black text-base text-primary tracking-tight">G-CRM</span>
-        <button
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="w-[34px] h-[34px] rounded-lg bg-background border border-border flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-primary transition-all"
-        >
-          <span className={`w-[15px] h-[1.5px] bg-foreground rounded-sm transition-all ${sidebarOpen ? 'rotate-45 translate-y-[5.5px]' : ''}`} />
-          <span className={`w-[15px] h-[1.5px] bg-foreground rounded-sm transition-all ${sidebarOpen ? 'opacity-0 scale-x-0' : ''}`} />
-          <span className={`w-[15px] h-[1.5px] bg-foreground rounded-sm transition-all ${sidebarOpen ? '-rotate-45 -translate-y-[5.5px]' : ''}`} />
-        </button>
+        <div className="relative" ref={menuRef}>
+          <button
+            onClick={() => setShowTopMenu(!showTopMenu)}
+            className="w-[34px] h-[34px] rounded-lg bg-background border border-border flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-primary transition-all"
+          >
+            <span className={`w-[15px] h-[1.5px] bg-foreground rounded-sm transition-all ${showTopMenu ? 'rotate-45 translate-y-[5.5px]' : ''}`} />
+            <span className={`w-[15px] h-[1.5px] bg-foreground rounded-sm transition-all ${showTopMenu ? 'opacity-0 scale-x-0' : ''}`} />
+            <span className={`w-[15px] h-[1.5px] bg-foreground rounded-sm transition-all ${showTopMenu ? '-rotate-45 -translate-y-[5.5px]' : ''}`} />
+          </button>
+          {showTopMenu && (
+            <div className="absolute right-0 top-[40px] w-48 bg-card border border-border rounded-xl shadow-elevated py-1 z-[100] animate-in fade-in slide-in-from-top-2 duration-150">
+              <button
+                onClick={() => { setShowTopMenu(false); navigate('/entreprise'); }}
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-foreground hover:bg-accent transition-colors"
+              >
+                <Building2 className="w-4 h-4 text-muted-foreground" />
+                Infos Entreprise
+              </button>
+              <button
+                onClick={() => { setShowTopMenu(false); navigate('/journal'); }}
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-foreground hover:bg-accent transition-colors"
+              >
+                <BookOpen className="w-4 h-4 text-muted-foreground" />
+                Journal
+              </button>
+              <div className="h-px bg-border mx-2 my-1" />
+              <button
+                onClick={() => { setShowTopMenu(false); logout(); }}
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
+                Déconnexion
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="lg:ml-[252px] flex-1 flex flex-col min-h-screen pt-[52px] lg:pt-0">
