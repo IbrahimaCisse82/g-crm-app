@@ -126,7 +126,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="flex items-center h-[58px]">
           {[
             { path: '/', icon: '📊', label: 'Accueil', section: 'dashboard' },
-            { path: '/factures', icon: '🧾', label: 'Factures', section: 'factures' },
+            { path: '/journal', icon: '📒', label: 'Journal', section: 'journal' },
           ].map(item => (
             <button
               key={item.path}
