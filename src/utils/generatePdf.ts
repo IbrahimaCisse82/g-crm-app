@@ -88,6 +88,7 @@ export function downloadPdf(data: PdfData) {
 </style>
 </head>
 <body>
+  <div class="content">
   <div class="header">
     <div class="company">
       <h1>${esc(data.entreprise?.nom) || 'Mon Entreprise'}</h1>
@@ -142,6 +143,7 @@ export function downloadPdf(data: PdfData) {
   </div>
 
   ${data.notes ? `<div class="notes"><strong>Notes:</strong> ${esc(data.notes)}</div>` : ''}
+  </div>
 
   <div class="footer">
     ${esc(data.entreprise?.nom) || 'Mon Entreprise'} — Document généré automatiquement
