@@ -4,6 +4,10 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import LoginPage from '@/pages/LoginPage';
+import LandingPage from '@/pages/LandingPage';
+import CGUPage from '@/pages/CGUPage';
+import PrivacyPage from '@/pages/PrivacyPage';
+import DataProtectionPage from '@/pages/DataProtectionPage';
 import AppLayout from '@/components/layout/AppLayout';
 import Dashboard from '@/pages/Dashboard';
 import ClientsPage from '@/pages/ClientsPage';
@@ -31,7 +35,18 @@ function AppContent() {
     );
   }
 
-  if (!user) return <LoginPage />;
+  if (!user) {
+    return (
+      <Routes>
+        <Route path="/landing" element={<LandingPage />} />
+        <Route path="/cgu" element={<CGUPage />} />
+        <Route path="/confidentialite" element={<PrivacyPage />} />
+        <Route path="/protection-donnees" element={<DataProtectionPage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="*" element={<LandingPage />} />
+      </Routes>
+    );
+  }
 
   return (
     <AppProvider>
