@@ -244,7 +244,9 @@ export default function InvoicesPage() {
                           className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-primary hover:text-primary transition-all"
                           title="Télécharger PDF"
                         >📄</button>
-                        <button onClick={() => openEdit(f)} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-primary hover:text-primary transition-all" title="Modifier">✏️</button>
+                        {f.statut !== 'Payée' && (
+                          <button onClick={() => openEdit(f)} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-primary hover:text-primary transition-all" title="Modifier">✏️</button>
+                        )}
                         {(f.statut === 'En attente' || f.statut === 'En retard') && (
                           <button
                             onClick={() => markPaid(f)}
