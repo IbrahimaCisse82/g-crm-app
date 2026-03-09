@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 
@@ -10,6 +11,7 @@ export default function LoginPage() {
   const [showPw, setShowPw] = useState(false);
   const [name, setName] = useState('');
   const [company, setCompany] = useState('');
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [suEmail, setSuEmail] = useState('');
   const [suPw, setSuPw] = useState('');
   const [loading, setLoading] = useState(false);
@@ -24,6 +26,7 @@ export default function LoginPage() {
 
   const handleSignup = async () => {
     if (!suEmail || !suPw || !name) return toast.error('Veuillez remplir les champs obligatoires');
+    if (!acceptedTerms) return toast.error('Veuillez accepter les conditions d\'utilisation');
     if (suPw.length < 6) return toast.error('Le mot de passe doit contenir au moins 6 caractères');
     setLoading(true);
     const { error } = await signUp(suEmail, suPw, name, company);
@@ -148,6 +151,21 @@ export default function LoginPage() {
                 className="w-full h-[46px] border-[1.5px] border-border rounded-xl px-3.5 text-sm text-foreground bg-muted outline-none transition-all focus:border-primary focus:ring-[3px] focus:ring-primary/10 focus:bg-card"
                 onKeyDown={e => e.key === 'Enter' && handleSignup()}
               />
+            </div>
+            <div className="mb-4 flex items-start gap-2.5">
+              <input
+                type="checkbox"
+                id="accept-terms"
+                checked={acceptedTerms}
+                onChange={e => setAcceptedTerms(e.target.checked)}
+                className="mt-0.5 w-4 h-4 rounded border-border accent-[hsl(168,100%,31%)] cursor-pointer shrink-0"
+              />
+              <label htmlFor="accept-terms" className="text-xs text-muted-foreground leading-relaxed cursor-pointer">
+                J'accepte les{' '}
+                <Link to="/cgu" className="text-primary font-semibold hover:underline" target="_blank">Conditions d'utilisation</Link>,{' '}
+                la <Link to="/confidentialite" className="text-primary font-semibold hover:underline" target="_blank">Politique de confidentialité</Link>{' '}
+                et la <Link to="/protection-donnees" className="text-primary font-semibold hover:underline" target="_blank">Politique de protection des données</Link>.
+              </label>
             </div>
             <button
               onClick={handleSignup}
