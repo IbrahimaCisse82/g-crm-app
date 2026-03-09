@@ -5,12 +5,12 @@ import { CardSkeleton, TableSkeleton } from '@/components/LoadingSkeleton';
 
 function StatCard({ icon, value, label, sub }: { icon: string; value: string; label: string; sub?: string }) {
   return (
-    <div className="bg-card border border-border rounded-xl p-4 lg:p-[18px] relative overflow-hidden shadow-card hover:-translate-y-px hover:shadow-elevated hover:border-primary/25 transition-all cursor-default">
+    <div className="bg-card border border-border rounded-xl p-3 lg:p-[18px] relative overflow-hidden shadow-card hover:-translate-y-px hover:shadow-elevated hover:border-primary/25 transition-all cursor-default">
       <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-primary to-secondary" />
-      <div className="text-2xl lg:text-[26px] mb-2">{icon}</div>
-      <div className="font-black text-lg lg:text-2xl text-foreground">{value}</div>
-      <div className="text-[11px] text-muted-foreground mt-0.5">{label}</div>
-      {sub && <div className="text-[10.5px] text-accent mt-1">{sub}</div>}
+      <div className="text-xl lg:text-[26px] mb-1 lg:mb-2">{icon}</div>
+      <div className="font-black text-sm lg:text-2xl text-foreground truncate">{value}</div>
+      <div className="text-[10px] lg:text-[11px] text-muted-foreground mt-0.5 truncate">{label}</div>
+      {sub && <div className="text-[10px] lg:text-[10.5px] text-accent mt-0.5 lg:mt-1 truncate">{sub}</div>}
     </div>
   );
 }
@@ -71,7 +71,7 @@ export default function Dashboard() {
           <div className="px-4 py-3 border-b border-border">
             <h3 className="font-extrabold text-sm text-foreground">Évolution mensuelle</h3>
           </div>
-          <div className="flex items-end gap-1.5 px-4 py-3 h-[140px]">
+          <div className="flex items-end gap-1 lg:gap-1.5 px-3 lg:px-4 py-3 h-[140px]">
             {months.map(m => {
               const r = journal.data.filter(j => j.type === 'Recette' && j.categorie !== 'Transfert' && j.date_operation?.startsWith(m.key)).reduce((s, j) => s + (j.montant || 0), 0);
               const d = journal.data.filter(j => j.type === 'Dépense' && j.categorie !== 'Transfert' && j.date_operation?.startsWith(m.key)).reduce((s, j) => s + (j.montant || 0), 0);
@@ -79,12 +79,12 @@ export default function Dashboard() {
               const dh = Math.round((d / maxR) * 80);
               return (
                 <div key={m.key} className="flex-1 flex flex-col items-center gap-1">
-                  <div className="text-[9px] text-muted-foreground">{r ? fmt(r) : ''}</div>
+                  <div className="text-[8px] lg:text-[9px] text-muted-foreground truncate max-w-full">{r ? fmt(r) : ''}</div>
                   <div className="flex gap-0.5 items-end h-20">
-                    <div className="w-3 rounded-t bg-primary transition-all duration-500" style={{ height: `${rh}px`, minHeight: r ? 2 : 0 }} title={`Recettes: ${fmt(r)}`} />
-                    <div className="w-3 rounded-t bg-destructive/40 transition-all duration-500" style={{ height: `${dh}px`, minHeight: d ? 2 : 0 }} title={`Dépenses: ${fmt(d)}`} />
+                    <div className="w-2.5 lg:w-3 rounded-t bg-primary transition-all duration-500" style={{ height: `${rh}px`, minHeight: r ? 2 : 0 }} title={`Recettes: ${fmt(r)}`} />
+                    <div className="w-2.5 lg:w-3 rounded-t bg-destructive/40 transition-all duration-500" style={{ height: `${dh}px`, minHeight: d ? 2 : 0 }} title={`Dépenses: ${fmt(d)}`} />
                   </div>
-                  <span className="text-[9.5px] text-muted-foreground">{m.label}</span>
+                  <span className="text-[8px] lg:text-[9.5px] text-muted-foreground">{m.label}</span>
                 </div>
               );
             })}
@@ -121,8 +121,28 @@ export default function Dashboard() {
           <h3 className="font-extrabold text-sm text-foreground">Factures récentes</h3>
           <button onClick={() => navigate('/factures')} className="text-[10.5px] text-primary font-semibold hover:underline">Voir tout →</button>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse min-w-[560px]">
+
+        {/* Mobile card view */}
+        <div className="lg:hidden">
+          {recentFacs.length ? recentFacs.map(f => (
+            <div key={f.id} className="px-4 py-3 border-b border-border flex items-center justify-between" onClick={() => navigate('/factures')}>
+              <div className="min-w-0 flex-1">
+                <div className="font-bold text-xs text-foreground truncate">{f.numero}</div>
+                <div className="text-[10.5px] text-muted-foreground truncate">{cliName(f.client_id)} · {f.date_facture}</div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0 ml-2">
+                <span className="font-bold text-xs text-foreground">{fmt(f.montant_ttc)}</span>
+                <StatusBadge status={f.statut} />
+              </div>
+            </div>
+          )) : (
+            <div className="text-center py-5 text-sm text-muted-foreground">Aucune facture</div>
+          )}
+        </div>
+
+        {/* Desktop table */}
+        <div className="hidden lg:block overflow-x-auto">
+          <table className="w-full border-collapse">
             <thead>
               <tr>
                 {['N° Facture', 'Client', 'Montant TTC', 'Date', 'Statut'].map(h => (
