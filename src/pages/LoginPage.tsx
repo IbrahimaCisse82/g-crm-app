@@ -11,6 +11,7 @@ export default function LoginPage() {
   const [showPw, setShowPw] = useState(false);
   const [name, setName] = useState('');
   const [company, setCompany] = useState('');
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [suEmail, setSuEmail] = useState('');
   const [suPw, setSuPw] = useState('');
   const [loading, setLoading] = useState(false);
