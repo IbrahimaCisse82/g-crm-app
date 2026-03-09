@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import { useNavigate } from 'react-router-dom';
-import { Building2, BookOpen, LogOut } from 'lucide-react';
+import { Building2, BookOpen, LogOut, Package } from 'lucide-react';
 import AppSidebar from './AppSidebar';
 
 const sectionTitles: Record<string, string> = {
