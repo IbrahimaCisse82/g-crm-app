@@ -4,7 +4,6 @@ import { StatusBadge } from '@/components/StatusBadge';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { TableSkeleton } from '@/components/LoadingSkeleton';
 import { toast } from 'sonner';
-import { toast } from 'sonner';
 
 export default function ClientsPage() {
   const { clients, factures, devis } = useApp();
