@@ -82,8 +82,9 @@ export function downloadPdf(data: PdfData) {
   .totals-row.total .val { color: #10b981; }
   .notes { margin-top: 30px; padding: 12px; background: #f8f9fa; border-radius: 6px; font-size: 12px; color: #666; }
   .notes strong { color: #333; }
-  .footer { margin-top: 40px; text-align: center; color: #aaa; font-size: 10px; border-top: 1px solid #eee; padding-top: 12px; }
-  @media print { body { padding: 20px; } }
+  .footer { margin-top: auto; text-align: center; color: #aaa; font-size: 10px; border-top: 1px solid #eee; padding-top: 12px; }
+  .content { flex: 1; }
+  @media print { body { padding: 20px; min-height: 100vh; } }
 </style>
 </head>
 <body>
