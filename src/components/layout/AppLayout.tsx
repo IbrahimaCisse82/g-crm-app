@@ -23,9 +23,21 @@ const quickActions = [
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const { currentSection, sidebarOpen, setSidebarOpen } = useApp();
+  const { currentSection, sidebarOpen, setSidebarOpen, logout } = useApp();
   const navigate = useNavigate();
   const [showFabMenu, setShowFabMenu] = useState(false);
+  const [showTopMenu, setShowTopMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setShowTopMenu(false);
+      }
+    };
+    if (showTopMenu) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showTopMenu]);
 
   const handleFabAction = (path: string) => {
     setShowFabMenu(false);
