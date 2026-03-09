@@ -1,8 +1,7 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
-
-// Simple typed hooks for each table
+import type { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
 
 export function useClients() {
   const { user } = useAuth();
@@ -12,20 +11,20 @@ export function useClients() {
   const query = useQuery({
     queryKey: key,
     queryFn: async () => {
-      const { data, error } = await supabase.from('clients').select('*');
+      const { data, error } = await supabase.from('clients').select('*').order('created_at', { ascending: false });
       if (error) throw error;
       return data;
     },
     enabled: !!user,
   });
 
-  const add = async (row: { prenom: string; nom: string; email?: string; telephone?: string; entreprise?: string; statut?: string; adresse?: string; notes?: string }) => {
+  const add = async (row: Omit<TablesInsert<'clients'>, 'user_id'>) => {
     const { error } = await supabase.from('clients').insert({ ...row, user_id: user!.id });
     if (error) throw error;
     qc.invalidateQueries({ queryKey: key });
   };
 
-  const update = async (id: string, updates: Record<string, any>) => {
+  const update = async (id: string, updates: TablesUpdate<'clients'>) => {
     const { error } = await supabase.from('clients').update(updates).eq('id', id);
     if (error) throw error;
     qc.invalidateQueries({ queryKey: key });
@@ -48,20 +47,20 @@ export function useFactures() {
   const query = useQuery({
     queryKey: key,
     queryFn: async () => {
-      const { data, error } = await supabase.from('factures').select('*');
+      const { data, error } = await supabase.from('factures').select('*').order('date_facture', { ascending: false });
       if (error) throw error;
       return data;
     },
     enabled: !!user,
   });
 
-  const add = async (row: Record<string, any>) => {
-    const { error } = await supabase.from('factures').insert({ ...row, user_id: user!.id } as any);
+  const add = async (row: Omit<TablesInsert<'factures'>, 'user_id'>) => {
+    const { error } = await supabase.from('factures').insert({ ...row, user_id: user!.id });
     if (error) throw error;
     qc.invalidateQueries({ queryKey: key });
   };
 
-  const update = async (id: string, updates: Record<string, any>) => {
+  const update = async (id: string, updates: TablesUpdate<'factures'>) => {
     const { error } = await supabase.from('factures').update(updates).eq('id', id);
     if (error) throw error;
     qc.invalidateQueries({ queryKey: key });
@@ -84,20 +83,20 @@ export function useDevis() {
   const query = useQuery({
     queryKey: key,
     queryFn: async () => {
-      const { data, error } = await supabase.from('devis').select('*');
+      const { data, error } = await supabase.from('devis').select('*').order('date_devis', { ascending: false });
       if (error) throw error;
       return data;
     },
     enabled: !!user,
   });
 
-  const add = async (row: Record<string, any>) => {
-    const { error } = await supabase.from('devis').insert({ ...row, user_id: user!.id } as any);
+  const add = async (row: Omit<TablesInsert<'devis'>, 'user_id'>) => {
+    const { error } = await supabase.from('devis').insert({ ...row, user_id: user!.id });
     if (error) throw error;
     qc.invalidateQueries({ queryKey: key });
   };
 
-  const update = async (id: string, updates: Record<string, any>) => {
+  const update = async (id: string, updates: TablesUpdate<'devis'>) => {
     const { error } = await supabase.from('devis').update(updates).eq('id', id);
     if (error) throw error;
     qc.invalidateQueries({ queryKey: key });
@@ -120,20 +119,20 @@ export function useProduits() {
   const query = useQuery({
     queryKey: key,
     queryFn: async () => {
-      const { data, error } = await supabase.from('produits').select('*');
+      const { data, error } = await supabase.from('produits').select('*').order('nom', { ascending: true });
       if (error) throw error;
       return data;
     },
     enabled: !!user,
   });
 
-  const add = async (row: Record<string, any>) => {
-    const { error } = await supabase.from('produits').insert({ ...row, user_id: user!.id } as any);
+  const add = async (row: Omit<TablesInsert<'produits'>, 'user_id'>) => {
+    const { error } = await supabase.from('produits').insert({ ...row, user_id: user!.id });
     if (error) throw error;
     qc.invalidateQueries({ queryKey: key });
   };
 
-  const update = async (id: string, updates: Record<string, any>) => {
+  const update = async (id: string, updates: TablesUpdate<'produits'>) => {
     const { error } = await supabase.from('produits').update(updates).eq('id', id);
     if (error) throw error;
     qc.invalidateQueries({ queryKey: key });
@@ -163,8 +162,8 @@ export function useJournal() {
     enabled: !!user,
   });
 
-  const add = async (row: Record<string, any>) => {
-    const { error } = await supabase.from('journal').insert({ ...row, user_id: user!.id } as any);
+  const add = async (row: Omit<TablesInsert<'journal'>, 'user_id'>) => {
+    const { error } = await supabase.from('journal').insert({ ...row, user_id: user!.id });
     if (error) throw error;
     qc.invalidateQueries({ queryKey: key });
   };
@@ -175,7 +174,13 @@ export function useJournal() {
     qc.invalidateQueries({ queryKey: key });
   };
 
-  return { data: query.data ?? [], isLoading: query.isLoading, add, remove };
+  const removeByFactureId = async (factureId: string) => {
+    const { error } = await supabase.from('journal').delete().eq('facture_id', factureId);
+    if (error) throw error;
+    qc.invalidateQueries({ queryKey: key });
+  };
+
+  return { data: query.data ?? [], isLoading: query.isLoading, add, remove, removeByFactureId };
 }
 
 export function useComptesTresorerie() {
@@ -193,8 +198,8 @@ export function useComptesTresorerie() {
     enabled: !!user,
   });
 
-  const add = async (row: Record<string, any>) => {
-    const { error } = await supabase.from('comptes_tresorerie').insert({ ...row, user_id: user!.id } as any);
+  const add = async (row: Omit<TablesInsert<'comptes_tresorerie'>, 'user_id'>) => {
+    const { error } = await supabase.from('comptes_tresorerie').insert({ ...row, user_id: user!.id });
     if (error) throw error;
     qc.invalidateQueries({ queryKey: key });
   };
@@ -223,12 +228,12 @@ export function useEntreprise() {
     enabled: !!user,
   });
 
-  const upsert = async (values: Record<string, any>) => {
+  const upsert = async (values: TablesUpdate<'entreprises'>) => {
     if (query.data) {
       const { error } = await supabase.from('entreprises').update(values).eq('id', query.data.id);
       if (error) throw error;
     } else {
-      const { error } = await supabase.from('entreprises').insert({ ...values, user_id: user!.id });
+      const { error } = await supabase.from('entreprises').insert({ ...values, user_id: user!.id } as TablesInsert<'entreprises'>);
       if (error) throw error;
     }
     qc.invalidateQueries({ queryKey: key });

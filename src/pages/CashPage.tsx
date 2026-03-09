@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { toast } from 'sonner';
 
 export default function CashPage() {
   const { comptes, journal, fmt } = useApp();
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ operateur: 'Wave', numero: '', titulaire: '', solde: 0 });
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; label: string } | null>(null);
 
   const mmModes = ['Wave', 'Orange Money', 'Yas Money'];
   const icons: Record<string, string> = { Wave: '🔵', 'Orange Money': '🟠', 'Yas Money': '🟣' };
@@ -49,9 +51,20 @@ export default function CashPage() {
       await comptes.add(form);
       setShowModal(false);
       toast.success('Compte ajouté');
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Erreur');
     }
+  };
+
+  const del = async () => {
+    if (!deleteTarget) return;
+    try {
+      await comptes.remove(deleteTarget.id);
+      toast.success('Supprimé');
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Erreur');
+    }
+    setDeleteTarget(null);
   };
 
   return (
@@ -102,7 +115,7 @@ export default function CashPage() {
                 </div>
                 <div className="text-right">
                   <div className={`font-black text-base ${sol >= 0 ? 'text-success' : 'text-destructive'}`}>{fmt(sol)}</div>
-                  <button onClick={async () => { if (confirm('Supprimer ?')) { await comptes.remove(mm.id); toast.success('Supprimé'); } }} className="text-[10.5px] text-muted-foreground hover:text-destructive mt-1">🗑 Supprimer</button>
+                  <button onClick={() => setDeleteTarget({ id: mm.id, label: `${mm.operateur} ${mm.numero}` })} className="text-[10.5px] text-muted-foreground hover:text-destructive mt-1">🗑 Supprimer</button>
                 </div>
               </div>
             )) : (
@@ -151,6 +164,15 @@ export default function CashPage() {
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={() => setDeleteTarget(null)}
+        title="Supprimer ce compte ?"
+        description={`Le compte "${deleteTarget?.label}" sera définitivement supprimé.`}
+        onConfirm={del}
+        confirmLabel="Supprimer"
+      />
 
       {showModal && (
         <div className="fixed inset-0 bg-foreground/50 backdrop-blur-sm z-[1000] flex items-end lg:items-center justify-center">

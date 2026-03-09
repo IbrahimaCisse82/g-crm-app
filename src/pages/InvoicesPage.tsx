@@ -1,15 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
-import { useNavigate } from 'react-router-dom';
-import { StatusBadge } from './Dashboard';
+import { StatusBadge, PayBadge } from '@/components/StatusBadge';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { TableSkeleton } from '@/components/LoadingSkeleton';
 import { toast } from 'sonner';
 import { downloadPdf } from '@/utils/generatePdf';
-
-interface ArticleLine {
-  nom: string;
-  quantite: number;
-  prix_unitaire: number;
-}
+import type { ArticleLine } from '@/types';
+import { PAYMENT_MODES } from '@/types';
+import type { Json } from '@/integrations/supabase/types';
 
 const defaultForm = {
   client_id: '',
@@ -27,8 +25,18 @@ export default function InvoicesPage() {
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(defaultForm);
   const [articles, setArticles] = useState<ArticleLine[]>([{ nom: '', quantite: 1, prix_unitaire: 0 }]);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; numero: string } | null>(null);
 
-  let filtered = factures.data;
+  // Auto-detect overdue invoices
+  const today = new Date().toISOString().slice(0, 10);
+  const enrichedData = factures.data.map(f => {
+    if (f.statut === 'En attente' && f.date_echeance && f.date_echeance < today) {
+      return { ...f, statut: 'En retard' };
+    }
+    return f;
+  });
+
+  let filtered = enrichedData;
   if (statFilter) filtered = filtered.filter(f => f.statut === statFilter);
   if (search) {
     const q = search.toLowerCase();
@@ -49,7 +57,7 @@ export default function InvoicesPage() {
 
   const openEdit = (f: typeof factures.data[0]) => {
     setEditId(f.id);
-    const arts = Array.isArray(f.articles) ? (f.articles as any[]).map((a: any) => ({
+    const arts = Array.isArray(f.articles) ? (f.articles as unknown as ArticleLine[]).map(a => ({
       nom: a.nom || '', quantite: a.quantite || 1, prix_unitaire: a.prix_unitaire || 0
     })) : [{ nom: '', quantite: 1, prix_unitaire: 0 }];
     setForm({
@@ -71,9 +79,8 @@ export default function InvoicesPage() {
 
   const addArticleLine = () => setArticles([...articles, { nom: '', quantite: 1, prix_unitaire: 0 }]);
   const removeArticleLine = (i: number) => setArticles(articles.filter((_, idx) => idx !== i));
-  const updateArticle = (i: number, field: keyof ArticleLine, value: any) => {
-    const next = [...articles];
-    (next[i] as any)[field] = value;
+  const updateArticle = (i: number, field: keyof ArticleLine, value: string | number) => {
+    const next = articles.map((a, idx) => idx === i ? { ...a, [field]: value } : a);
     setArticles(next);
   };
 
@@ -87,6 +94,10 @@ export default function InvoicesPage() {
       toast.error('Sélectionnez un client et au moins un article');
       return;
     }
+    if (form.date_echeance && form.date_echeance < form.date_facture) {
+      toast.error("La date d'échéance doit être après la date de facture");
+      return;
+    }
     const validArticles = articles.filter(a => a.nom);
     const ht = validArticles.reduce((s, a) => s + a.quantite * a.prix_unitaire, 0);
     const tvaMontant = Math.round(ht * tva / 100);
@@ -96,7 +107,7 @@ export default function InvoicesPage() {
       if (editId) {
         await factures.update(editId, {
           client_id: form.client_id,
-          articles: validArticles,
+          articles: validArticles as unknown as Json,
           montant_ht: ht,
           montant_tva: tvaMontant,
           montant_ttc: ttc,
@@ -111,7 +122,7 @@ export default function InvoicesPage() {
         await factures.add({
           numero,
           client_id: form.client_id,
-          articles: validArticles,
+          articles: validArticles as unknown as Json,
           montant_ht: ht,
           montant_tva: tvaMontant,
           montant_ttc: ttc,
@@ -125,22 +136,32 @@ export default function InvoicesPage() {
         toast.success('Facture créée');
       }
       setShowModal(false);
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Erreur');
     }
   };
 
-  const del = async (id: string) => {
-    if (confirm('Supprimer cette facture ?')) {
-      await factures.remove(id);
-      toast.success('Facture supprimée');
+  const del = async () => {
+    if (!deleteTarget) return;
+    try {
+      // Clean up journal entries linked to this invoice
+      await journal.removeByFactureId(deleteTarget.id);
+      await factures.remove(deleteTarget.id);
+      toast.success('Facture supprimée (+ écritures journal nettoyées)');
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Erreur');
     }
+    setDeleteTarget(null);
   };
 
   const markPaid = async (f: typeof factures.data[0]) => {
+    // Guard against double payment
+    if (f.statut === 'Payée') {
+      toast.info('Cette facture est déjà marquée comme payée');
+      return;
+    }
     try {
       await factures.update(f.id, { statut: 'Payée', montant_regle: f.montant_ttc });
-      // Write journal entry for payment
       await journal.add({
         libelle: `Paiement facture ${f.numero}`,
         type: 'Recette',
@@ -151,8 +172,8 @@ export default function InvoicesPage() {
         facture_id: f.id,
       });
       toast.success('Facture marquée comme payée + écriture journal');
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Erreur');
     }
   };
 
@@ -185,63 +206,74 @@ export default function InvoicesPage() {
           </div>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full border-collapse min-w-[700px]">
-            <thead>
-              <tr>
-                {['N°', 'Client', 'HT', 'TVA', 'TTC', 'Paiement', 'Date', 'Statut', 'Actions'].map(h => (
-                  <th key={h} className="px-3.5 py-2.5 text-[10.5px] font-bold text-muted-foreground uppercase tracking-wider text-left border-b border-border bg-background">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.length ? filtered.map(f => (
-                <tr key={f.id} className="hover:bg-background transition-colors">
-                  <td className="px-3.5 py-3 text-sm font-bold text-foreground border-b border-border">{f.numero}</td>
-                  <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{cliName(f.client_id)}</td>
-                  <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{fmt(f.montant_ht)}</td>
-                  <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{fmt(f.montant_tva)}</td>
-                  <td className="px-3.5 py-3 text-sm font-bold text-foreground border-b border-border">{fmt(f.montant_ttc)}</td>
-                  <td className="px-3.5 py-3 text-sm border-b border-border">
-                    <PayBadge mode={f.mode_paiement || ''} />
-                  </td>
-                  <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{f.date_facture}</td>
-                  <td className="px-3.5 py-3 text-sm border-b border-border"><StatusBadge status={f.statut} /></td>
-                  <td className="px-3.5 py-3 text-sm border-b border-border">
-                    <div className="flex gap-1">
-                      <button
-                        onClick={() => downloadPdf({
-                          type: 'facture', numero: f.numero, date: f.date_facture,
-                          echeance: f.date_echeance, client: cliName(f.client_id),
-                          articles: (f.articles as any) || [], montant_ht: f.montant_ht,
-                          montant_tva: f.montant_tva, montant_ttc: f.montant_ttc,
-                          tva_pct: entreprise.data?.tva ?? 18, mode_paiement: f.mode_paiement,
-                          notes: f.notes, entreprise: entreprise.data,
-                        })}
-                        className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-primary hover:text-primary transition-all"
-                        title="Télécharger PDF"
-                      >📄</button>
-                      <button onClick={() => openEdit(f)} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-primary hover:text-primary transition-all" title="Modifier">✏️</button>
-                      {(f.statut === 'En attente' || f.statut === 'En retard') && (
-                        <button
-                          onClick={() => markPaid(f)}
-                          className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-success hover:text-success transition-all"
-                          title="Marquer payée"
-                        >💳</button>
-                      )}
-                      <button onClick={() => del(f.id)} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-destructive hover:text-destructive transition-all" title="Supprimer">🗑️</button>
-                    </div>
-                  </td>
+          {factures.isLoading ? <TableSkeleton rows={5} cols={9} /> : (
+            <table className="w-full border-collapse min-w-[700px]">
+              <thead>
+                <tr>
+                  {['N°', 'Client', 'HT', 'TVA', 'TTC', 'Paiement', 'Date', 'Statut', 'Actions'].map(h => (
+                    <th key={h} className="px-3.5 py-2.5 text-[10.5px] font-bold text-muted-foreground uppercase tracking-wider text-left border-b border-border bg-background">{h}</th>
+                  ))}
                 </tr>
-              )) : (
-                <tr><td colSpan={9} className="text-center py-10 text-muted-foreground">
-                  <div className="text-4xl opacity-30 mb-2">🧾</div>
-                  <div className="text-sm">Aucune facture</div>
-                </td></tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filtered.length ? filtered.map(f => (
+                  <tr key={f.id} className="hover:bg-background transition-colors">
+                    <td className="px-3.5 py-3 text-sm font-bold text-foreground border-b border-border">{f.numero}</td>
+                    <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{cliName(f.client_id)}</td>
+                    <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{fmt(f.montant_ht)}</td>
+                    <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{fmt(f.montant_tva)}</td>
+                    <td className="px-3.5 py-3 text-sm font-bold text-foreground border-b border-border">{fmt(f.montant_ttc)}</td>
+                    <td className="px-3.5 py-3 text-sm border-b border-border">
+                      <PayBadge mode={f.mode_paiement || ''} />
+                    </td>
+                    <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{f.date_facture}</td>
+                    <td className="px-3.5 py-3 text-sm border-b border-border"><StatusBadge status={f.statut} /></td>
+                    <td className="px-3.5 py-3 text-sm border-b border-border">
+                      <div className="flex gap-1">
+                        <button
+                          onClick={() => downloadPdf({
+                            type: 'facture', numero: f.numero, date: f.date_facture,
+                            echeance: f.date_echeance, client: cliName(f.client_id),
+                            articles: (f.articles as unknown as ArticleLine[]) || [], montant_ht: f.montant_ht,
+                            montant_tva: f.montant_tva, montant_ttc: f.montant_ttc,
+                            tva_pct: entreprise.data?.tva ?? 18, mode_paiement: f.mode_paiement,
+                            notes: f.notes, entreprise: entreprise.data,
+                          })}
+                          className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-primary hover:text-primary transition-all"
+                          title="Télécharger PDF"
+                        >📄</button>
+                        <button onClick={() => openEdit(f)} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-primary hover:text-primary transition-all" title="Modifier">✏️</button>
+                        {(f.statut === 'En attente' || f.statut === 'En retard') && (
+                          <button
+                            onClick={() => markPaid(f)}
+                            className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-success hover:text-success transition-all"
+                            title="Marquer payée"
+                          >💳</button>
+                        )}
+                        <button onClick={() => setDeleteTarget({ id: f.id, numero: f.numero })} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-destructive hover:text-destructive transition-all" title="Supprimer">🗑️</button>
+                      </div>
+                    </td>
+                  </tr>
+                )) : (
+                  <tr><td colSpan={9} className="text-center py-10 text-muted-foreground">
+                    <div className="text-4xl opacity-30 mb-2">🧾</div>
+                    <div className="text-sm">Aucune facture</div>
+                  </td></tr>
+                )}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={() => setDeleteTarget(null)}
+        title={`Supprimer la facture ${deleteTarget?.numero} ?`}
+        description="Cette action est irréversible. Les écritures journal liées seront également supprimées."
+        onConfirm={del}
+        confirmLabel="Supprimer"
+      />
 
       {showModal && (
         <div className="fixed inset-0 bg-foreground/50 backdrop-blur-sm z-[1000] flex items-end lg:items-center justify-center">
@@ -262,7 +294,7 @@ export default function InvoicesPage() {
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Mode de paiement</label>
                   <select className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.mode_paiement} onChange={e => setForm({ ...form, mode_paiement: e.target.value })}>
-                    {['Espèce', 'Wave', 'Orange Money', 'Yas Money', 'Virement', 'Chèque'].map(m => <option key={m}>{m}</option>)}
+                    {PAYMENT_MODES.map(m => <option key={m}>{m}</option>)}
                   </select>
                 </div>
                 <div className="flex flex-col gap-1.5">
@@ -271,7 +303,7 @@ export default function InvoicesPage() {
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Date échéance</label>
-                  <input type="date" className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.date_echeance} onChange={e => setForm({ ...form, date_echeance: e.target.value })} />
+                  <input type="date" className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.date_echeance} onChange={e => setForm({ ...form, date_echeance: e.target.value })} min={form.date_facture} />
                 </div>
               </div>
 
@@ -328,15 +360,4 @@ export default function InvoicesPage() {
       )}
     </div>
   );
-}
-
-function PayBadge({ mode }: { mode: string }) {
-  const cls = mode === 'Espèce' ? 'bg-accent/10 text-accent'
-    : mode === 'Wave' ? 'bg-primary/10 text-primary'
-    : mode === 'Orange Money' ? 'bg-[hsl(25,95%,53%)]/10 text-[hsl(25,95%,53%)]'
-    : mode === 'Yas Money' ? 'bg-[hsl(271,76%,53%)]/10 text-[hsl(271,76%,53%)]'
-    : mode === 'Virement' || mode === 'Chèque' ? 'bg-[hsl(239,84%,67%)]/10 text-[hsl(239,84%,67%)]'
-    : 'bg-secondary/10 text-secondary';
-
-  return <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10.5px] font-semibold ${cls}`}>{mode || '—'}</span>;
 }

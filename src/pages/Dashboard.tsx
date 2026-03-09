@@ -1,5 +1,7 @@
 import { useApp } from '@/context/AppContext';
 import { useNavigate } from 'react-router-dom';
+import { StatusBadge } from '@/components/StatusBadge';
+import { CardSkeleton, TableSkeleton } from '@/components/LoadingSkeleton';
 
 function StatCard({ icon, value, label, sub }: { icon: string; value: string; label: string; sub?: string }) {
   return (
@@ -17,6 +19,8 @@ export default function Dashboard() {
   const { clients, factures, journal, cliName, fmt } = useApp();
   const navigate = useNavigate();
 
+  const isLoading = clients.isLoading || factures.isLoading || journal.isLoading;
+
   const actifs = clients.data.filter(c => c.statut === 'Actif').length;
   const totR = journal.data.filter(j => j.type === 'Recette' && j.categorie !== 'Transfert').reduce((s, j) => s + (j.montant || 0), 0);
   const totD = journal.data.filter(j => j.type === 'Dépense' && j.categorie !== 'Transfert').reduce((s, j) => s + (j.montant || 0), 0);
@@ -32,6 +36,20 @@ export default function Dashboard() {
 
   const last6Txns = journal.data.slice(0, 6);
   const recentFacs = factures.data.slice(0, 5);
+
+  if (isLoading) {
+    return (
+      <div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 lg:gap-3.5 mb-5">
+          {[1,2,3,4].map(i => <CardSkeleton key={i} />)}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+          <div className="bg-card border border-border rounded-xl p-4 h-[200px] animate-pulse"><div className="h-4 w-32 bg-muted rounded mb-4" /><div className="h-24 bg-muted rounded" /></div>
+          <div className="bg-card border border-border rounded-xl p-4 h-[200px] animate-pulse"><div className="h-4 w-32 bg-muted rounded mb-4" /><div className="h-24 bg-muted rounded" /></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -125,21 +143,5 @@ export default function Dashboard() {
         </div>
       </div>
     </div>
-  );
-}
-
-export function StatusBadge({ status }: { status: string }) {
-  const cls = status === 'Payée' ? 'bg-success/10 text-success'
-    : status === 'En retard' ? 'bg-destructive/10 text-destructive'
-    : status === 'Annulée' ? 'bg-muted-foreground/15 text-muted-foreground'
-    : status === 'Accepté' ? 'bg-primary/10 text-primary'
-    : status === 'Refusé' ? 'bg-destructive/10 text-destructive'
-    : status === 'Converti' ? 'bg-secondary/10 text-secondary'
-    : 'bg-accent/10 text-accent';
-
-  return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10.5px] font-semibold ${cls}`}>
-      {status}
-    </span>
   );
 }
