@@ -55,7 +55,8 @@ export function downloadPdf(data: PdfData) {
 <title>${esc(title)} ${esc(data.numero)}</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Segoe UI', system-ui, sans-serif; color: #1a1a2e; padding: 40px; font-size: 13px; }
+  html, body { height: 100%; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; color: #1a1a2e; padding: 40px; font-size: 13px; display: flex; flex-direction: column; min-height: 100vh; }
   .header { display: flex; justify-content: space-between; margin-bottom: 40px; }
   .company { max-width: 50%; }
   .company h1 { font-size: 22px; color: #10b981; margin-bottom: 4px; }
@@ -81,11 +82,13 @@ export function downloadPdf(data: PdfData) {
   .totals-row.total .val { color: #10b981; }
   .notes { margin-top: 30px; padding: 12px; background: #f8f9fa; border-radius: 6px; font-size: 12px; color: #666; }
   .notes strong { color: #333; }
-  .footer { margin-top: 40px; text-align: center; color: #aaa; font-size: 10px; border-top: 1px solid #eee; padding-top: 12px; }
-  @media print { body { padding: 20px; } }
+  .footer { margin-top: auto; text-align: center; color: #aaa; font-size: 10px; border-top: 1px solid #eee; padding-top: 12px; }
+  .content { flex: 1; }
+  @media print { body { padding: 20px; min-height: 100vh; } }
 </style>
 </head>
 <body>
+  <div class="content">
   <div class="header">
     <div class="company">
       <h1>${esc(data.entreprise?.nom) || 'Mon Entreprise'}</h1>
@@ -140,6 +143,7 @@ export function downloadPdf(data: PdfData) {
   </div>
 
   ${data.notes ? `<div class="notes"><strong>Notes:</strong> ${esc(data.notes)}</div>` : ''}
+  </div>
 
   <div class="footer">
     ${esc(data.entreprise?.nom) || 'Mon Entreprise'} — Document généré automatiquement
