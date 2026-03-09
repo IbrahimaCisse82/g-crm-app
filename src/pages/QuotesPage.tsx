@@ -1,15 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import { useNavigate } from 'react-router-dom';
-import { StatusBadge } from './Dashboard';
+import { StatusBadge } from '@/components/StatusBadge';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { TableSkeleton } from '@/components/LoadingSkeleton';
 import { toast } from 'sonner';
 import { downloadPdf } from '@/utils/generatePdf';
-
-interface ArticleLine {
-  nom: string;
-  quantite: number;
-  prix_unitaire: number;
-}
+import type { ArticleLine } from '@/types';
+import type { Json } from '@/integrations/supabase/types';
 
 export default function QuotesPage() {
   const { devis, factures, clients, produits, entreprise, cliName, fmt } = useApp();
@@ -20,8 +18,22 @@ export default function QuotesPage() {
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({ client_id: '', date_devis: new Date().toISOString().slice(0, 10), validite_jours: 30, notes: '' });
   const [articles, setArticles] = useState<ArticleLine[]>([{ nom: '', quantite: 1, prix_unitaire: 0 }]);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; numero: string } | null>(null);
 
-  let filtered = devis.data;
+  // Auto-detect expired quotes
+  const today = new Date().toISOString().slice(0, 10);
+  const enrichedData = devis.data.map(d => {
+    if (d.statut === 'En attente') {
+      const expiry = new Date(d.date_devis);
+      expiry.setDate(expiry.getDate() + d.validite_jours);
+      if (expiry.toISOString().slice(0, 10) < today) {
+        return { ...d, statut: 'Expiré' };
+      }
+    }
+    return d;
+  });
+
+  let filtered = enrichedData;
   if (statFilter) filtered = filtered.filter(d => d.statut === statFilter);
   if (search) {
     const q = search.toLowerCase();
@@ -42,7 +54,7 @@ export default function QuotesPage() {
 
   const openEdit = (d: typeof devis.data[0]) => {
     setEditId(d.id);
-    const arts = Array.isArray(d.articles) ? (d.articles as any[]).map((a: any) => ({
+    const arts = Array.isArray(d.articles) ? (d.articles as unknown as ArticleLine[]).map(a => ({
       nom: a.nom || '', quantite: a.quantite || 1, prix_unitaire: a.prix_unitaire || 0
     })) : [{ nom: '', quantite: 1, prix_unitaire: 0 }];
     setForm({
@@ -63,9 +75,9 @@ export default function QuotesPage() {
 
   const addLine = () => setArticles([...articles, { nom: '', quantite: 1, prix_unitaire: 0 }]);
   const removeLine = (i: number) => setArticles(articles.filter((_, idx) => idx !== i));
-  const updateArticle = (i: number, field: keyof ArticleLine, value: any) => {
+  const updateArticle = (i: number, field: keyof ArticleLine, value: string | number) => {
     const next = [...articles];
-    (next[i] as any)[field] = value;
+    (next[i] as Record<string, string | number>)[field] = value;
     setArticles(next);
   };
   const selectProduct = (i: number, pid: string) => {
@@ -87,7 +99,7 @@ export default function QuotesPage() {
       if (editId) {
         await devis.update(editId, {
           client_id: form.client_id,
-          articles: validArticles,
+          articles: validArticles as unknown as Json,
           montant_ht: ht,
           montant_tva: tvaMontant,
           montant_ttc: ttc,
@@ -101,7 +113,7 @@ export default function QuotesPage() {
         await devis.add({
           numero,
           client_id: form.client_id,
-          articles: validArticles,
+          articles: validArticles as unknown as Json,
           montant_ht: ht,
           montant_tva: tvaMontant,
           montant_ttc: ttc,
@@ -113,8 +125,8 @@ export default function QuotesPage() {
         toast.success('Devis créé');
       }
       setShowModal(false);
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Erreur');
     }
   };
 
@@ -122,8 +134,8 @@ export default function QuotesPage() {
     try {
       await devis.update(id, { statut });
       toast.success(`Devis marqué "${statut}"`);
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Erreur');
     }
   };
 
@@ -133,7 +145,7 @@ export default function QuotesPage() {
       await factures.add({
         numero,
         client_id: d.client_id,
-        articles: d.articles as any,
+        articles: d.articles,
         montant_ht: d.montant_ht,
         montant_tva: d.montant_tva,
         montant_ttc: d.montant_ttc,
@@ -141,13 +153,25 @@ export default function QuotesPage() {
         mode_paiement: 'Espèce',
         date_facture: new Date().toISOString().slice(0, 10),
         statut: 'En attente',
+        notes: d.notes, // FIX: transfer notes from devis to facture
       });
       await devis.update(d.id, { statut: 'Converti' });
       toast.success('Devis converti en facture !');
       navigate('/factures');
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Erreur');
     }
+  };
+
+  const del = async () => {
+    if (!deleteTarget) return;
+    try {
+      await devis.remove(deleteTarget.id);
+      toast.success('Devis supprimé');
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Erreur');
+    }
+    setDeleteTarget(null);
   };
 
   return (
@@ -171,61 +195,72 @@ export default function QuotesPage() {
           </div>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full border-collapse min-w-[700px]">
-            <thead>
-              <tr>
-                {['N°', 'Client', 'TTC', 'Date', 'Validité', 'Statut', 'Actions'].map(h => (
-                  <th key={h} className="px-3.5 py-2.5 text-[10.5px] font-bold text-muted-foreground uppercase tracking-wider text-left border-b border-border bg-background">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.length ? filtered.map(d => (
-                <tr key={d.id} className="hover:bg-background transition-colors">
-                  <td className="px-3.5 py-3 text-sm font-bold text-foreground border-b border-border">{d.numero}</td>
-                  <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{cliName(d.client_id)}</td>
-                  <td className="px-3.5 py-3 text-sm font-bold text-foreground border-b border-border">{fmt(d.montant_ttc)}</td>
-                  <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{d.date_devis}</td>
-                  <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{d.validite_jours} jours</td>
-                  <td className="px-3.5 py-3 text-sm border-b border-border"><StatusBadge status={d.statut} /></td>
-                  <td className="px-3.5 py-3 text-sm border-b border-border">
-                    <div className="flex gap-1">
-                      <button
-                        onClick={() => downloadPdf({
-                          type: 'devis', numero: d.numero, date: d.date_devis,
-                          validite_jours: d.validite_jours, client: cliName(d.client_id),
-                          articles: (d.articles as any) || [], montant_ht: d.montant_ht,
-                          montant_tva: d.montant_tva, montant_ttc: d.montant_ttc,
-                          tva_pct: entreprise.data?.tva ?? 18, notes: d.notes,
-                          entreprise: entreprise.data,
-                        })}
-                        className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-primary hover:text-primary transition-all"
-                        title="Télécharger PDF"
-                      >📄</button>
-                      <button onClick={() => openEdit(d)} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-primary hover:text-primary transition-all" title="Modifier">✏️</button>
-                      {d.statut === 'En attente' && (
-                        <>
-                          <button onClick={() => updateStatus(d.id, 'Accepté')} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-success hover:text-success transition-all" title="Accepter">✅</button>
-                          <button onClick={() => updateStatus(d.id, 'Refusé')} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-destructive hover:text-destructive transition-all" title="Refuser">❌</button>
-                        </>
-                      )}
-                      {d.statut === 'Accepté' && (
-                        <button onClick={() => convertToInvoice(d)} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-primary hover:text-primary transition-all" title="Convertir en facture">🧾→</button>
-                      )}
-                      <button onClick={async () => { if (confirm('Supprimer ce devis ?')) { await devis.remove(d.id); toast.success('Devis supprimé'); } }} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-destructive hover:text-destructive transition-all" title="Supprimer">🗑️</button>
-                    </div>
-                  </td>
+          {devis.isLoading ? <TableSkeleton rows={5} cols={7} /> : (
+            <table className="w-full border-collapse min-w-[700px]">
+              <thead>
+                <tr>
+                  {['N°', 'Client', 'TTC', 'Date', 'Validité', 'Statut', 'Actions'].map(h => (
+                    <th key={h} className="px-3.5 py-2.5 text-[10.5px] font-bold text-muted-foreground uppercase tracking-wider text-left border-b border-border bg-background">{h}</th>
+                  ))}
                 </tr>
-              )) : (
-                <tr><td colSpan={7} className="text-center py-10 text-muted-foreground">
-                  <div className="text-4xl opacity-30 mb-2">📋</div>
-                  <div className="text-sm">Aucun devis</div>
-                </td></tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filtered.length ? filtered.map(d => (
+                  <tr key={d.id} className="hover:bg-background transition-colors">
+                    <td className="px-3.5 py-3 text-sm font-bold text-foreground border-b border-border">{d.numero}</td>
+                    <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{cliName(d.client_id)}</td>
+                    <td className="px-3.5 py-3 text-sm font-bold text-foreground border-b border-border">{fmt(d.montant_ttc)}</td>
+                    <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{d.date_devis}</td>
+                    <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{d.validite_jours} jours</td>
+                    <td className="px-3.5 py-3 text-sm border-b border-border"><StatusBadge status={d.statut} /></td>
+                    <td className="px-3.5 py-3 text-sm border-b border-border">
+                      <div className="flex gap-1">
+                        <button
+                          onClick={() => downloadPdf({
+                            type: 'devis', numero: d.numero, date: d.date_devis,
+                            validite_jours: d.validite_jours, client: cliName(d.client_id),
+                            articles: (d.articles as unknown as ArticleLine[]) || [], montant_ht: d.montant_ht,
+                            montant_tva: d.montant_tva, montant_ttc: d.montant_ttc,
+                            tva_pct: entreprise.data?.tva ?? 18, notes: d.notes,
+                            entreprise: entreprise.data,
+                          })}
+                          className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-primary hover:text-primary transition-all"
+                          title="Télécharger PDF"
+                        >📄</button>
+                        <button onClick={() => openEdit(d)} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-primary hover:text-primary transition-all" title="Modifier">✏️</button>
+                        {d.statut === 'En attente' && (
+                          <>
+                            <button onClick={() => updateStatus(d.id, 'Accepté')} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-success hover:text-success transition-all" title="Accepter">✅</button>
+                            <button onClick={() => updateStatus(d.id, 'Refusé')} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-destructive hover:text-destructive transition-all" title="Refuser">❌</button>
+                          </>
+                        )}
+                        {d.statut === 'Accepté' && (
+                          <button onClick={() => convertToInvoice(d)} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-primary hover:text-primary transition-all" title="Convertir en facture">🧾→</button>
+                        )}
+                        <button onClick={() => setDeleteTarget({ id: d.id, numero: d.numero })} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-destructive hover:text-destructive transition-all" title="Supprimer">🗑️</button>
+                      </div>
+                    </td>
+                  </tr>
+                )) : (
+                  <tr><td colSpan={7} className="text-center py-10 text-muted-foreground">
+                    <div className="text-4xl opacity-30 mb-2">📋</div>
+                    <div className="text-sm">Aucun devis</div>
+                  </td></tr>
+                )}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={() => setDeleteTarget(null)}
+        title={`Supprimer le devis ${deleteTarget?.numero} ?`}
+        description="Cette action est irréversible."
+        onConfirm={del}
+        confirmLabel="Supprimer"
+      />
 
       {showModal && (
         <div className="fixed inset-0 bg-foreground/50 backdrop-blur-sm z-[1000] flex items-end lg:items-center justify-center">

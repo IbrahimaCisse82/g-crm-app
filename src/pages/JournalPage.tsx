@@ -1,12 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { TableSkeleton } from '@/components/LoadingSkeleton';
 import { toast } from 'sonner';
+import { JOURNAL_CATEGORIES, PAYMENT_MODES } from '@/types';
 
 export default function JournalPage() {
   const { journal, comptes, fmt } = useApp();
   const [filter, setFilter] = useState('all');
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ libelle: '', type: 'Recette', montant: 0, mode_paiement: 'Espèce', categorie: '', compte: '', date_operation: new Date().toISOString().slice(0, 10) });
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; libelle: string } | null>(null);
 
   const totR = journal.data.filter(j => j.type === 'Recette' && j.categorie !== 'Transfert').reduce((s, j) => s + (j.montant || 0), 0);
   const totD = journal.data.filter(j => j.type === 'Dépense' && j.categorie !== 'Transfert').reduce((s, j) => s + (j.montant || 0), 0);
@@ -16,7 +20,7 @@ export default function JournalPage() {
   if (filter === 'Recette' || filter === 'Dépense') filtered = filtered.filter(j => j.type === filter && j.categorie !== 'Transfert');
   else if (filter !== 'all') filtered = filtered.filter(j => j.mode_paiement === filter);
 
-  const filters = ['all', 'Recette', 'Dépense', 'Espèce', 'Wave', 'Orange Money', 'Yas Money', 'Virement', 'Chèque'];
+  const filters = ['all', 'Recette', 'Dépense', ...PAYMENT_MODES];
   const filterLabels: Record<string, string> = { all: 'Tous', Recette: '📥 Recettes', 'Dépense': '📤 Dépenses', Espèce: '💵 Espèce', Wave: 'Wave', 'Orange Money': '🟠 Orange', 'Yas Money': '🟣 Yas', Virement: '🏦 Virement', Chèque: '✉️ Chèque' };
 
   const openNew = () => {
@@ -39,9 +43,20 @@ export default function JournalPage() {
       await journal.add(form);
       setShowModal(false);
       toast.success('Transaction ajoutée');
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Erreur');
     }
+  };
+
+  const del = async () => {
+    if (!deleteTarget) return;
+    try {
+      await journal.remove(deleteTarget.id);
+      toast.success('Supprimé');
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Erreur');
+    }
+    setDeleteTarget(null);
   };
 
   return (
@@ -88,44 +103,55 @@ export default function JournalPage() {
           </div>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full border-collapse min-w-[560px]">
-            <thead>
-              <tr>
-                {['Date', 'Libellé', 'Type', 'Mode', 'Compte', 'Montant', ''].map(h => (
-                  <th key={h} className="px-3.5 py-2.5 text-[10.5px] font-bold text-muted-foreground uppercase tracking-wider text-left border-b border-border bg-background">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.length ? filtered.map(j => (
-                <tr key={j.id} className="hover:bg-background transition-colors">
-                  <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{j.date_operation || '—'}</td>
-                  <td className="px-3.5 py-3 text-sm border-b border-border">
-                    <div className="font-bold text-foreground">{j.libelle || '—'}</div>
-                    <div className="text-[10.5px] text-muted-foreground">{j.categorie || ''}</div>
-                  </td>
-                  <td className="px-3.5 py-3 text-sm border-b border-border">
-                    <span className={`font-bold ${j.type === 'Recette' ? 'text-success' : 'text-destructive'}`}>{j.type}</span>
-                  </td>
-                  <td className="px-3.5 py-3 text-sm border-b border-border text-muted-foreground">{j.mode_paiement || '—'}</td>
-                  <td className="px-3.5 py-3 text-[11.5px] border-b border-border text-muted-foreground">{j.compte || '—'}</td>
-                  <td className={`px-3.5 py-3 text-sm font-bold border-b border-border ${j.type === 'Recette' ? 'text-success' : 'text-destructive'}`}>
-                    {j.type === 'Recette' ? '+' : '-'}{fmt(j.montant || 0)}
-                  </td>
-                  <td className="px-3.5 py-3 text-sm border-b border-border">
-                    <button onClick={async () => { if (confirm('Supprimer ?')) { await journal.remove(j.id); toast.success('Supprimé'); } }} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-destructive hover:text-destructive transition-all">🗑️</button>
-                  </td>
+          {journal.isLoading ? <TableSkeleton rows={5} cols={7} /> : (
+            <table className="w-full border-collapse min-w-[560px]">
+              <thead>
+                <tr>
+                  {['Date', 'Libellé', 'Type', 'Mode', 'Compte', 'Montant', ''].map(h => (
+                    <th key={h} className="px-3.5 py-2.5 text-[10.5px] font-bold text-muted-foreground uppercase tracking-wider text-left border-b border-border bg-background">{h}</th>
+                  ))}
                 </tr>
-              )) : (
-                <tr><td colSpan={7} className="text-center py-10 text-muted-foreground">
-                  <div className="text-4xl opacity-30 mb-2">📒</div>
-                  <div className="text-sm">Aucune transaction</div>
-                </td></tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filtered.length ? filtered.map(j => (
+                  <tr key={j.id} className="hover:bg-background transition-colors">
+                    <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{j.date_operation || '—'}</td>
+                    <td className="px-3.5 py-3 text-sm border-b border-border">
+                      <div className="font-bold text-foreground">{j.libelle || '—'}</div>
+                      <div className="text-[10.5px] text-muted-foreground">{j.categorie || ''}</div>
+                    </td>
+                    <td className="px-3.5 py-3 text-sm border-b border-border">
+                      <span className={`font-bold ${j.type === 'Recette' ? 'text-success' : 'text-destructive'}`}>{j.type}</span>
+                    </td>
+                    <td className="px-3.5 py-3 text-sm border-b border-border text-muted-foreground">{j.mode_paiement || '—'}</td>
+                    <td className="px-3.5 py-3 text-[11.5px] border-b border-border text-muted-foreground">{j.compte || '—'}</td>
+                    <td className={`px-3.5 py-3 text-sm font-bold border-b border-border ${j.type === 'Recette' ? 'text-success' : 'text-destructive'}`}>
+                      {j.type === 'Recette' ? '+' : '-'}{fmt(j.montant || 0)}
+                    </td>
+                    <td className="px-3.5 py-3 text-sm border-b border-border">
+                      <button onClick={() => setDeleteTarget({ id: j.id, libelle: j.libelle })} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-destructive hover:text-destructive transition-all">🗑️</button>
+                    </td>
+                  </tr>
+                )) : (
+                  <tr><td colSpan={7} className="text-center py-10 text-muted-foreground">
+                    <div className="text-4xl opacity-30 mb-2">📒</div>
+                    <div className="text-sm">Aucune transaction</div>
+                  </td></tr>
+                )}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={() => setDeleteTarget(null)}
+        title="Supprimer cette transaction ?"
+        description={`"${deleteTarget?.libelle}" sera définitivement supprimée.`}
+        onConfirm={del}
+        confirmLabel="Supprimer"
+      />
 
       {showModal && (
         <div className="fixed inset-0 bg-foreground/50 backdrop-blur-sm z-[1000] flex items-end lg:items-center justify-center">
@@ -156,7 +182,7 @@ export default function JournalPage() {
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Mode paiement</label>
                   <select className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.mode_paiement} onChange={e => setForm({ ...form, mode_paiement: e.target.value })}>
-                    {['Espèce', 'Wave', 'Orange Money', 'Yas Money', 'Virement', 'Chèque'].map(m => <option key={m}>{m}</option>)}
+                    {PAYMENT_MODES.map(m => <option key={m}>{m}</option>)}
                   </select>
                 </div>
                 <div className="flex flex-col gap-1.5">
@@ -167,7 +193,10 @@ export default function JournalPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Catégorie</label>
-                  <input className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.categorie} onChange={e => setForm({ ...form, categorie: e.target.value })} placeholder="Ex: Vente, Loyer..." />
+                  <select className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.categorie} onChange={e => setForm({ ...form, categorie: e.target.value })}>
+                    <option value="">— Choisir —</option>
+                    {JOURNAL_CATEGORIES.map(c => <option key={c}>{c}</option>)}
+                  </select>
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Compte</label>

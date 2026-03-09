@@ -1,5 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { TableSkeleton } from '@/components/LoadingSkeleton';
 import { toast } from 'sonner';
 
 export default function ProductsPage() {
@@ -7,18 +9,36 @@ export default function ProductsPage() {
   const [showModal, setShowModal] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({ nom: '', type: 'Service', prix: 0, unite: 'forfait', description: '' });
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; nom: string } | null>(null);
 
   const openNew = () => { setEditId(null); setForm({ nom: '', type: 'Service', prix: 0, unite: 'forfait', description: '' }); setShowModal(true); };
   const openEdit = (p: typeof produits.data[0]) => { setEditId(p.id); setForm({ nom: p.nom, type: p.type || 'Service', prix: p.prix, unite: p.unite || 'forfait', description: p.description || '' }); setShowModal(true); };
+
+  useEffect(() => {
+    const handler = () => openNew();
+    window.addEventListener('open-create-modal', handler);
+    return () => window.removeEventListener('open-create-modal', handler);
+  }, []);
 
   const save = async () => {
     if (!form.nom) return;
     try {
       if (editId) await produits.update(editId, form);
-      else await produits.add(form as any);
+      else await produits.add(form);
       setShowModal(false);
       toast.success(editId ? 'Produit modifié' : 'Produit ajouté');
-    } catch (e: any) { toast.error(e.message); }
+    } catch (e: unknown) { toast.error(e instanceof Error ? e.message : 'Erreur'); }
+  };
+
+  const del = async () => {
+    if (!deleteTarget) return;
+    try {
+      await produits.remove(deleteTarget.id);
+      toast.success('Supprimé');
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Erreur');
+    }
+    setDeleteTarget(null);
   };
 
   return (
@@ -29,39 +49,50 @@ export default function ProductsPage() {
           <button onClick={openNew} className="gradient-primary text-primary-foreground border-none py-1.5 px-3 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all">＋ Nouveau</button>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full border-collapse min-w-[560px]">
-            <thead>
-              <tr>
-                {['Nom', 'Type', 'Prix unitaire', 'Unité', 'Description', 'Actions'].map(h => (
-                  <th key={h} className="px-3.5 py-2.5 text-[10.5px] font-bold text-muted-foreground uppercase tracking-wider text-left border-b border-border bg-background">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {produits.data.length ? produits.data.map(p => (
-                <tr key={p.id} className="hover:bg-background transition-colors">
-                  <td className="px-3.5 py-3 text-sm font-bold text-foreground border-b border-border">{p.nom}</td>
-                  <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{p.type}</td>
-                  <td className="px-3.5 py-3 text-sm font-bold text-foreground border-b border-border">{fmt(p.prix)}</td>
-                  <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{p.unite}</td>
-                  <td className="px-3.5 py-3 text-sm text-muted-foreground border-b border-border">{p.description}</td>
-                  <td className="px-3.5 py-3 text-sm border-b border-border">
-                    <div className="flex gap-1">
-                      <button onClick={() => openEdit(p)} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-primary hover:text-primary transition-all">✏️</button>
-                      <button onClick={async () => { if (confirm('Supprimer ?')) { await produits.remove(p.id); toast.success('Supprimé'); } }} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-destructive hover:text-destructive transition-all">🗑️</button>
-                    </div>
-                  </td>
+          {produits.isLoading ? <TableSkeleton rows={5} cols={6} /> : (
+            <table className="w-full border-collapse min-w-[560px]">
+              <thead>
+                <tr>
+                  {['Nom', 'Type', 'Prix unitaire', 'Unité', 'Description', 'Actions'].map(h => (
+                    <th key={h} className="px-3.5 py-2.5 text-[10.5px] font-bold text-muted-foreground uppercase tracking-wider text-left border-b border-border bg-background">{h}</th>
+                  ))}
                 </tr>
-              )) : (
-                <tr><td colSpan={6} className="text-center py-10 text-muted-foreground">
-                  <div className="text-4xl opacity-30 mb-2">📦</div>
-                  <div className="text-sm">Aucun produit</div>
-                </td></tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {produits.data.length ? produits.data.map(p => (
+                  <tr key={p.id} className="hover:bg-background transition-colors">
+                    <td className="px-3.5 py-3 text-sm font-bold text-foreground border-b border-border">{p.nom}</td>
+                    <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{p.type}</td>
+                    <td className="px-3.5 py-3 text-sm font-bold text-foreground border-b border-border">{fmt(p.prix)}</td>
+                    <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{p.unite}</td>
+                    <td className="px-3.5 py-3 text-sm text-muted-foreground border-b border-border">{p.description}</td>
+                    <td className="px-3.5 py-3 text-sm border-b border-border">
+                      <div className="flex gap-1">
+                        <button onClick={() => openEdit(p)} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-primary hover:text-primary transition-all">✏️</button>
+                        <button onClick={() => setDeleteTarget({ id: p.id, nom: p.nom })} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-destructive hover:text-destructive transition-all">🗑️</button>
+                      </div>
+                    </td>
+                  </tr>
+                )) : (
+                  <tr><td colSpan={6} className="text-center py-10 text-muted-foreground">
+                    <div className="text-4xl opacity-30 mb-2">📦</div>
+                    <div className="text-sm">Aucun produit</div>
+                  </td></tr>
+                )}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={() => setDeleteTarget(null)}
+        title={`Supprimer "${deleteTarget?.nom}" ?`}
+        description="Ce produit sera définitivement supprimé."
+        onConfirm={del}
+        confirmLabel="Supprimer"
+      />
 
       {showModal && (
         <div className="fixed inset-0 bg-foreground/50 backdrop-blur-sm z-[1000] flex items-end lg:items-center justify-center">

@@ -1,14 +1,18 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
-import { StatusBadge } from './Dashboard';
+import { StatusBadge } from '@/components/StatusBadge';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { TableSkeleton } from '@/components/LoadingSkeleton';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function ClientsPage() {
-  const { clients } = useApp();
+  const { clients, factures, devis } = useApp();
   const [filter, setFilter] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({ prenom: '', nom: '', email: '', telephone: '', entreprise: '', statut: 'Actif', adresse: '', notes: '' });
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
 
   const filtered = filter
     ? clients.data.filter(c => c.statut === filter || (c.nom + c.prenom + c.entreprise + c.email).toLowerCase().includes(filter.toLowerCase()))
@@ -42,16 +46,28 @@ export default function ClientsPage() {
       }
       setShowModal(false);
       toast.success(editId ? 'Client modifié' : 'Client ajouté');
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Erreur');
     }
   };
 
-  const del = async (id: string) => {
-    if (confirm('Supprimer ce client ?')) {
-      await clients.remove(id);
-      toast.success('Client supprimé');
+  const del = async () => {
+    if (!deleteTarget) return;
+    // Check for linked invoices/quotes
+    const linkedFacs = factures.data.filter(f => f.client_id === deleteTarget.id);
+    const linkedDevis = devis.data.filter(d => d.client_id === deleteTarget.id);
+    if (linkedFacs.length > 0 || linkedDevis.length > 0) {
+      toast.error(`Ce client a ${linkedFacs.length} facture(s) et ${linkedDevis.length} devis liés. Supprimez-les d'abord.`);
+      setDeleteTarget(null);
+      return;
     }
+    try {
+      await clients.remove(deleteTarget.id);
+      toast.success('Client supprimé');
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Erreur');
+    }
+    setDeleteTarget(null);
   };
 
   return (
@@ -76,39 +92,50 @@ export default function ClientsPage() {
           </div>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full border-collapse min-w-[560px]">
-            <thead>
-              <tr>
-                {['Nom', 'Email', 'Téléphone', 'Entreprise', 'Statut', 'Actions'].map(h => (
-                  <th key={h} className="px-3.5 py-2.5 text-[10.5px] font-bold text-muted-foreground uppercase tracking-wider text-left border-b border-border bg-background">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.length ? filtered.map(c => (
-                <tr key={c.id} className="hover:bg-background transition-colors">
-                  <td className="px-3.5 py-3 text-sm font-bold text-foreground border-b border-border">{c.prenom} {c.nom}</td>
-                  <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{c.email || '—'}</td>
-                  <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{c.telephone || '—'}</td>
-                  <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{c.entreprise || '—'}</td>
-                  <td className="px-3.5 py-3 text-sm border-b border-border"><StatusBadge status={c.statut} /></td>
-                  <td className="px-3.5 py-3 text-sm border-b border-border">
-                    <div className="flex gap-1">
-                      <button onClick={() => openEdit(c)} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-primary hover:text-primary transition-all">✏️</button>
-                      <button onClick={() => del(c.id)} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-destructive hover:text-destructive transition-all">🗑️</button>
-                    </div>
-                  </td>
+          {clients.isLoading ? <TableSkeleton rows={5} cols={6} /> : (
+            <table className="w-full border-collapse min-w-[560px]">
+              <thead>
+                <tr>
+                  {['Nom', 'Email', 'Téléphone', 'Entreprise', 'Statut', 'Actions'].map(h => (
+                    <th key={h} className="px-3.5 py-2.5 text-[10.5px] font-bold text-muted-foreground uppercase tracking-wider text-left border-b border-border bg-background">{h}</th>
+                  ))}
                 </tr>
-              )) : (
-                <tr><td colSpan={6} className="text-center py-10 text-muted-foreground">
-                  <div className="text-4xl opacity-30 mb-2">👥</div>
-                  <div className="text-sm">Aucun client</div>
-                </td></tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filtered.length ? filtered.map(c => (
+                  <tr key={c.id} className="hover:bg-background transition-colors">
+                    <td className="px-3.5 py-3 text-sm font-bold text-foreground border-b border-border">{c.prenom} {c.nom}</td>
+                    <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{c.email || '—'}</td>
+                    <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{c.telephone || '—'}</td>
+                    <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{c.entreprise || '—'}</td>
+                    <td className="px-3.5 py-3 text-sm border-b border-border"><StatusBadge status={c.statut} /></td>
+                    <td className="px-3.5 py-3 text-sm border-b border-border">
+                      <div className="flex gap-1">
+                        <button onClick={() => openEdit(c)} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-primary hover:text-primary transition-all">✏️</button>
+                        <button onClick={() => setDeleteTarget({ id: c.id, name: `${c.prenom} ${c.nom}` })} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-destructive hover:text-destructive transition-all">🗑️</button>
+                      </div>
+                    </td>
+                  </tr>
+                )) : (
+                  <tr><td colSpan={6} className="text-center py-10 text-muted-foreground">
+                    <div className="text-4xl opacity-30 mb-2">👥</div>
+                    <div className="text-sm">Aucun client</div>
+                  </td></tr>
+                )}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={() => setDeleteTarget(null)}
+        title={`Supprimer ${deleteTarget?.name} ?`}
+        description="Cette action est irréversible. Vérifiez qu'aucune facture ou devis n'est lié à ce client."
+        onConfirm={del}
+        confirmLabel="Supprimer"
+      />
 
       {showModal && (
         <div className="fixed inset-0 bg-foreground/50 backdrop-blur-sm z-[1000] flex items-center lg:items-center items-end justify-center">
@@ -162,7 +189,7 @@ export default function ClientsPage() {
   );
 }
 
-function FormField({ label, value, onChange, type = 'text', placeholder }: { label: string; value: string; onChange: (v: string) => void; type?: string; placeholder?: string }) {
+function FormField({ label, value, onChange, type = 'text' }: { label: string; value: string; onChange: (v: string) => void; type?: string }) {
   return (
     <div className="flex flex-col gap-1.5">
       <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">{label}</label>
@@ -170,7 +197,6 @@ function FormField({ label, value, onChange, type = 'text', placeholder }: { lab
         type={type}
         value={value}
         onChange={e => onChange(e.target.value)}
-        placeholder={placeholder}
         className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary focus:ring-[3px] focus:ring-primary/10 w-full"
       />
     </div>
