@@ -62,24 +62,24 @@ export default function JournalPage() {
 
   return (
     <div>
-      <div className="grid grid-cols-3 gap-3 mb-4">
-        <div className="bg-card border border-border rounded-xl p-4 relative overflow-hidden shadow-card">
+      <div className="grid grid-cols-3 gap-2 lg:gap-3 mb-4">
+        <div className="bg-card border border-border rounded-xl p-2.5 lg:p-4 relative overflow-hidden shadow-card">
           <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-primary to-secondary" />
-          <div className="text-2xl mb-2">📥</div>
-          <div className="font-black text-lg text-success">{fmt(totR)}</div>
-          <div className="text-[11px] text-muted-foreground">Recettes</div>
+          <div className="text-lg lg:text-2xl mb-1 lg:mb-2">📥</div>
+          <div className="font-black text-xs lg:text-lg text-success truncate">{fmt(totR)}</div>
+          <div className="text-[9px] lg:text-[11px] text-muted-foreground">Recettes</div>
         </div>
-        <div className="bg-card border border-border rounded-xl p-4 relative overflow-hidden shadow-card">
+        <div className="bg-card border border-border rounded-xl p-2.5 lg:p-4 relative overflow-hidden shadow-card">
           <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-destructive to-accent" />
-          <div className="text-2xl mb-2">📤</div>
-          <div className="font-black text-lg text-destructive">{fmt(totD)}</div>
-          <div className="text-[11px] text-muted-foreground">Dépenses</div>
+          <div className="text-lg lg:text-2xl mb-1 lg:mb-2">📤</div>
+          <div className="font-black text-xs lg:text-lg text-destructive truncate">{fmt(totD)}</div>
+          <div className="text-[9px] lg:text-[11px] text-muted-foreground">Dépenses</div>
         </div>
-        <div className="bg-card border border-border rounded-xl p-4 relative overflow-hidden shadow-card">
+        <div className="bg-card border border-border rounded-xl p-2.5 lg:p-4 relative overflow-hidden shadow-card">
           <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-primary to-success" />
-          <div className="text-2xl mb-2">⚖️</div>
-          <div className={`font-black text-lg ${bal >= 0 ? 'text-success' : 'text-destructive'}`}>{fmt(Math.abs(bal))}</div>
-          <div className="text-[11px] text-muted-foreground">Balance</div>
+          <div className="text-lg lg:text-2xl mb-1 lg:mb-2">⚖️</div>
+          <div className={`font-black text-xs lg:text-lg truncate ${bal >= 0 ? 'text-success' : 'text-destructive'}`}>{fmt(Math.abs(bal))}</div>
+          <div className="text-[9px] lg:text-[11px] text-muted-foreground">Balance</div>
         </div>
       </div>
 
