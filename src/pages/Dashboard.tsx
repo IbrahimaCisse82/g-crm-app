@@ -5,12 +5,12 @@ import { CardSkeleton, TableSkeleton } from '@/components/LoadingSkeleton';
 
 function StatCard({ icon, value, label, sub }: { icon: string; value: string; label: string; sub?: string }) {
   return (
-    <div className="bg-card border border-border rounded-xl p-4 lg:p-[18px] relative overflow-hidden shadow-card hover:-translate-y-px hover:shadow-elevated hover:border-primary/25 transition-all cursor-default">
+    <div className="bg-card border border-border rounded-xl p-3 lg:p-[18px] relative overflow-hidden shadow-card hover:-translate-y-px hover:shadow-elevated hover:border-primary/25 transition-all cursor-default">
       <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-primary to-secondary" />
-      <div className="text-2xl lg:text-[26px] mb-2">{icon}</div>
-      <div className="font-black text-lg lg:text-2xl text-foreground">{value}</div>
-      <div className="text-[11px] text-muted-foreground mt-0.5">{label}</div>
-      {sub && <div className="text-[10.5px] text-accent mt-1">{sub}</div>}
+      <div className="text-xl lg:text-[26px] mb-1 lg:mb-2">{icon}</div>
+      <div className="font-black text-sm lg:text-2xl text-foreground truncate">{value}</div>
+      <div className="text-[10px] lg:text-[11px] text-muted-foreground mt-0.5 truncate">{label}</div>
+      {sub && <div className="text-[10px] lg:text-[10.5px] text-accent mt-0.5 lg:mt-1 truncate">{sub}</div>}
     </div>
   );
 }
