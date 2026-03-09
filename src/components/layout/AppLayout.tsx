@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import { useNavigate } from 'react-router-dom';
-import { Building2, BookOpen, LogOut } from 'lucide-react';
+import { Building2, BookOpen, LogOut, Package } from 'lucide-react';
 import AppSidebar from './AppSidebar';
 
 const sectionTitles: Record<string, string> = {
@@ -69,14 +69,21 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 <Building2 className="w-4 h-4 text-muted-foreground" />
                 Infos Entreprise
               </button>
-              <button
-                onClick={() => { setShowTopMenu(false); navigate('/journal'); }}
-                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-foreground hover:bg-accent transition-colors"
-              >
-                <BookOpen className="w-4 h-4 text-muted-foreground" />
-                Journal
-              </button>
-              <div className="h-px bg-border mx-2 my-1" />
+               <button
+                 onClick={() => { setShowTopMenu(false); navigate('/journal'); }}
+                 className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-foreground hover:bg-accent transition-colors"
+               >
+                 <BookOpen className="w-4 h-4 text-muted-foreground" />
+                 Journal
+               </button>
+               <button
+                 onClick={() => { setShowTopMenu(false); navigate('/produits'); }}
+                 className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-foreground hover:bg-accent transition-colors"
+               >
+                 <Package className="w-4 h-4 text-muted-foreground" />
+                 Produits & Services
+               </button>
+               <div className="h-px bg-border mx-2 my-1" />
               <button
                 onClick={() => { setShowTopMenu(false); logout(); }}
                 className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors"
