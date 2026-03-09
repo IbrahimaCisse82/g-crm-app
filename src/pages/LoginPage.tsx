@@ -152,6 +152,21 @@ export default function LoginPage() {
                 onKeyDown={e => e.key === 'Enter' && handleSignup()}
               />
             </div>
+            <div className="mb-4 flex items-start gap-2.5">
+              <input
+                type="checkbox"
+                id="accept-terms"
+                checked={acceptedTerms}
+                onChange={e => setAcceptedTerms(e.target.checked)}
+                className="mt-0.5 w-4 h-4 rounded border-border accent-[hsl(168,100%,31%)] cursor-pointer shrink-0"
+              />
+              <label htmlFor="accept-terms" className="text-xs text-muted-foreground leading-relaxed cursor-pointer">
+                J'accepte les{' '}
+                <Link to="/cgu" className="text-primary font-semibold hover:underline" target="_blank">Conditions d'utilisation</Link>,{' '}
+                la <Link to="/confidentialite" className="text-primary font-semibold hover:underline" target="_blank">Politique de confidentialité</Link>{' '}
+                et la <Link to="/protection-donnees" className="text-primary font-semibold hover:underline" target="_blank">Politique de protection des données</Link>.
+              </label>
+            </div>
             <button
               onClick={handleSignup}
               disabled={loading}
