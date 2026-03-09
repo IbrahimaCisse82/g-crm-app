@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { CardSkeleton } from '@/components/LoadingSkeleton';
 import { toast } from 'sonner';
 
 export default function CashPage() {
