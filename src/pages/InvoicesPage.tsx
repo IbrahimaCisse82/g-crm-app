@@ -80,8 +80,7 @@ export default function InvoicesPage() {
   const addArticleLine = () => setArticles([...articles, { nom: '', quantite: 1, prix_unitaire: 0 }]);
   const removeArticleLine = (i: number) => setArticles(articles.filter((_, idx) => idx !== i));
   const updateArticle = (i: number, field: keyof ArticleLine, value: string | number) => {
-    const next = [...articles];
-    (next[i] as Record<string, string | number>)[field] = value;
+    const next = articles.map((a, idx) => idx === i ? { ...a, [field]: value } : a);
     setArticles(next);
   };
 

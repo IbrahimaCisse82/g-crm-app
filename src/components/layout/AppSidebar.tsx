@@ -1,5 +1,6 @@
 import { useApp } from '@/context/AppContext';
 import { useNavigate } from 'react-router-dom';
+import { DarkModeToggle } from '@/components/DarkModeToggle';
 import { Section, sectionPaths } from '@/types';
 
 const navItems: { section: Section; icon: string; label: string; badge?: boolean }[] = [
@@ -38,10 +39,11 @@ export default function AppSidebar() {
           <div className="w-[34px] h-[34px] rounded-[9px] gradient-primary flex items-center justify-center font-black text-[15px] text-primary-foreground shrink-0 shadow-primary animate-[logoPulse_3s_ease-in-out_infinite]">
             G
           </div>
-          <div>
-            <div className="font-black text-base text-foreground tracking-tight">{companyName}</div>
+          <div className="flex-1 min-w-0">
+            <div className="font-black text-base text-foreground tracking-tight truncate">{companyName}</div>
             <div className="text-[9px] text-muted-foreground uppercase tracking-[2px]">GROW HUB</div>
           </div>
+          <DarkModeToggle />
         </div>
 
         <nav className="flex-1 px-2.5 py-2 overflow-y-auto">
@@ -109,7 +111,7 @@ export default function AppSidebar() {
 
         <div className="p-2.5 px-3 border-t border-sidebar-border shrink-0">
           <div className="flex items-center gap-2.5 p-1.5 rounded-lg cursor-pointer hover:bg-sidebar-hover transition-colors group" onClick={logout}>
-            <div className="w-[34px] h-[34px] rounded-[9px] bg-gradient-to-br from-[hsl(239,84%,67%)] to-[hsl(263,70%,50%)] flex items-center justify-center font-bold text-xs text-primary-foreground relative shrink-0 shadow-md">
+            <div className="w-[34px] h-[34px] rounded-[9px] bg-gradient-to-br from-primary to-secondary flex items-center justify-center font-bold text-xs text-primary-foreground relative shrink-0 shadow-md">
               {initials}
               <div className="absolute -bottom-px -right-px w-[9px] h-[9px] rounded-full bg-success border-2 border-card" />
             </div>
