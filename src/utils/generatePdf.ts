@@ -55,7 +55,8 @@ export function downloadPdf(data: PdfData) {
 <title>${esc(title)} ${esc(data.numero)}</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Segoe UI', system-ui, sans-serif; color: #1a1a2e; padding: 40px; font-size: 13px; }
+  html, body { height: 100%; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; color: #1a1a2e; padding: 40px; font-size: 13px; display: flex; flex-direction: column; min-height: 100vh; }
   .header { display: flex; justify-content: space-between; margin-bottom: 40px; }
   .company { max-width: 50%; }
   .company h1 { font-size: 22px; color: #10b981; margin-bottom: 4px; }
