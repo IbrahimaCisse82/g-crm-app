@@ -71,7 +71,7 @@ export default function Dashboard() {
           <div className="px-4 py-3 border-b border-border">
             <h3 className="font-extrabold text-sm text-foreground">Évolution mensuelle</h3>
           </div>
-          <div className="flex items-end gap-1.5 px-4 py-3 h-[140px]">
+          <div className="flex items-end gap-1 lg:gap-1.5 px-3 lg:px-4 py-3 h-[140px]">
             {months.map(m => {
               const r = journal.data.filter(j => j.type === 'Recette' && j.categorie !== 'Transfert' && j.date_operation?.startsWith(m.key)).reduce((s, j) => s + (j.montant || 0), 0);
               const d = journal.data.filter(j => j.type === 'Dépense' && j.categorie !== 'Transfert' && j.date_operation?.startsWith(m.key)).reduce((s, j) => s + (j.montant || 0), 0);
@@ -79,12 +79,12 @@ export default function Dashboard() {
               const dh = Math.round((d / maxR) * 80);
               return (
                 <div key={m.key} className="flex-1 flex flex-col items-center gap-1">
-                  <div className="text-[9px] text-muted-foreground">{r ? fmt(r) : ''}</div>
+                  <div className="text-[8px] lg:text-[9px] text-muted-foreground truncate max-w-full">{r ? fmt(r) : ''}</div>
                   <div className="flex gap-0.5 items-end h-20">
-                    <div className="w-3 rounded-t bg-primary transition-all duration-500" style={{ height: `${rh}px`, minHeight: r ? 2 : 0 }} title={`Recettes: ${fmt(r)}`} />
-                    <div className="w-3 rounded-t bg-destructive/40 transition-all duration-500" style={{ height: `${dh}px`, minHeight: d ? 2 : 0 }} title={`Dépenses: ${fmt(d)}`} />
+                    <div className="w-2.5 lg:w-3 rounded-t bg-primary transition-all duration-500" style={{ height: `${rh}px`, minHeight: r ? 2 : 0 }} title={`Recettes: ${fmt(r)}`} />
+                    <div className="w-2.5 lg:w-3 rounded-t bg-destructive/40 transition-all duration-500" style={{ height: `${dh}px`, minHeight: d ? 2 : 0 }} title={`Dépenses: ${fmt(d)}`} />
                   </div>
-                  <span className="text-[9.5px] text-muted-foreground">{m.label}</span>
+                  <span className="text-[8px] lg:text-[9.5px] text-muted-foreground">{m.label}</span>
                 </div>
               );
             })}
