@@ -280,7 +280,7 @@ export default function InvoicesPage() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.length ? filtered.map(f => (
+                {pagination.items.length ? pagination.items.map(f => (
                   <tr key={f.id} className="hover:bg-background transition-colors">
                     <td className="px-3.5 py-3 text-sm font-bold text-foreground border-b border-border">{f.numero}</td>
                     <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{cliName(f.client_id)}</td>
