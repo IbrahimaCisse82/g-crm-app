@@ -55,10 +55,45 @@ export default function JournalPage() {
     triggerRef.current = createModalTrigger;
   }, [createModalTrigger]);
 
+  const handleSelectInvoice = (factureId: string) => {
+    const inv = pendingInvoices.find(f => f.id === factureId);
+    if (!inv) { setForm({ ...form, facture_id: '', libelle: '', montant: 0 }); return; }
+    const reste = inv.montant_ttc - (inv.montant_regle || 0);
+    setForm({
+      ...form,
+      facture_id: inv.id,
+      libelle: `Paiement ${inv.numero} - ${cliName(inv.client_id)}`,
+      montant: Math.round(reste),
+      categorie: '',
+    });
+  };
+
   const save = async () => {
     if (!form.libelle || !form.montant) { toast.error('Renseignez le libellé et le montant'); return; }
+    if (form.type === 'Recette' && !form.facture_id) { toast.error('Sélectionnez une facture pour la recette'); return; }
     try {
-      await journal.add(form);
+      const journalData: Record<string, unknown> = {
+        libelle: form.libelle,
+        type: form.type,
+        montant: form.montant,
+        mode_paiement: form.mode_paiement,
+        compte: form.compte,
+        date_operation: form.date_operation,
+        categorie: form.type === 'Dépense' ? form.categorie : null,
+        facture_id: form.type === 'Recette' ? form.facture_id : null,
+      };
+      await journal.add(journalData as any);
+
+      // Update invoice payment if receipt
+      if (form.type === 'Recette' && form.facture_id) {
+        const inv = factures.data.find(f => f.id === form.facture_id);
+        if (inv) {
+          const newRegle = (inv.montant_regle || 0) + form.montant;
+          const newStatut = newRegle >= inv.montant_ttc ? 'Payée' : 'Partielle';
+          await factures.update(inv.id, { montant_regle: newRegle, statut: newStatut, mode_paiement: form.mode_paiement });
+        }
+      }
+
       setShowModal(false);
       toast.success('Transaction ajoutée');
     } catch (e: unknown) { toast.error(e instanceof Error ? e.message : 'Erreur'); }
