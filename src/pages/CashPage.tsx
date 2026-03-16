@@ -1,14 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useApp } from '@/context/AppContext';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { CardSkeleton } from '@/components/LoadingSkeleton';
 import { toast } from 'sonner';
 
 export default function CashPage() {
-  const { comptes, journal, fmt } = useApp();
+  const { comptes, journal, fmt, createModalTrigger } = useApp();
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ operateur: 'Wave', numero: '', titulaire: '', solde: 0 });
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; label: string } | null>(null);
+  const triggerRef = useRef(createModalTrigger);
 
   const mmModes = ['Wave', 'Orange Money', 'Yas Money'];
   const icons: Record<string, string> = { Wave: '🔵', 'Orange Money': '🟠', 'Yas Money': '🟣' };
@@ -38,11 +39,11 @@ export default function CashPage() {
   };
 
   useEffect(() => {
-    const handler = () => openNew();
-    window.addEventListener('open-create-modal', handler);
-    return () => window.removeEventListener('open-create-modal', handler);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (createModalTrigger > triggerRef.current) {
+      openNew();
+    }
+    triggerRef.current = createModalTrigger;
+  }, [createModalTrigger]);
 
   if (comptes.isLoading || journal.isLoading) {
     return (

@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useApp } from '@/context/AppContext';
 import { StatusBadge, PayBadge } from '@/components/StatusBadge';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { PaginationControls } from '@/components/PaginationControls';
 import { TableSkeleton } from '@/components/LoadingSkeleton';
+import { usePagination } from '@/hooks/usePagination';
 import { toast } from 'sonner';
 import { downloadPdf } from '@/utils/generatePdf';
 import { formatDate } from '@/lib/formatDate';
@@ -19,7 +21,8 @@ const defaultForm = {
 };
 
 export default function InvoicesPage() {
-  const { factures, clients, produits, entreprise, journal, cliName, fmt } = useApp();
+  const { factures, clients, produits, entreprise, journal, cliName, fmt, createModalTrigger } = useApp();
+  const triggerRef = useRef(createModalTrigger);
   const [search, setSearch] = useState('');
   const [statFilter, setStatFilter] = useState('');
   const [showModal, setShowModal] = useState(false);
@@ -41,6 +44,8 @@ export default function InvoicesPage() {
 
   let filtered = enrichedData;
   if (statFilter) filtered = filtered.filter(f => f.statut === statFilter);
+  const pagination = usePagination(filtered);
+
   if (search) {
     const q = search.toLowerCase();
     filtered = filtered.filter(f => f.numero?.toLowerCase().includes(q) || cliName(f.client_id).toLowerCase().includes(q));
@@ -75,11 +80,11 @@ export default function InvoicesPage() {
   };
 
   useEffect(() => {
-    const handler = () => openNew();
-    window.addEventListener('open-create-modal', handler);
-    return () => window.removeEventListener('open-create-modal', handler);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (createModalTrigger > triggerRef.current) {
+      openNew();
+    }
+    triggerRef.current = createModalTrigger;
+  }, [createModalTrigger]);
 
   const addArticleLine = () => setArticles([...articles, { nom: '', quantite: 1, prix_unitaire: 0 }]);
   const removeArticleLine = (i: number) => setArticles(articles.filter((_, idx) => idx !== i));
@@ -228,7 +233,7 @@ export default function InvoicesPage() {
         {/* Mobile card view */}
         <div className="lg:hidden">
           {factures.isLoading ? <TableSkeleton rows={5} cols={3} /> : (
-            filtered.length ? filtered.map(f => (
+            pagination.items.length ? pagination.items.map(f => (
               <div key={f.id} className="px-4 py-3 border-b border-border">
                 <div className="flex items-center justify-between mb-1">
                   <div className="font-bold text-xs text-foreground">{f.numero}</div>
@@ -275,7 +280,7 @@ export default function InvoicesPage() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.length ? filtered.map(f => (
+                {pagination.items.length ? pagination.items.map(f => (
                   <tr key={f.id} className="hover:bg-background transition-colors">
                     <td className="px-3.5 py-3 text-sm font-bold text-foreground border-b border-border">{f.numero}</td>
                     <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{cliName(f.client_id)}</td>
@@ -316,6 +321,7 @@ export default function InvoicesPage() {
             </table>
           )}
         </div>
+        <PaginationControls {...pagination} />
       </div>
 
       {/* Confirm delete */}

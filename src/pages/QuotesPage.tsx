@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useApp } from '@/context/AppContext';
 import { useNavigate } from 'react-router-dom';
 import { StatusBadge } from '@/components/StatusBadge';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { PaginationControls } from '@/components/PaginationControls';
 import { TableSkeleton } from '@/components/LoadingSkeleton';
+import { usePagination } from '@/hooks/usePagination';
 import { toast } from 'sonner';
 import { downloadPdf } from '@/utils/generatePdf';
 import { formatDate } from '@/lib/formatDate';
@@ -11,7 +13,8 @@ import type { ArticleLine } from '@/types';
 import type { Json } from '@/integrations/supabase/types';
 
 export default function QuotesPage() {
-  const { devis, factures, clients, produits, entreprise, cliName, fmt } = useApp();
+  const { devis, factures, clients, produits, entreprise, cliName, fmt, createModalTrigger } = useApp();
+  const triggerRef = useRef(createModalTrigger);
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [statFilter, setStatFilter] = useState('');
@@ -42,6 +45,8 @@ export default function QuotesPage() {
     filtered = filtered.filter(d => d.numero?.toLowerCase().includes(q) || cliName(d.client_id).toLowerCase().includes(q));
   }
 
+  const pagination = usePagination(filtered);
+
   const tva = entreprise.data?.tva ?? 18;
   const totalHT = articles.reduce((s, a) => s + a.quantite * a.prix_unitaire, 0);
   const totalTVA = Math.round(totalHT * tva / 100);
@@ -70,11 +75,11 @@ export default function QuotesPage() {
   };
 
   useEffect(() => {
-    const handler = () => openNew();
-    window.addEventListener('open-create-modal', handler);
-    return () => window.removeEventListener('open-create-modal', handler);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (createModalTrigger > triggerRef.current) {
+      openNew();
+    }
+    triggerRef.current = createModalTrigger;
+  }, [createModalTrigger]);
 
   const addLine = () => setArticles([...articles, { nom: '', quantite: 1, prix_unitaire: 0 }]);
   const removeLine = (i: number) => setArticles(articles.filter((_, idx) => idx !== i));
@@ -207,7 +212,7 @@ export default function QuotesPage() {
         {/* Mobile card view */}
         <div className="lg:hidden">
           {devis.isLoading ? <TableSkeleton rows={5} cols={3} /> : (
-            filtered.length ? filtered.map(d => (
+            pagination.items.length ? pagination.items.map(d => (
               <div key={d.id} className="px-4 py-3 border-b border-border">
                 <div className="flex items-center justify-between mb-1">
                   <div className="font-bold text-xs text-foreground">{d.numero}</div>
@@ -253,7 +258,7 @@ export default function QuotesPage() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.length ? filtered.map(d => (
+                {pagination.items.length ? pagination.items.map(d => (
                   <tr key={d.id} className="hover:bg-background transition-colors">
                     <td className="px-3.5 py-3 text-sm font-bold text-foreground border-b border-border">{d.numero}</td>
                     <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{cliName(d.client_id)}</td>
@@ -288,6 +293,7 @@ export default function QuotesPage() {
             </table>
           )}
         </div>
+        <PaginationControls {...pagination} />
       </div>
 
       <ConfirmDialog
