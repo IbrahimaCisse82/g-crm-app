@@ -218,13 +218,19 @@ export function useComptesTresorerie() {
     qc.invalidateQueries({ queryKey: key });
   };
 
+  const update = async (id: string, values: Partial<Omit<TablesInsert<'comptes_tresorerie'>, 'user_id'>>) => {
+    const { error } = await supabase.from('comptes_tresorerie').update(values).eq('id', id);
+    if (error) throw error;
+    qc.invalidateQueries({ queryKey: key });
+  };
+
   const remove = async (id: string) => {
     const { error } = await supabase.from('comptes_tresorerie').delete().eq('id', id);
     if (error) throw error;
     qc.invalidateQueries({ queryKey: key });
   };
 
-  return { data: query.data ?? [], isLoading: query.isLoading, add, remove };
+  return { data: query.data ?? [], isLoading: query.isLoading, add, update, remove };
 }
 
 export function useEntreprise() {
