@@ -86,6 +86,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <div className="lg:ml-[252px] flex-1 flex flex-col min-h-screen pt-[52px] lg:pt-0">
         <div className="hidden lg:flex h-14 bg-card border-b border-border items-center px-6 sticky top-0 z-[80] gap-3 shadow-card shrink-0">
           <h2 className="font-extrabold text-base flex-1 text-foreground tracking-tight">{sectionTitles[currentSection]}</h2>
+          <NotificationBell />
         </div>
 
         <div className="flex-1 p-4 lg:p-6 pb-20 lg:pb-6">
