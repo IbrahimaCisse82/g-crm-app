@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useApp } from '@/context/AppContext';
 import { StatusBadge, PayBadge } from '@/components/StatusBadge';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { PaginationControls } from '@/components/PaginationControls';
 import { TableSkeleton } from '@/components/LoadingSkeleton';
+import { usePagination } from '@/hooks/usePagination';
 import { toast } from 'sonner';
 import { downloadPdf } from '@/utils/generatePdf';
 import { formatDate } from '@/lib/formatDate';
