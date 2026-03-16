@@ -258,7 +258,7 @@ export default function QuotesPage() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.length ? filtered.map(d => (
+                {pagination.items.length ? pagination.items.map(d => (
                   <tr key={d.id} className="hover:bg-background transition-colors">
                     <td className="px-3.5 py-3 text-sm font-bold text-foreground border-b border-border">{d.numero}</td>
                     <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{cliName(d.client_id)}</td>

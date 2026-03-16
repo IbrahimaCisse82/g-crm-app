@@ -321,6 +321,7 @@ export default function InvoicesPage() {
             </table>
           )}
         </div>
+        <PaginationControls {...pagination} />
       </div>
 
       {/* Confirm delete */}
