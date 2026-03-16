@@ -18,7 +18,7 @@ const sectionTitles: Record<string, string> = {
 };
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const { currentSection, sidebarOpen, setSidebarOpen, logout } = useApp();
+  const { currentSection, sidebarOpen, setSidebarOpen, logout, factures, cliName, fmt } = useApp();
   const navigate = useNavigate();
   const [showTopMenu, setShowTopMenu] = React.useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
