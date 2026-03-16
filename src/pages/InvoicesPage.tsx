@@ -179,28 +179,48 @@ export default function InvoicesPage() {
     setDeleteTarget(null);
   };
 
-  const markPaid = async () => {
+  const openPayModal = (f: typeof factures.data[0]) => {
+    const reste = f.montant_ttc - (f.montant_regle || 0);
+    setPayTarget(f);
+    setPayAmount(String(reste));
+    setPayMode(f.mode_paiement || 'Espèce');
+  };
+
+  const submitPayment = async () => {
     if (!payTarget) return;
-    if (payTarget.statut === 'Payée') {
-      toast.info('Cette facture est déjà marquée comme payée');
-      setPayTarget(null);
+    const amount = Number(payAmount);
+    const reste = payTarget.montant_ttc - (payTarget.montant_regle || 0);
+    if (!amount || amount <= 0) {
+      toast.error('Montant invalide');
       return;
     }
+    if (amount > reste) {
+      toast.error(`Le montant ne peut pas dépasser le reste à payer (${fmt(reste)})`);
+      return;
+    }
+    setSaving(true);
     try {
-      await factures.update(payTarget.id, { statut: 'Payée', montant_regle: payTarget.montant_ttc });
+      const newRegle = (payTarget.montant_regle || 0) + amount;
+      const isFullyPaid = newRegle >= payTarget.montant_ttc;
+      await factures.update(payTarget.id, {
+        montant_regle: newRegle,
+        statut: isFullyPaid ? 'Payée' : 'Partielle',
+        mode_paiement: payMode,
+      });
       await journal.add({
-        libelle: `Paiement facture ${payTarget.numero}`,
+        libelle: `Paiement ${isFullyPaid ? 'total' : 'partiel'} facture ${payTarget.numero}`,
         type: 'Recette',
-        montant: payTarget.montant_ttc,
-        mode_paiement: payTarget.mode_paiement || 'Espèce',
+        montant: amount,
+        mode_paiement: payMode,
         categorie: 'Vente',
         date_operation: new Date().toISOString().slice(0, 10),
         facture_id: payTarget.id,
       });
-      toast.success('Facture marquée comme payée + écriture journal');
+      toast.success(isFullyPaid ? 'Facture entièrement payée' : `Paiement partiel de ${fmt(amount)} enregistré`);
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : 'Erreur');
     }
+    setSaving(false);
     setPayTarget(null);
   };
 
