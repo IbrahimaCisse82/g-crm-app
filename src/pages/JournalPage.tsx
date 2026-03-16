@@ -3,6 +3,7 @@ import { useApp } from '@/context/AppContext';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { TableSkeleton } from '@/components/LoadingSkeleton';
 import { toast } from 'sonner';
+import { formatDate } from '@/lib/formatDate';
 import { JOURNAL_CATEGORIES, PAYMENT_MODES } from '@/types';
 
 export default function JournalPage() {
@@ -110,7 +111,7 @@ export default function JournalPage() {
               <div key={j.id} className="px-4 py-3 border-b border-border flex items-center justify-between gap-2">
                 <div className="min-w-0 flex-1">
                   <div className="font-bold text-xs text-foreground truncate">{j.libelle || '—'}</div>
-                  <div className="text-[10px] text-muted-foreground truncate">{j.date_operation} · {j.mode_paiement} {j.categorie ? `· ${j.categorie}` : ''}</div>
+                  <div className="text-[10px] text-muted-foreground truncate">{formatDate(j.date_operation)} · {j.mode_paiement} {j.categorie ? `· ${j.categorie}` : ''}</div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <span className={`font-bold text-sm ${j.type === 'Recette' ? 'text-success' : 'text-destructive'}`}>
@@ -142,7 +143,7 @@ export default function JournalPage() {
               <tbody>
                 {filtered.length ? filtered.map(j => (
                   <tr key={j.id} className="hover:bg-background transition-colors">
-                    <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{j.date_operation || '—'}</td>
+                    <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{formatDate(j.date_operation)}</td>
                     <td className="px-3.5 py-3 text-sm border-b border-border">
                       <div className="font-bold text-foreground">{j.libelle || '—'}</div>
                       <div className="text-[10.5px] text-muted-foreground">{j.categorie || ''}</div>

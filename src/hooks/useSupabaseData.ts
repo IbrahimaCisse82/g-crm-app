@@ -3,6 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import type { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
 
+const QUERY_LIMIT = 500;
+
 export function useClients() {
   const { user } = useAuth();
   const qc = useQueryClient();
@@ -11,7 +13,7 @@ export function useClients() {
   const query = useQuery({
     queryKey: key,
     queryFn: async () => {
-      const { data, error } = await supabase.from('clients').select('*').order('created_at', { ascending: false });
+      const { data, error } = await supabase.from('clients').select('*').order('created_at', { ascending: false }).limit(QUERY_LIMIT);
       if (error) throw error;
       return data;
     },
@@ -47,7 +49,7 @@ export function useFactures() {
   const query = useQuery({
     queryKey: key,
     queryFn: async () => {
-      const { data, error } = await supabase.from('factures').select('*').order('date_facture', { ascending: false });
+      const { data, error } = await supabase.from('factures').select('*').order('date_facture', { ascending: false }).limit(QUERY_LIMIT);
       if (error) throw error;
       return data;
     },
@@ -72,7 +74,13 @@ export function useFactures() {
     qc.invalidateQueries({ queryKey: key });
   };
 
-  return { data: query.data ?? [], isLoading: query.isLoading, add, update, remove };
+  const nextNumero = async (): Promise<string> => {
+    const { data, error } = await supabase.rpc('next_facture_numero');
+    if (error) throw error;
+    return data as string;
+  };
+
+  return { data: query.data ?? [], isLoading: query.isLoading, add, update, remove, nextNumero };
 }
 
 export function useDevis() {
@@ -83,7 +91,7 @@ export function useDevis() {
   const query = useQuery({
     queryKey: key,
     queryFn: async () => {
-      const { data, error } = await supabase.from('devis').select('*').order('date_devis', { ascending: false });
+      const { data, error } = await supabase.from('devis').select('*').order('date_devis', { ascending: false }).limit(QUERY_LIMIT);
       if (error) throw error;
       return data;
     },
@@ -108,7 +116,13 @@ export function useDevis() {
     qc.invalidateQueries({ queryKey: key });
   };
 
-  return { data: query.data ?? [], isLoading: query.isLoading, add, update, remove };
+  const nextNumero = async (): Promise<string> => {
+    const { data, error } = await supabase.rpc('next_devis_numero');
+    if (error) throw error;
+    return data as string;
+  };
+
+  return { data: query.data ?? [], isLoading: query.isLoading, add, update, remove, nextNumero };
 }
 
 export function useProduits() {
@@ -119,7 +133,7 @@ export function useProduits() {
   const query = useQuery({
     queryKey: key,
     queryFn: async () => {
-      const { data, error } = await supabase.from('produits').select('*').order('nom', { ascending: true });
+      const { data, error } = await supabase.from('produits').select('*').order('nom', { ascending: true }).limit(QUERY_LIMIT);
       if (error) throw error;
       return data;
     },
@@ -155,7 +169,7 @@ export function useJournal() {
   const query = useQuery({
     queryKey: key,
     queryFn: async () => {
-      const { data, error } = await supabase.from('journal').select('*').order('date_operation', { ascending: false });
+      const { data, error } = await supabase.from('journal').select('*').order('date_operation', { ascending: false }).limit(QUERY_LIMIT);
       if (error) throw error;
       return data;
     },
@@ -191,7 +205,7 @@ export function useComptesTresorerie() {
   const query = useQuery({
     queryKey: key,
     queryFn: async () => {
-      const { data, error } = await supabase.from('comptes_tresorerie').select('*');
+      const { data, error } = await supabase.from('comptes_tresorerie').select('*').limit(QUERY_LIMIT);
       if (error) throw error;
       return data;
     },

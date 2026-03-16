@@ -110,16 +110,33 @@ export default function AppSidebar() {
         </nav>
 
         <div className="p-2.5 px-3 border-t border-sidebar-border shrink-0">
-          <div className="flex items-center gap-2.5 p-1.5 rounded-lg cursor-pointer hover:bg-sidebar-hover transition-colors group" onClick={logout}>
-            <div className="w-[34px] h-[34px] rounded-[9px] bg-gradient-to-br from-primary to-secondary flex items-center justify-center font-bold text-xs text-primary-foreground relative shrink-0 shadow-md">
-              {initials}
-              <div className="absolute -bottom-px -right-px w-[9px] h-[9px] rounded-full bg-success border-2 border-card" />
+          <div className="relative group">
+            <div className="flex items-center gap-2.5 p-1.5 rounded-lg cursor-pointer hover:bg-sidebar-hover transition-colors">
+              <div className="w-[34px] h-[34px] rounded-[9px] bg-gradient-to-br from-primary to-secondary flex items-center justify-center font-bold text-xs text-primary-foreground relative shrink-0 shadow-md">
+                {initials}
+                <div className="absolute -bottom-px -right-px w-[9px] h-[9px] rounded-full bg-success border-2 border-card" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-xs font-semibold text-foreground truncate">{userName || 'Utilisateur'}</div>
+                <div className="text-[10px] text-muted-foreground">{companyName}</div>
+              </div>
+              <span className="text-muted-foreground text-sm group-hover:text-foreground transition-colors">⋮</span>
             </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-xs font-semibold text-foreground truncate">{userName || 'Utilisateur'}</div>
-              <div className="text-[10px] text-muted-foreground">Déconnexion</div>
+            <div className="absolute bottom-full left-0 right-0 mb-1 bg-card border border-border rounded-xl shadow-elevated py-1 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-[300]">
+              <button
+                onClick={() => goTo('entreprise')}
+                className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-foreground hover:bg-accent/10 transition-colors"
+              >
+                ⚙️ Mon entreprise
+              </button>
+              <div className="h-px bg-border mx-2 my-0.5" />
+              <button
+                onClick={logout}
+                className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-destructive hover:bg-destructive/10 transition-colors"
+              >
+                🚪 Déconnexion
+              </button>
             </div>
-            <span className="text-muted-foreground text-sm group-hover:text-foreground transition-colors">⋮</span>
           </div>
         </div>
       </aside>

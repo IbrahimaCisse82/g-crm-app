@@ -6,6 +6,7 @@ import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { TableSkeleton } from '@/components/LoadingSkeleton';
 import { toast } from 'sonner';
 import { downloadPdf } from '@/utils/generatePdf';
+import { formatDate } from '@/lib/formatDate';
 import type { ArticleLine } from '@/types';
 import type { Json } from '@/integrations/supabase/types';
 
@@ -19,6 +20,7 @@ export default function QuotesPage() {
   const [form, setForm] = useState({ client_id: '', date_devis: new Date().toISOString().slice(0, 10), validite_jours: 30, notes: '' });
   const [articles, setArticles] = useState<ArticleLine[]>([{ nom: '', quantite: 1, prix_unitaire: 0 }]);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; numero: string } | null>(null);
+  const [saving, setSaving] = useState(false);
 
   // Auto-detect expired quotes
   const today = new Date().toISOString().slice(0, 10);
@@ -93,10 +95,15 @@ export default function QuotesPage() {
       return;
     }
     const validArticles = articles.filter(a => a.nom);
+    if (validArticles.some(a => a.quantite <= 0 || a.prix_unitaire < 0)) {
+      toast.error('Vérifiez les quantités et prix des articles');
+      return;
+    }
     const ht = validArticles.reduce((s, a) => s + a.quantite * a.prix_unitaire, 0);
     const tvaMontant = Math.round(ht * tva / 100);
     const ttc = ht + tvaMontant;
 
+    setSaving(true);
     try {
       if (editId) {
         await devis.update(editId, {
@@ -111,7 +118,7 @@ export default function QuotesPage() {
         });
         toast.success('Devis modifié');
       } else {
-        const numero = `DEV-${Date.now().toString(36).toUpperCase()}`;
+        const numero = await devis.nextNumero();
         await devis.add({
           numero,
           client_id: form.client_id,
@@ -130,6 +137,7 @@ export default function QuotesPage() {
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : 'Erreur');
     }
+    setSaving(false);
   };
 
   const updateStatus = async (id: string, statut: string) => {
@@ -143,7 +151,7 @@ export default function QuotesPage() {
 
   const convertToInvoice = async (d: typeof devis.data[0]) => {
     try {
-      const numero = `FAC-${Date.now().toString(36).toUpperCase()}`;
+      const numero = await factures.nextNumero();
       await factures.add({
         numero,
         client_id: d.client_id,
@@ -155,7 +163,7 @@ export default function QuotesPage() {
         mode_paiement: 'Espèce',
         date_facture: new Date().toISOString().slice(0, 10),
         statut: 'En attente',
-        notes: d.notes, // FIX: transfer notes from devis to facture
+        notes: d.notes,
       });
       await devis.update(d.id, { statut: 'Converti' });
       toast.success('Devis converti en facture !');
@@ -206,7 +214,7 @@ export default function QuotesPage() {
                   <StatusBadge status={d.statut} />
                 </div>
                 <div className="flex items-center justify-between">
-                  <div className="text-[10.5px] text-muted-foreground truncate">{cliName(d.client_id)} · {d.date_devis}</div>
+                  <div className="text-[10.5px] text-muted-foreground truncate">{cliName(d.client_id)} · {formatDate(d.date_devis)}</div>
                   <span className="font-bold text-sm text-foreground">{fmt(d.montant_ttc)}</span>
                 </div>
                 <div className="flex gap-1 mt-2">
@@ -250,7 +258,7 @@ export default function QuotesPage() {
                     <td className="px-3.5 py-3 text-sm font-bold text-foreground border-b border-border">{d.numero}</td>
                     <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{cliName(d.client_id)}</td>
                     <td className="px-3.5 py-3 text-sm font-bold text-foreground border-b border-border">{fmt(d.montant_ttc)}</td>
-                    <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{d.date_devis}</td>
+                    <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{formatDate(d.date_devis)}</td>
                     <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{d.validite_jours} jours</td>
                     <td className="px-3.5 py-3 text-sm border-b border-border"><StatusBadge status={d.statut} /></td>
                     <td className="px-3.5 py-3 text-sm border-b border-border">
@@ -309,7 +317,7 @@ export default function QuotesPage() {
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Validité (jours)</label>
-                  <input type="number" className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.validite_jours} onChange={e => setForm({ ...form, validite_jours: Number(e.target.value) })} />
+                  <input type="number" min="1" className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.validite_jours} onChange={e => setForm({ ...form, validite_jours: Number(e.target.value) })} />
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Date devis</label>
@@ -323,45 +331,44 @@ export default function QuotesPage() {
                   <button onClick={addLine} className="text-xs text-primary font-bold hover:underline">＋ Ajouter</button>
                 </div>
                 {articles.map((a, i) => (
-                  <div key={i} className="flex gap-2 mb-2 items-end">
-                    <div className="flex-1 flex flex-col gap-1">
-                      {i === 0 && <span className="text-[10px] text-muted-foreground">Produit</span>}
-                      <select className="bg-background border-[1.5px] border-border rounded-lg py-2 px-2 text-xs text-foreground outline-none font-sans focus:border-primary w-full" value="" onChange={e => selectProduct(i, e.target.value)}>
-                        <option value="">Choisir...</option>
-                        {produits.data.map(p => <option key={p.id} value={p.id}>{p.nom} — {fmt(p.prix)}</option>)}
+                  <div key={i} className="flex gap-2 items-end mb-2 flex-wrap">
+                    <div className="flex-1 min-w-[140px]">
+                      <select
+                        className="bg-background border-[1.5px] border-border rounded-lg py-2 px-2.5 text-xs text-foreground outline-none font-sans focus:border-primary w-full mb-1"
+                        value=""
+                        onChange={e => selectProduct(i, e.target.value)}
+                      >
+                        <option value="">📦 Choisir produit...</option>
+                        {produits.data.map(p => <option key={p.id} value={p.id}>{p.nom} ({fmt(p.prix)})</option>)}
                       </select>
+                      <input className="bg-background border-[1.5px] border-border rounded-lg py-2 px-2.5 text-xs text-foreground outline-none font-sans focus:border-primary w-full" placeholder="Désignation" value={a.nom} onChange={e => updateArticle(i, 'nom', e.target.value)} />
                     </div>
-                    <div className="flex-1 flex flex-col gap-1">
-                      {i === 0 && <span className="text-[10px] text-muted-foreground">Désignation</span>}
-                      <input className="bg-background border-[1.5px] border-border rounded-lg py-2 px-2 text-xs text-foreground outline-none font-sans focus:border-primary w-full" value={a.nom} onChange={e => updateArticle(i, 'nom', e.target.value)} placeholder="Nom" />
-                    </div>
-                    <div className="w-16 flex flex-col gap-1">
-                      {i === 0 && <span className="text-[10px] text-muted-foreground">Qté</span>}
-                      <input type="number" min={1} className="bg-background border-[1.5px] border-border rounded-lg py-2 px-2 text-xs text-foreground outline-none font-sans focus:border-primary w-full" value={a.quantite} onChange={e => updateArticle(i, 'quantite', Number(e.target.value))} />
-                    </div>
-                    <div className="w-24 flex flex-col gap-1">
-                      {i === 0 && <span className="text-[10px] text-muted-foreground">Prix U.</span>}
-                      <input type="number" className="bg-background border-[1.5px] border-border rounded-lg py-2 px-2 text-xs text-foreground outline-none font-sans focus:border-primary w-full" value={a.prix_unitaire} onChange={e => updateArticle(i, 'prix_unitaire', Number(e.target.value))} />
-                    </div>
-                    {articles.length > 1 && <button onClick={() => removeLine(i)} className="text-destructive text-sm mb-0.5">✕</button>}
+                    <input type="number" min="1" className="bg-background border-[1.5px] border-border rounded-lg py-2 px-2.5 text-xs text-foreground outline-none font-sans focus:border-primary w-16" placeholder="Qté" value={a.quantite} onChange={e => updateArticle(i, 'quantite', Number(e.target.value))} />
+                    <input type="number" min="0" className="bg-background border-[1.5px] border-border rounded-lg py-2 px-2.5 text-xs text-foreground outline-none font-sans focus:border-primary w-24" placeholder="Prix" value={a.prix_unitaire} onChange={e => updateArticle(i, 'prix_unitaire', Number(e.target.value))} />
+                    <span className="text-xs font-bold text-foreground w-24 text-right">{fmt(a.quantite * a.prix_unitaire)}</span>
+                    {articles.length > 1 && (
+                      <button onClick={() => removeLine(i)} className="text-destructive text-xs px-1">✕</button>
+                    )}
                   </div>
                 ))}
               </div>
 
-              <div className="bg-background border-[1.5px] border-border rounded-xl p-3 space-y-1 text-sm">
-                <div className="flex justify-between"><span className="text-muted-foreground">Total HT</span><span className="font-bold">{fmt(totalHT)}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">TVA ({tva}%)</span><span className="font-bold">{fmt(totalTVA)}</span></div>
-                <div className="flex justify-between border-t border-border pt-1 mt-1"><span className="font-bold">Total TTC</span><span className="font-black text-primary">{fmt(totalTTC)}</span></div>
+              <div className="bg-background border border-border rounded-lg p-3 mb-3.5">
+                <div className="flex justify-between text-xs mb-1"><span>Total HT</span><span className="font-bold">{fmt(totalHT)}</span></div>
+                <div className="flex justify-between text-xs mb-1"><span>TVA ({tva}%)</span><span className="font-bold">{fmt(totalTVA)}</span></div>
+                <div className="flex justify-between text-sm font-black border-t border-border pt-1.5 mt-1.5"><span>Total TTC</span><span className="text-primary">{fmt(totalTTC)}</span></div>
               </div>
 
-              <div className="mt-3 flex flex-col gap-1.5">
+              <div className="flex flex-col gap-1.5">
                 <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Notes</label>
-                <textarea className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans resize-y min-h-[60px] focus:border-primary w-full" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} />
+                <textarea className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans resize-y min-h-[60px] focus:border-primary w-full" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} maxLength={500} />
               </div>
             </div>
             <div className="px-5 py-3.5 border-t border-border flex gap-2 justify-end">
               <button onClick={() => setShowModal(false)} className="bg-card border-[1.5px] border-border text-muted-foreground py-2 px-4 rounded-lg text-xs font-bold hover:bg-background transition-all">Annuler</button>
-              <button onClick={save} className="gradient-primary text-primary-foreground border-none py-2 px-4 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all">💾 {editId ? 'Modifier' : 'Créer le devis'}</button>
+              <button onClick={save} disabled={saving} className="gradient-primary text-primary-foreground border-none py-2 px-4 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all disabled:opacity-60">
+                {saving ? '⏳ Enregistrement...' : '💾 Enregistrer'}
+              </button>
             </div>
           </div>
         </div>

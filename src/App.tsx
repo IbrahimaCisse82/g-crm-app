@@ -4,6 +4,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import LoginPage from '@/pages/LoginPage';
+import ForgotPasswordPage from '@/pages/ForgotPasswordPage';
+import ResetPasswordPage from '@/pages/ResetPasswordPage';
 import LandingPage from '@/pages/LandingPage';
 import CGUPage from '@/pages/CGUPage';
 import PrivacyPage from '@/pages/PrivacyPage';
@@ -43,6 +45,8 @@ function AppContent() {
         <Route path="/confidentialite" element={<PrivacyPage />} />
         <Route path="/protection-donnees" element={<DataProtectionPage />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="*" element={<LandingPage />} />
       </Routes>
     );

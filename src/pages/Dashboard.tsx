@@ -2,6 +2,7 @@ import { useApp } from '@/context/AppContext';
 import { useNavigate } from 'react-router-dom';
 import { StatusBadge } from '@/components/StatusBadge';
 import { CardSkeleton, TableSkeleton } from '@/components/LoadingSkeleton';
+import { formatDate } from '@/lib/formatDate';
 
 function StatCard({ icon, value, label, sub }: { icon: string; value: string; label: string; sub?: string }) {
   return (
@@ -104,7 +105,7 @@ export default function Dashboard() {
             <div key={j.id} className="flex justify-between px-4 py-2.5 border-b border-border text-xs">
               <div>
                 <div className="font-semibold text-foreground">{j.libelle || '—'}</div>
-                <div className="text-[10.5px] text-muted-foreground">{j.date_operation} · {j.mode_paiement}</div>
+                <div className="text-[10.5px] text-muted-foreground">{formatDate(j.date_operation)} · {j.mode_paiement}</div>
               </div>
               <div className={`font-bold ${j.type === 'Recette' ? 'text-success' : 'text-destructive'}`}>
                 {j.type === 'Recette' ? '+' : '-'}{fmt(j.montant || 0)}
@@ -128,7 +129,7 @@ export default function Dashboard() {
             <div key={f.id} className="px-4 py-3 border-b border-border flex items-center justify-between" onClick={() => navigate('/factures')}>
               <div className="min-w-0 flex-1">
                 <div className="font-bold text-xs text-foreground truncate">{f.numero}</div>
-                <div className="text-[10.5px] text-muted-foreground truncate">{cliName(f.client_id)} · {f.date_facture}</div>
+                <div className="text-[10.5px] text-muted-foreground truncate">{cliName(f.client_id)} · {formatDate(f.date_facture)}</div>
               </div>
               <div className="flex items-center gap-2 shrink-0 ml-2">
                 <span className="font-bold text-xs text-foreground">{fmt(f.montant_ttc)}</span>
@@ -156,7 +157,7 @@ export default function Dashboard() {
                   <td className="px-3.5 py-3 text-sm font-bold text-foreground border-b border-border">{f.numero}</td>
                   <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{cliName(f.client_id)}</td>
                   <td className="px-3.5 py-3 text-sm font-bold text-foreground border-b border-border">{fmt(f.montant_ttc)}</td>
-                  <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{f.date_facture}</td>
+                  <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{formatDate(f.date_facture)}</td>
                   <td className="px-3.5 py-3 text-sm border-b border-border">
                     <StatusBadge status={f.statut} />
                   </td>
