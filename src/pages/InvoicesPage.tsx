@@ -31,6 +31,8 @@ export default function InvoicesPage() {
   const [articles, setArticles] = useState<ArticleLine[]>([{ nom: '', quantite: 1, prix_unitaire: 0 }]);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; numero: string } | null>(null);
   const [payTarget, setPayTarget] = useState<typeof factures.data[0] | null>(null);
+  const [payAmount, setPayAmount] = useState('');
+  const [payMode, setPayMode] = useState('Espèce');
   const [saving, setSaving] = useState(false);
 
   // Auto-detect overdue invoices
