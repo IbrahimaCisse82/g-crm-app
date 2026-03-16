@@ -143,7 +143,7 @@ export default function JournalPage() {
               <tbody>
                 {filtered.length ? filtered.map(j => (
                   <tr key={j.id} className="hover:bg-background transition-colors">
-                    <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{j.date_operation || '—'}</td>
+                    <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{formatDate(j.date_operation)}</td>
                     <td className="px-3.5 py-3 text-sm border-b border-border">
                       <div className="font-bold text-foreground">{j.libelle || '—'}</div>
                       <div className="text-[10.5px] text-muted-foreground">{j.categorie || ''}</div>
