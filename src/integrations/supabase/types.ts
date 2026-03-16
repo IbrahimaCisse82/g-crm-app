@@ -398,6 +398,8 @@ export type Database = {
     }
     Functions: {
       is_owner: { Args: { row_user_id: string }; Returns: boolean }
+      next_devis_numero: { Args: never; Returns: string }
+      next_facture_numero: { Args: never; Returns: string }
     }
     Enums: {
       [_ in never]: never
