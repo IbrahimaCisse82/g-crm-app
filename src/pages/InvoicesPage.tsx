@@ -312,9 +312,11 @@ export default function InvoicesPage() {
                   <tr key={f.id} className="hover:bg-background transition-colors">
                     <td className="px-3.5 py-3 text-sm font-bold text-foreground border-b border-border">{f.numero}</td>
                     <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{cliName(f.client_id)}</td>
-                    <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{fmt(f.montant_ht)}</td>
-                    <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{fmt(f.montant_tva)}</td>
                     <td className="px-3.5 py-3 text-sm font-bold text-foreground border-b border-border">{fmt(f.montant_ttc)}</td>
+                    <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{fmt(f.montant_regle)}</td>
+                    <td className="px-3.5 py-3 text-sm font-bold border-b border-border">
+                      <span className={f.montant_ttc - f.montant_regle > 0 ? 'text-destructive' : 'text-success'}>{fmt(f.montant_ttc - f.montant_regle)}</span>
+                    </td>
                     <td className="px-3.5 py-3 text-sm border-b border-border">
                       <PayBadge mode={f.mode_paiement || ''} />
                     </td>
