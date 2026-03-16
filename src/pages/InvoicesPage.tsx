@@ -44,6 +44,8 @@ export default function InvoicesPage() {
 
   let filtered = enrichedData;
   if (statFilter) filtered = filtered.filter(f => f.statut === statFilter);
+  const pagination = usePagination(filtered);
+
   if (search) {
     const q = search.toLowerCase();
     filtered = filtered.filter(f => f.numero?.toLowerCase().includes(q) || cliName(f.client_id).toLowerCase().includes(q));
