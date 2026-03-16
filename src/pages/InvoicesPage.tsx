@@ -243,6 +243,7 @@ export default function InvoicesPage() {
             >
               <option value="">Tous statuts</option>
               <option>Payée</option>
+              <option>Partielle</option>
               <option>En attente</option>
               <option>En retard</option>
               <option>Annulée</option>
