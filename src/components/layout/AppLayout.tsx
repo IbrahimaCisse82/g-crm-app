@@ -79,6 +79,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               </button>
             </div>
           )}
+          </div>
         </div>
       </div>
 
