@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useRef, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import { useNavigate } from 'react-router-dom';
 import { Building2, LogOut, Package } from 'lucide-react';
@@ -14,13 +14,6 @@ const sectionTitles: Record<string, string> = {
   caisse: 'Caisse & Trésorerie',
   entreprise: 'Infos Entreprise',
 };
-
-const quickActions = [
-  { path: '/factures', label: '🧾 Facture' },
-  { path: '/devis', label: '📋 Devis' },
-  { path: '/journal', label: '📒 Transaction' },
-  { path: '/clients', label: '👥 Client' },
-];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { currentSection, sidebarOpen, setSidebarOpen, logout, triggerCreateModal } = useApp();
