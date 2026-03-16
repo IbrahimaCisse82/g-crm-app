@@ -18,7 +18,10 @@ export default function JournalPage() {
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
-  const [form, setForm] = useState({ libelle: '', type: 'Recette', montant: 0, mode_paiement: 'Espèce', categorie: '', compte: '', date_operation: new Date().toISOString().slice(0, 10) });
+  const [form, setForm] = useState({ libelle: '', type: 'Recette', montant: 0, mode_paiement: 'Espèce', categorie: '', compte: '', date_operation: new Date().toISOString().slice(0, 10), facture_id: '' });
+
+  // Factures en attente de paiement (non payées ou partielles)
+  const pendingInvoices = factures.data.filter(f => f.statut !== 'Payée' && f.montant_ttc > (f.montant_regle || 0));
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; libelle: string } | null>(null);
   const triggerRef = useRef(createModalTrigger);
 
