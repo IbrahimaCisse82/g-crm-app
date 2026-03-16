@@ -1,21 +1,30 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useApp } from '@/context/AppContext';
 import { StatusBadge } from '@/components/StatusBadge';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { PaginationControls } from '@/components/PaginationControls';
 import { TableSkeleton } from '@/components/LoadingSkeleton';
+import { usePagination } from '@/hooks/usePagination';
 import { toast } from 'sonner';
 
 export default function ClientsPage() {
-  const { clients, factures, devis } = useApp();
-  const [filter, setFilter] = useState('');
+  const { clients, factures, devis, createModalTrigger } = useApp();
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({ prenom: '', nom: '', email: '', telephone: '', entreprise: '', statut: 'Actif', adresse: '', notes: '' });
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+  const triggerRef = useRef(createModalTrigger);
 
-  const filtered = filter
-    ? clients.data.filter(c => c.statut === filter || (c.nom + c.prenom + c.entreprise + c.email).toLowerCase().includes(filter.toLowerCase()))
-    : clients.data;
+  let filtered = clients.data;
+  if (statusFilter) filtered = filtered.filter(c => c.statut === statusFilter);
+  if (search) {
+    const q = search.toLowerCase();
+    filtered = filtered.filter(c => (c.nom + ' ' + c.prenom + ' ' + c.entreprise + ' ' + c.email + ' ' + c.telephone).toLowerCase().includes(q));
+  }
+
+  const pagination = usePagination(filtered);
 
   const openNew = () => {
     setEditId(null);
@@ -23,12 +32,13 @@ export default function ClientsPage() {
     setShowModal(true);
   };
 
+  // Listen to context-based create trigger instead of CustomEvent
   useEffect(() => {
-    const handler = () => openNew();
-    window.addEventListener('open-create-modal', handler);
-    return () => window.removeEventListener('open-create-modal', handler);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (createModalTrigger > triggerRef.current) {
+      openNew();
+    }
+    triggerRef.current = createModalTrigger;
+  }, [createModalTrigger]);
 
   const openEdit = (c: typeof clients.data[0]) => {
     setEditId(c.id);
@@ -37,7 +47,7 @@ export default function ClientsPage() {
   };
 
   const save = async () => {
-    if (!form.prenom && !form.nom) return;
+    if (!form.prenom && !form.nom) { toast.error('Renseignez au moins le prénom ou le nom'); return; }
     try {
       if (editId) {
         await clients.update(editId, form);
@@ -53,7 +63,6 @@ export default function ClientsPage() {
 
   const del = async () => {
     if (!deleteTarget) return;
-    // Check for linked invoices/quotes
     const linkedFacs = factures.data.filter(f => f.client_id === deleteTarget.id);
     const linkedDevis = devis.data.filter(d => d.client_id === deleteTarget.id);
     if (linkedFacs.length > 0 || linkedDevis.length > 0) {
@@ -76,10 +85,16 @@ export default function ClientsPage() {
         <div className="px-4 py-3 border-b border-border flex items-center justify-between flex-wrap gap-2">
           <h3 className="font-extrabold text-sm text-foreground">Clients ({filtered.length})</h3>
           <div className="flex gap-2 items-center">
+            <input
+              className="bg-background border-[1.5px] border-border rounded-lg py-1 px-2.5 text-xs text-foreground outline-none w-[140px] font-sans placeholder:text-muted-foreground focus:border-primary focus:ring-[3px] focus:ring-primary/10"
+              placeholder="🔍 Rechercher..."
+              value={search}
+              onChange={e => { setSearch(e.target.value); pagination.resetPage(); }}
+            />
             <select
               className="bg-background border-[1.5px] border-border rounded-lg py-1 px-2 text-xs text-foreground outline-none font-sans"
-              value={filter}
-              onChange={e => setFilter(e.target.value)}
+              value={statusFilter}
+              onChange={e => { setStatusFilter(e.target.value); pagination.resetPage(); }}
             >
               <option value="">Tous</option>
               <option>Actif</option>
@@ -94,7 +109,7 @@ export default function ClientsPage() {
         {/* Mobile card view */}
         <div className="lg:hidden">
           {clients.isLoading ? <TableSkeleton rows={5} cols={3} /> : (
-            filtered.length ? filtered.map(c => (
+            pagination.items.length ? pagination.items.map(c => (
               <div key={c.id} className="px-4 py-3 border-b border-border flex items-center justify-between gap-2">
                 <div className="min-w-0 flex-1">
                   <div className="font-bold text-sm text-foreground truncate">{c.prenom} {c.nom}</div>
@@ -127,7 +142,7 @@ export default function ClientsPage() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.length ? filtered.map(c => (
+                {pagination.items.length ? pagination.items.map(c => (
                   <tr key={c.id} className="hover:bg-background transition-colors">
                     <td className="px-3.5 py-3 text-sm font-bold text-foreground border-b border-border">{c.prenom} {c.nom}</td>
                     <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{c.email || '—'}</td>
@@ -151,6 +166,7 @@ export default function ClientsPage() {
             </table>
           )}
         </div>
+        <PaginationControls {...pagination} />
       </div>
 
       <ConfirmDialog

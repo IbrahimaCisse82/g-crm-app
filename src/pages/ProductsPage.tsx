@@ -1,28 +1,40 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useApp } from '@/context/AppContext';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { PaginationControls } from '@/components/PaginationControls';
 import { TableSkeleton } from '@/components/LoadingSkeleton';
+import { usePagination } from '@/hooks/usePagination';
 import { toast } from 'sonner';
 
 export default function ProductsPage() {
-  const { produits, fmt } = useApp();
+  const { produits, fmt, createModalTrigger } = useApp();
+  const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({ nom: '', type: 'Service', prix: 0, unite: 'forfait', description: '' });
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; nom: string } | null>(null);
+  const triggerRef = useRef(createModalTrigger);
+
+  let filtered = produits.data;
+  if (search) {
+    const q = search.toLowerCase();
+    filtered = filtered.filter(p => (p.nom + ' ' + p.description + ' ' + p.type).toLowerCase().includes(q));
+  }
+
+  const pagination = usePagination(filtered);
 
   const openNew = () => { setEditId(null); setForm({ nom: '', type: 'Service', prix: 0, unite: 'forfait', description: '' }); setShowModal(true); };
   const openEdit = (p: typeof produits.data[0]) => { setEditId(p.id); setForm({ nom: p.nom, type: p.type || 'Service', prix: p.prix, unite: p.unite || 'forfait', description: p.description || '' }); setShowModal(true); };
 
   useEffect(() => {
-    const handler = () => openNew();
-    window.addEventListener('open-create-modal', handler);
-    return () => window.removeEventListener('open-create-modal', handler);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (createModalTrigger > triggerRef.current) {
+      openNew();
+    }
+    triggerRef.current = createModalTrigger;
+  }, [createModalTrigger]);
 
   const save = async () => {
-    if (!form.nom) return;
+    if (!form.nom) { toast.error('Renseignez le nom du produit'); return; }
     try {
       if (editId) await produits.update(editId, form);
       else await produits.add(form);
@@ -45,14 +57,22 @@ export default function ProductsPage() {
   return (
     <div>
       <div className="bg-card border border-border rounded-xl overflow-hidden shadow-card">
-        <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-          <h3 className="font-extrabold text-sm text-foreground">Produits & Services</h3>
-          <button onClick={openNew} className="gradient-primary text-primary-foreground border-none py-1.5 px-3 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all">＋ Nouveau</button>
+        <div className="px-4 py-3 border-b border-border flex items-center justify-between flex-wrap gap-2">
+          <h3 className="font-extrabold text-sm text-foreground">Produits & Services ({filtered.length})</h3>
+          <div className="flex gap-2 items-center">
+            <input
+              className="bg-background border-[1.5px] border-border rounded-lg py-1 px-2.5 text-xs text-foreground outline-none w-[140px] font-sans placeholder:text-muted-foreground focus:border-primary focus:ring-[3px] focus:ring-primary/10"
+              placeholder="🔍 Rechercher..."
+              value={search}
+              onChange={e => { setSearch(e.target.value); pagination.resetPage(); }}
+            />
+            <button onClick={openNew} className="gradient-primary text-primary-foreground border-none py-1.5 px-3 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all">＋ Nouveau</button>
+          </div>
         </div>
         {/* Mobile card view */}
         <div className="lg:hidden">
           {produits.isLoading ? <TableSkeleton rows={5} cols={3} /> : (
-            produits.data.length ? produits.data.map(p => (
+            pagination.items.length ? pagination.items.map(p => (
               <div key={p.id} className="px-4 py-3 border-b border-border flex items-center justify-between gap-2">
                 <div className="min-w-0 flex-1">
                   <div className="font-bold text-sm text-foreground truncate">{p.nom}</div>
@@ -85,7 +105,7 @@ export default function ProductsPage() {
                 </tr>
               </thead>
               <tbody>
-                {produits.data.length ? produits.data.map(p => (
+                {pagination.items.length ? pagination.items.map(p => (
                   <tr key={p.id} className="hover:bg-background transition-colors">
                     <td className="px-3.5 py-3 text-sm font-bold text-foreground border-b border-border">{p.nom}</td>
                     <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{p.type}</td>
@@ -109,6 +129,7 @@ export default function ProductsPage() {
             </table>
           )}
         </div>
+        <PaginationControls {...pagination} />
       </div>
 
       <ConfirmDialog

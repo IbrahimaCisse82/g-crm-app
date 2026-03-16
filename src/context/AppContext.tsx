@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useCallback } from 'react';
+import React, { createContext, useContext, useCallback, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useClients, useFactures, useDevis, useProduits, useJournal, useComptesTresorerie, useEntreprise } from '@/hooks/useSupabaseData';
@@ -22,6 +22,9 @@ interface AppContextType {
   entreprise: ReturnType<typeof useEntreprise>;
   cliName: (id: string | null) => string;
   fmt: (n: number) => string;
+  // Create modal trigger
+  createModalTrigger: number;
+  triggerCreateModal: () => void;
 }
 
 const AppContext = createContext<AppContextType | null>(null);
@@ -31,6 +34,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
+  const [createModalTrigger, setCreateModalTrigger] = useState(0);
 
   const currentSection: Section = pathToSection[location.pathname] || 'dashboard';
 
@@ -65,12 +69,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return new Intl.NumberFormat('fr-FR').format(Math.round(n || 0)) + ' ' + devise;
   }, [entreprise.data?.devise]);
 
+  const triggerCreateModal = useCallback(() => {
+    setCreateModalTrigger(prev => prev + 1);
+  }, []);
+
   return (
     <AppContext.Provider value={{
       currentSection, setCurrentSection, sidebarOpen, setSidebarOpen,
       isLoggedIn, userName, logout,
       clients, factures, devis, produits, journal, comptes, entreprise,
       cliName, fmt,
+      createModalTrigger, triggerCreateModal,
     }}>
       {children}
     </AppContext.Provider>

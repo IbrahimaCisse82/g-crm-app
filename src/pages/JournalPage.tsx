@@ -1,17 +1,21 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useApp } from '@/context/AppContext';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { PaginationControls } from '@/components/PaginationControls';
 import { TableSkeleton } from '@/components/LoadingSkeleton';
+import { usePagination } from '@/hooks/usePagination';
 import { toast } from 'sonner';
 import { formatDate } from '@/lib/formatDate';
 import { JOURNAL_CATEGORIES, PAYMENT_MODES } from '@/types';
 
 export default function JournalPage() {
-  const { journal, comptes, fmt } = useApp();
+  const { journal, comptes, fmt, createModalTrigger } = useApp();
   const [filter, setFilter] = useState('all');
+  const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ libelle: '', type: 'Recette', montant: 0, mode_paiement: 'Espèce', categorie: '', compte: '', date_operation: new Date().toISOString().slice(0, 10) });
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; libelle: string } | null>(null);
+  const triggerRef = useRef(createModalTrigger);
 
   const totR = journal.data.filter(j => j.type === 'Recette' && j.categorie !== 'Transfert').reduce((s, j) => s + (j.montant || 0), 0);
   const totD = journal.data.filter(j => j.type === 'Dépense' && j.categorie !== 'Transfert').reduce((s, j) => s + (j.montant || 0), 0);
@@ -20,6 +24,13 @@ export default function JournalPage() {
   let filtered = journal.data;
   if (filter === 'Recette' || filter === 'Dépense') filtered = filtered.filter(j => j.type === filter && j.categorie !== 'Transfert');
   else if (filter !== 'all') filtered = filtered.filter(j => j.mode_paiement === filter);
+
+  if (search) {
+    const q = search.toLowerCase();
+    filtered = filtered.filter(j => (j.libelle + ' ' + j.categorie + ' ' + j.compte).toLowerCase().includes(q));
+  }
+
+  const pagination = usePagination(filtered);
 
   const filters = ['all', 'Recette', 'Dépense', ...PAYMENT_MODES];
   const filterLabels: Record<string, string> = { all: 'Tous', Recette: '📥 Recettes', 'Dépense': '📤 Dépenses', Espèce: '💵 Espèce', Wave: 'Wave', 'Orange Money': '🟠 Orange', 'Yas Money': '🟣 Yas', Virement: '🏦 Virement', Chèque: '✉️ Chèque' };
@@ -30,11 +41,11 @@ export default function JournalPage() {
   };
 
   useEffect(() => {
-    const handler = () => openNew();
-    window.addEventListener('open-create-modal', handler);
-    return () => window.removeEventListener('open-create-modal', handler);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (createModalTrigger > triggerRef.current) {
+      openNew();
+    }
+    triggerRef.current = createModalTrigger;
+  }, [createModalTrigger]);
 
   const save = async () => {
     if (!form.libelle || !form.montant) {
@@ -86,17 +97,25 @@ export default function JournalPage() {
 
       <div className="bg-card border border-border rounded-xl overflow-hidden shadow-card">
         <div className="px-4 py-3 border-b border-border flex items-center justify-between flex-wrap gap-2">
-          <h3 className="font-extrabold text-sm text-foreground">Journal</h3>
-          <button onClick={openNew} className="gradient-primary text-primary-foreground border-none py-1.5 px-3 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all">
-            ＋ Transaction
-          </button>
+          <h3 className="font-extrabold text-sm text-foreground">Journal ({filtered.length})</h3>
+          <div className="flex gap-2 items-center">
+            <input
+              className="bg-background border-[1.5px] border-border rounded-lg py-1 px-2.5 text-xs text-foreground outline-none w-[140px] font-sans placeholder:text-muted-foreground focus:border-primary focus:ring-[3px] focus:ring-primary/10"
+              placeholder="🔍 Rechercher..."
+              value={search}
+              onChange={e => { setSearch(e.target.value); pagination.resetPage(); }}
+            />
+            <button onClick={openNew} className="gradient-primary text-primary-foreground border-none py-1.5 px-3 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all">
+              ＋ Transaction
+            </button>
+          </div>
         </div>
         <div className="px-4 py-2 border-b border-border">
           <div className="flex gap-2 flex-wrap">
             {filters.map(f => (
               <button
                 key={f}
-                onClick={() => setFilter(f)}
+                onClick={() => { setFilter(f); pagination.resetPage(); }}
                 className={`border-[1.5px] rounded-lg px-3 py-1.5 text-[11.5px] font-semibold transition-all ${filter === f ? 'bg-primary/10 text-primary border-primary' : 'bg-background border-border text-muted-foreground hover:bg-card'}`}
               >
                 {filterLabels[f] || f}
@@ -107,7 +126,7 @@ export default function JournalPage() {
         {/* Mobile card view */}
         <div className="lg:hidden">
           {journal.isLoading ? <TableSkeleton rows={5} cols={3} /> : (
-            filtered.length ? filtered.map(j => (
+            pagination.items.length ? pagination.items.map(j => (
               <div key={j.id} className="px-4 py-3 border-b border-border flex items-center justify-between gap-2">
                 <div className="min-w-0 flex-1">
                   <div className="font-bold text-xs text-foreground truncate">{j.libelle || '—'}</div>
@@ -141,7 +160,7 @@ export default function JournalPage() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.length ? filtered.map(j => (
+                {pagination.items.length ? pagination.items.map(j => (
                   <tr key={j.id} className="hover:bg-background transition-colors">
                     <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{formatDate(j.date_operation)}</td>
                     <td className="px-3.5 py-3 text-sm border-b border-border">
@@ -170,6 +189,7 @@ export default function JournalPage() {
             </table>
           )}
         </div>
+        <PaginationControls {...pagination} />
       </div>
 
       <ConfirmDialog

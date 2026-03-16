@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import { useNavigate } from 'react-router-dom';
-import { Building2, BookOpen, LogOut, Package } from 'lucide-react';
+import { Building2, LogOut, Package } from 'lucide-react';
 import AppSidebar from './AppSidebar';
 
 const sectionTitles: Record<string, string> = {
@@ -23,7 +23,7 @@ const quickActions = [
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const { currentSection, sidebarOpen, setSidebarOpen, logout } = useApp();
+  const { currentSection, sidebarOpen, setSidebarOpen, logout, triggerCreateModal } = useApp();
   const navigate = useNavigate();
   const [showFabMenu, setShowFabMenu] = useState(false);
   const [showTopMenu, setShowTopMenu] = useState(false);
@@ -42,7 +42,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const handleFabAction = (path: string) => {
     setShowFabMenu(false);
     navigate(path);
-    setTimeout(() => window.dispatchEvent(new CustomEvent('open-create-modal')), 100);
+    // Use context trigger instead of CustomEvent
+    setTimeout(() => triggerCreateModal(), 100);
   };
 
   return (
@@ -115,11 +116,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
       )}
 
+      {/* Bottom nav with better access to Factures & Devis */}
       <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border z-[190] shadow-[0_-2px_20px_rgba(0,0,0,0.12)] lg:hidden pb-[env(safe-area-inset-bottom)]">
         <div className="flex items-center h-[58px]">
           {[
             { path: '/', icon: '📊', label: 'Accueil', section: 'dashboard' },
-            { path: '/journal', icon: '📒', label: 'Journal', section: 'journal' },
+            { path: '/factures', icon: '🧾', label: 'Factures', section: 'factures' },
           ].map(item => (
             <button
               key={item.path}
@@ -138,7 +140,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </button>
           {[
             { path: '/caisse', icon: '💰', label: 'Tréso', section: 'caisse' },
-            { path: '/clients', icon: '👥', label: 'Plus', section: 'clients' },
+            { path: '/journal', icon: '📒', label: 'Journal', section: 'journal' },
           ].map(item => (
             <button
               key={item.path}
