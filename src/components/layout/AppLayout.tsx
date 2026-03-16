@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import { useNavigate } from 'react-router-dom';
 import { Building2, LogOut, Package } from 'lucide-react';
@@ -15,18 +15,10 @@ const sectionTitles: Record<string, string> = {
   entreprise: 'Infos Entreprise',
 };
 
-const quickActions = [
-  { path: '/factures', label: '🧾 Facture' },
-  { path: '/devis', label: '📋 Devis' },
-  { path: '/journal', label: '📒 Transaction' },
-  { path: '/clients', label: '👥 Client' },
-];
-
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const { currentSection, sidebarOpen, setSidebarOpen, logout, triggerCreateModal } = useApp();
+  const { currentSection, sidebarOpen, setSidebarOpen, logout } = useApp();
   const navigate = useNavigate();
-  const [showFabMenu, setShowFabMenu] = useState(false);
-  const [showTopMenu, setShowTopMenu] = useState(false);
+  const [showTopMenu, setShowTopMenu] = React.useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -38,13 +30,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     if (showTopMenu) document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showTopMenu]);
-
-  const handleFabAction = (path: string) => {
-    setShowFabMenu(false);
-    navigate(path);
-    // Use context trigger instead of CustomEvent
-    setTimeout(() => triggerCreateModal(), 100);
-  };
 
   return (
     <div className="flex min-h-screen">
@@ -100,28 +85,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
       </div>
 
-      {showFabMenu && (
-        <div className="fixed inset-0 bg-foreground/30 backdrop-blur-sm z-[180] lg:hidden" onClick={() => setShowFabMenu(false)}>
-          <div className="absolute bottom-[80px] left-1/2 -translate-x-1/2 flex flex-col gap-2 items-center animate-[slideUp_0.15s_ease]" onClick={e => e.stopPropagation()}>
-            {quickActions.map(a => (
-              <button
-                key={a.path}
-                onClick={() => handleFabAction(a.path)}
-                className="bg-card border border-border rounded-full px-4 py-2.5 text-sm font-bold shadow-elevated flex items-center gap-2 hover:bg-background transition-all whitespace-nowrap"
-              >
-                {a.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Bottom nav with better access to Factures & Devis */}
+      {/* Bottom nav — 6 items: Accueil, Factures, Clients, Journal, Tréso, Devis */}
       <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border z-[190] shadow-[0_-2px_20px_rgba(0,0,0,0.12)] lg:hidden pb-[env(safe-area-inset-bottom)]">
         <div className="flex items-center h-[58px]">
           {[
             { path: '/', icon: '📊', label: 'Accueil', section: 'dashboard' },
             { path: '/factures', icon: '🧾', label: 'Factures', section: 'factures' },
+            { path: '/clients', icon: '👥', label: 'Clients', section: 'clients' },
+            { path: '/journal', icon: '📒', label: 'Journal', section: 'journal' },
+            { path: '/caisse', icon: '💰', label: 'Tréso', section: 'caisse' },
             { path: '/devis', icon: '📋', label: 'Devis', section: 'devis' },
           ].map(item => (
             <button
@@ -129,27 +101,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               onClick={() => navigate(item.path)}
               className={`flex-1 flex flex-col items-center justify-center gap-1 border-none bg-transparent font-sans transition-colors ${currentSection === item.section ? 'text-primary' : 'text-muted-foreground'}`}
             >
-              <span className="text-[22px] leading-none">{item.icon}</span>
-              <span className="text-[10px] font-semibold">{item.label}</span>
-            </button>
-          ))}
-          <button
-            onClick={() => setShowFabMenu(!showFabMenu)}
-            className={`w-[52px] h-[52px] rounded-full bg-gradient-to-br from-[hsl(90,71%,43%)] to-[hsl(145,77%,23%)] text-primary-foreground text-[28px] font-light border-none flex items-center justify-center shadow-lg shrink-0 -mt-1.5 transition-transform ${showFabMenu ? 'rotate-45' : ''}`}
-          >
-            ＋
-          </button>
-          {[
-            { path: '/caisse', icon: '💰', label: 'Tréso', section: 'caisse' },
-            { path: '/journal', icon: '📒', label: 'Journal', section: 'journal' },
-          ].map(item => (
-            <button
-              key={item.path}
-              onClick={() => navigate(item.path)}
-              className={`flex-1 flex flex-col items-center justify-center gap-1 border-none bg-transparent font-sans transition-colors ${currentSection === item.section ? 'text-primary' : 'text-muted-foreground'}`}
-            >
-              <span className="text-[22px] leading-none">{item.icon}</span>
-              <span className="text-[10px] font-semibold">{item.label}</span>
+              <span className="text-[18px] leading-none">{item.icon}</span>
+              <span className="text-[9px] font-semibold">{item.label}</span>
             </button>
           ))}
         </div>

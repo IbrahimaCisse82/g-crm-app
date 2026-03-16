@@ -84,17 +84,20 @@ export default function ClientsPage() {
   return (
     <div>
       <div className="bg-card border border-border rounded-xl overflow-hidden shadow-card">
-        <div className="px-4 py-3 border-b border-border flex items-center justify-between flex-wrap gap-2">
-          <h3 className="font-extrabold text-sm text-foreground">Clients ({filtered.length})</h3>
-          <div className="flex gap-2 items-center">
+        <div className="px-4 py-3 border-b border-border">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="font-extrabold text-sm text-foreground">Clients ({filtered.length})</h3>
+            <button onClick={openNew} className="gradient-primary text-primary-foreground border-none py-1.5 px-3 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all lg:hidden">＋ Nouveau</button>
+          </div>
+          <div className="flex gap-2 items-center flex-wrap">
             <input
-              className="bg-background border-[1.5px] border-border rounded-lg py-1 px-2.5 text-xs text-foreground outline-none w-[140px] font-sans placeholder:text-muted-foreground focus:border-primary focus:ring-[3px] focus:ring-primary/10"
+              className="bg-background border-[1.5px] border-border rounded-lg py-1.5 px-2.5 text-xs text-foreground outline-none flex-1 min-w-[100px] max-w-[160px] font-sans placeholder:text-muted-foreground focus:border-primary focus:ring-[3px] focus:ring-primary/10"
               placeholder="🔍 Rechercher..."
               value={search}
               onChange={e => { setSearch(e.target.value); pagination.resetPage(); }}
             />
             <select
-              className="bg-background border-[1.5px] border-border rounded-lg py-1 px-2 text-xs text-foreground outline-none font-sans"
+              className="bg-background border-[1.5px] border-border rounded-lg py-1.5 px-2 text-xs text-foreground outline-none font-sans"
               value={statusFilter}
               onChange={e => { setStatusFilter(e.target.value); pagination.resetPage(); }}
             >
@@ -104,9 +107,7 @@ export default function ClientsPage() {
               <option>Inactif</option>
             </select>
             <button onClick={handleExport} className="bg-background border-[1.5px] border-border text-muted-foreground py-1.5 px-2.5 rounded-lg text-xs font-bold hover:border-primary hover:text-primary transition-all" title="Exporter CSV">📥</button>
-            <button onClick={openNew} className="gradient-primary text-primary-foreground border-none py-1.5 px-3 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all">
-              ＋ Nouveau
-            </button>
+            <button onClick={openNew} className="gradient-primary text-primary-foreground border-none py-1.5 px-3 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all hidden lg:inline-flex">＋ Nouveau</button>
           </div>
         </div>
         {/* Mobile card view */}
