@@ -122,6 +122,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           {[
             { path: '/', icon: '📊', label: 'Accueil', section: 'dashboard' },
             { path: '/factures', icon: '🧾', label: 'Factures', section: 'factures' },
+            { path: '/devis', icon: '📋', label: 'Devis', section: 'devis' },
           ].map(item => (
             <button
               key={item.path}

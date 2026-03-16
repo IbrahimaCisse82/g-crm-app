@@ -15,6 +15,7 @@ import { formatDate } from '@/lib/formatDate';
 import type { ArticleLine } from '@/types';
 import { PAYMENT_MODES } from '@/types';
 import type { Json } from '@/integrations/supabase/types';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 
 const defaultForm = {
   client_id: '',
@@ -277,14 +278,13 @@ export default function InvoicesPage() {
       <ConfirmDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)} title={`Supprimer la facture ${deleteTarget?.numero} ?`} description="Cette action est irréversible. Les écritures journal liées seront également supprimées." onConfirm={del} confirmLabel="Supprimer" />
 
       {/* Payment modal */}
-      {payTarget && (
-        <div className="fixed inset-0 bg-foreground/50 backdrop-blur-sm z-[1000] flex items-end lg:items-center justify-center">
-          <div className="bg-card border border-border rounded-2xl lg:rounded-2xl rounded-b-none w-full lg:max-w-[420px] shadow-2xl animate-[slideUp_0.22s_ease]">
-            <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-              <h3 className="font-extrabold text-[15px] text-foreground">💳 Paiement — {payTarget.numero}</h3>
-              <button onClick={() => setPayTarget(null)} className="text-muted-foreground text-xl bg-transparent border-none cursor-pointer">✕</button>
-            </div>
-            <div className="p-5">
+      <Dialog open={!!payTarget} onOpenChange={(open) => { if (!open) setPayTarget(null); }}>
+        <DialogContent className="max-w-[420px]">
+          <DialogHeader>
+            <DialogTitle>💳 Paiement — {payTarget?.numero}</DialogTitle>
+          </DialogHeader>
+          {payTarget && (
+            <div>
               <div className="bg-background border border-border rounded-lg p-3 mb-4">
                 <div className="flex justify-between text-xs mb-1"><span>Total TTC</span><span className="font-bold">{fmt(payTarget.montant_ttc)}</span></div>
                 <div className="flex justify-between text-xs mb-1"><span>Déjà réglé</span><span className="font-bold text-success">{fmt(payTarget.montant_regle)}</span></div>
@@ -294,94 +294,92 @@ export default function InvoicesPage() {
                 <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Montant du paiement *</label>
                 <input type="number" min="1" max={payTarget.montant_ttc - (payTarget.montant_regle || 0)} className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={payAmount} onChange={e => setPayAmount(e.target.value)} />
               </div>
-              <div className="flex flex-col gap-1.5 mb-4">
+              <div className="flex flex-col gap-1.5">
                 <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Mode de paiement</label>
                 <select className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={payMode} onChange={e => setPayMode(e.target.value)}>
                   {PAYMENT_MODES.map(m => <option key={m}>{m}</option>)}
                 </select>
               </div>
             </div>
-            <div className="px-5 py-3.5 border-t border-border flex gap-2 justify-end">
-              <button onClick={() => setPayTarget(null)} className="bg-card border-[1.5px] border-border text-muted-foreground py-2 px-4 rounded-lg text-xs font-bold hover:bg-background transition-all">Annuler</button>
-              <button onClick={submitPayment} disabled={saving} className="gradient-primary text-primary-foreground border-none py-2 px-4 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all disabled:opacity-60">
-                {saving ? '⏳...' : '✅ Valider le paiement'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+          )}
+          <DialogFooter>
+            <button onClick={() => setPayTarget(null)} className="bg-card border-[1.5px] border-border text-muted-foreground py-2 px-4 rounded-lg text-xs font-bold hover:bg-background transition-all">Annuler</button>
+            <button onClick={submitPayment} disabled={saving} className="gradient-primary text-primary-foreground border-none py-2 px-4 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all disabled:opacity-60">
+              {saving ? '⏳...' : '✅ Valider le paiement'}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-      {showModal && (
-        <div className="fixed inset-0 bg-foreground/50 backdrop-blur-sm z-[1000] flex items-end lg:items-center justify-center">
-          <div className="bg-card border border-border rounded-2xl lg:rounded-2xl rounded-b-none w-full lg:max-w-[640px] max-h-[90vh] overflow-y-auto shadow-2xl animate-[slideUp_0.22s_ease]">
-            <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-              <h3 className="font-extrabold text-[15px] text-foreground">{editId ? 'Modifier Facture' : 'Nouvelle Facture'}</h3>
-              <button onClick={() => setShowModal(false)} className="text-muted-foreground text-xl bg-transparent border-none cursor-pointer">✕</button>
-            </div>
-            <div className="p-5">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5 mb-4">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Client *</label>
-                  <select className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.client_id} onChange={e => setForm({ ...form, client_id: e.target.value })}>
-                    <option value="">— Sélectionner —</option>
-                    {clients.data.map(c => <option key={c.id} value={c.id}>{c.prenom} {c.nom}</option>)}
-                  </select>
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Mode de paiement</label>
-                  <select className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.mode_paiement} onChange={e => setForm({ ...form, mode_paiement: e.target.value })}>
-                    {PAYMENT_MODES.map(m => <option key={m}>{m}</option>)}
-                  </select>
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Date facture</label>
-                  <input type="date" className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.date_facture} onChange={e => setForm({ ...form, date_facture: e.target.value })} />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Date échéance</label>
-                  <input type="date" className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.date_echeance} onChange={e => setForm({ ...form, date_echeance: e.target.value })} />
-                </div>
-              </div>
-              <div className="mb-4">
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Articles</label>
-                  <button onClick={addArticleLine} className="text-xs text-primary font-bold hover:underline">＋ Ajouter</button>
-                </div>
-                {articles.map((a, i) => (
-                  <div key={i} className="flex gap-2 items-end mb-2 flex-wrap">
-                    <div className="flex-1 min-w-[140px]">
-                      <select className="bg-background border-[1.5px] border-border rounded-lg py-2 px-2.5 text-xs text-foreground outline-none font-sans focus:border-primary w-full mb-1" value="" onChange={e => selectProduct(i, e.target.value)}>
-                        <option value="">📦 Choisir produit...</option>
-                        {produits.data.map(p => <option key={p.id} value={p.id}>{p.nom} ({fmt(p.prix)})</option>)}
-                      </select>
-                      <input className="bg-background border-[1.5px] border-border rounded-lg py-2 px-2.5 text-xs text-foreground outline-none font-sans focus:border-primary w-full" placeholder="Désignation" value={a.nom} onChange={e => updateArticle(i, 'nom', e.target.value)} />
-                    </div>
-                    <input type="number" min="1" className="bg-background border-[1.5px] border-border rounded-lg py-2 px-2.5 text-xs text-foreground outline-none font-sans focus:border-primary w-16" placeholder="Qté" value={a.quantite} onChange={e => updateArticle(i, 'quantite', Number(e.target.value))} />
-                    <input type="number" min="0" className="bg-background border-[1.5px] border-border rounded-lg py-2 px-2.5 text-xs text-foreground outline-none font-sans focus:border-primary w-24" placeholder="Prix" value={a.prix_unitaire} onChange={e => updateArticle(i, 'prix_unitaire', Number(e.target.value))} />
-                    <span className="text-xs font-bold text-foreground w-24 text-right">{fmt(a.quantite * a.prix_unitaire)}</span>
-                    {articles.length > 1 && <button onClick={() => removeArticleLine(i)} className="text-destructive text-xs px-1">✕</button>}
-                  </div>
-                ))}
-              </div>
-              <div className="bg-background border border-border rounded-lg p-3 mb-3.5">
-                <div className="flex justify-between text-xs mb-1"><span>Total HT</span><span className="font-bold">{fmt(totalHT)}</span></div>
-                <div className="flex justify-between text-xs mb-1"><span>TVA ({tva}%)</span><span className="font-bold">{fmt(totalTVA)}</span></div>
-                <div className="flex justify-between text-sm font-black border-t border-border pt-1.5 mt-1.5"><span>Total TTC</span><span className="text-primary">{fmt(totalTTC)}</span></div>
+      {/* Create/Edit modal */}
+      <Dialog open={showModal} onOpenChange={setShowModal}>
+        <DialogContent className="max-w-[640px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editId ? 'Modifier Facture' : 'Nouvelle Facture'}</DialogTitle>
+          </DialogHeader>
+          <div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5 mb-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Client *</label>
+                <select className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.client_id} onChange={e => setForm({ ...form, client_id: e.target.value })}>
+                  <option value="">— Sélectionner —</option>
+                  {clients.data.map(c => <option key={c.id} value={c.id}>{c.prenom} {c.nom}</option>)}
+                </select>
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Notes</label>
-                <textarea className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans resize-y min-h-[60px] focus:border-primary w-full" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} maxLength={500} />
+                <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Mode de paiement</label>
+                <select className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.mode_paiement} onChange={e => setForm({ ...form, mode_paiement: e.target.value })}>
+                  {PAYMENT_MODES.map(m => <option key={m}>{m}</option>)}
+                </select>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Date facture</label>
+                <input type="date" className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.date_facture} onChange={e => setForm({ ...form, date_facture: e.target.value })} />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Date échéance</label>
+                <input type="date" className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.date_echeance} onChange={e => setForm({ ...form, date_echeance: e.target.value })} />
               </div>
             </div>
-            <div className="px-5 py-3.5 border-t border-border flex gap-2 justify-end">
-              <button onClick={() => setShowModal(false)} className="bg-card border-[1.5px] border-border text-muted-foreground py-2 px-4 rounded-lg text-xs font-bold hover:bg-background transition-all">Annuler</button>
-              <button onClick={save} disabled={saving} className="gradient-primary text-primary-foreground border-none py-2 px-4 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all disabled:opacity-60">
-                {saving ? '⏳ Enregistrement...' : '💾 Enregistrer'}
-              </button>
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Articles</label>
+                <button onClick={addArticleLine} className="text-xs text-primary font-bold hover:underline">＋ Ajouter</button>
+              </div>
+              {articles.map((a, i) => (
+                <div key={i} className="flex gap-2 items-end mb-2 flex-wrap">
+                  <div className="flex-1 min-w-[140px]">
+                    <select className="bg-background border-[1.5px] border-border rounded-lg py-2 px-2.5 text-xs text-foreground outline-none font-sans focus:border-primary w-full mb-1" value="" onChange={e => selectProduct(i, e.target.value)}>
+                      <option value="">📦 Choisir produit...</option>
+                      {produits.data.map(p => <option key={p.id} value={p.id}>{p.nom} ({fmt(p.prix)})</option>)}
+                    </select>
+                    <input className="bg-background border-[1.5px] border-border rounded-lg py-2 px-2.5 text-xs text-foreground outline-none font-sans focus:border-primary w-full" placeholder="Désignation" value={a.nom} onChange={e => updateArticle(i, 'nom', e.target.value)} />
+                  </div>
+                  <input type="number" min="1" className="bg-background border-[1.5px] border-border rounded-lg py-2 px-2.5 text-xs text-foreground outline-none font-sans focus:border-primary w-16" placeholder="Qté" value={a.quantite} onChange={e => updateArticle(i, 'quantite', Number(e.target.value))} />
+                  <input type="number" min="0" className="bg-background border-[1.5px] border-border rounded-lg py-2 px-2.5 text-xs text-foreground outline-none font-sans focus:border-primary w-24" placeholder="Prix" value={a.prix_unitaire} onChange={e => updateArticle(i, 'prix_unitaire', Number(e.target.value))} />
+                  <span className="text-xs font-bold text-foreground w-24 text-right">{fmt(a.quantite * a.prix_unitaire)}</span>
+                  {articles.length > 1 && <button onClick={() => removeArticleLine(i)} className="text-destructive text-xs px-1">✕</button>}
+                </div>
+              ))}
+            </div>
+            <div className="bg-background border border-border rounded-lg p-3 mb-3.5">
+              <div className="flex justify-between text-xs mb-1"><span>Total HT</span><span className="font-bold">{fmt(totalHT)}</span></div>
+              <div className="flex justify-between text-xs mb-1"><span>TVA ({tva}%)</span><span className="font-bold">{fmt(totalTVA)}</span></div>
+              <div className="flex justify-between text-sm font-black border-t border-border pt-1.5 mt-1.5"><span>Total TTC</span><span className="text-primary">{fmt(totalTTC)}</span></div>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Notes</label>
+              <textarea className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans resize-y min-h-[60px] focus:border-primary w-full" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} maxLength={500} />
             </div>
           </div>
-        </div>
-      )}
+          <DialogFooter>
+            <button onClick={() => setShowModal(false)} className="bg-card border-[1.5px] border-border text-muted-foreground py-2 px-4 rounded-lg text-xs font-bold hover:bg-background transition-all">Annuler</button>
+            <button onClick={save} disabled={saving} className="gradient-primary text-primary-foreground border-none py-2 px-4 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all disabled:opacity-60">
+              {saving ? '⏳ Enregistrement...' : '💾 Enregistrer'}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
