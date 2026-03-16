@@ -293,6 +293,7 @@ export default function QuotesPage() {
             </table>
           )}
         </div>
+        <PaginationControls {...pagination} />
       </div>
 
       <ConfirmDialog
