@@ -14,7 +14,7 @@ import { JOURNAL_CATEGORIES, PAYMENT_MODES } from '@/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 
 export default function JournalPage() {
-  const { journal, comptes, fmt, createModalTrigger } = useApp();
+  const { journal, factures, comptes, fmt, cliName, createModalTrigger } = useApp();
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
