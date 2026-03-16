@@ -2,8 +2,12 @@ import { useState, useEffect, useRef } from 'react';
 import { useApp } from '@/context/AppContext';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { PaginationControls } from '@/components/PaginationControls';
+import { DateFilter } from '@/components/DateFilter';
 import { TableSkeleton } from '@/components/LoadingSkeleton';
 import { usePagination } from '@/hooks/usePagination';
+import { useDateFilter } from '@/hooks/useDateFilter';
+import { useSortableTable } from '@/hooks/useSortableTable';
+import { exportCsv } from '@/utils/exportCsv';
 import { toast } from 'sonner';
 import { formatDate } from '@/lib/formatDate';
 import { JOURNAL_CATEGORIES, PAYMENT_MODES } from '@/types';
@@ -21,16 +25,18 @@ export default function JournalPage() {
   const totD = journal.data.filter(j => j.type === 'Dépense' && j.categorie !== 'Transfert').reduce((s, j) => s + (j.montant || 0), 0);
   const bal = totR - totD;
 
-  let filtered = journal.data;
-  if (filter === 'Recette' || filter === 'Dépense') filtered = filtered.filter(j => j.type === filter && j.categorie !== 'Transfert');
-  else if (filter !== 'all') filtered = filtered.filter(j => j.mode_paiement === filter);
+  let preFiltered = journal.data;
+  if (filter === 'Recette' || filter === 'Dépense') preFiltered = preFiltered.filter(j => j.type === filter && j.categorie !== 'Transfert');
+  else if (filter !== 'all') preFiltered = preFiltered.filter(j => j.mode_paiement === filter);
 
   if (search) {
     const q = search.toLowerCase();
-    filtered = filtered.filter(j => (j.libelle + ' ' + j.categorie + ' ' + j.compte).toLowerCase().includes(q));
+    preFiltered = preFiltered.filter(j => (j.libelle + ' ' + j.categorie + ' ' + j.compte).toLowerCase().includes(q));
   }
 
-  const pagination = usePagination(filtered);
+  const { filtered: dateFiltered, month, setMonth, availableMonths } = useDateFilter(preFiltered, 'date_operation');
+  const { sorted, toggleSort, sortIndicator } = useSortableTable(dateFiltered, 'date_operation');
+  const pagination = usePagination(sorted);
 
   const filters = ['all', 'Recette', 'Dépense', ...PAYMENT_MODES];
   const filterLabels: Record<string, string> = { all: 'Tous', Recette: '📥 Recettes', 'Dépense': '📤 Dépenses', Espèce: '💵 Espèce', Wave: 'Wave', 'Orange Money': '🟠 Orange', 'Yas Money': '🟣 Yas', Virement: '🏦 Virement', Chèque: '✉️ Chèque' };
@@ -41,24 +47,17 @@ export default function JournalPage() {
   };
 
   useEffect(() => {
-    if (createModalTrigger > triggerRef.current) {
-      openNew();
-    }
+    if (createModalTrigger > triggerRef.current) openNew();
     triggerRef.current = createModalTrigger;
   }, [createModalTrigger]);
 
   const save = async () => {
-    if (!form.libelle || !form.montant) {
-      toast.error('Renseignez le libellé et le montant');
-      return;
-    }
+    if (!form.libelle || !form.montant) { toast.error('Renseignez le libellé et le montant'); return; }
     try {
       await journal.add(form);
       setShowModal(false);
       toast.success('Transaction ajoutée');
-    } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : 'Erreur');
-    }
+    } catch (e: unknown) { toast.error(e instanceof Error ? e.message : 'Erreur'); }
   };
 
   const del = async () => {
@@ -66,11 +65,17 @@ export default function JournalPage() {
     try {
       await journal.remove(deleteTarget.id);
       toast.success('Supprimé');
-    } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : 'Erreur');
-    }
+    } catch (e: unknown) { toast.error(e instanceof Error ? e.message : 'Erreur'); }
     setDeleteTarget(null);
   };
+
+  const handleExport = () => {
+    exportCsv('journal', ['Date', 'Libellé', 'Type', 'Montant', 'Mode', 'Catégorie', 'Compte'],
+      dateFiltered.map(j => [j.date_operation, j.libelle, j.type, String(j.montant || 0), j.mode_paiement || '', j.categorie || '', j.compte || '']));
+    toast.success('Export CSV téléchargé');
+  };
+
+  const thClass = "px-3.5 py-2.5 text-[10.5px] font-bold text-muted-foreground uppercase tracking-wider text-left border-b border-border bg-background cursor-pointer hover:text-primary transition-colors select-none";
 
   return (
     <div>
@@ -97,7 +102,7 @@ export default function JournalPage() {
 
       <div className="bg-card border border-border rounded-xl overflow-hidden shadow-card">
         <div className="px-4 py-3 border-b border-border flex items-center justify-between flex-wrap gap-2">
-          <h3 className="font-extrabold text-sm text-foreground">Journal ({filtered.length})</h3>
+          <h3 className="font-extrabold text-sm text-foreground">Journal ({dateFiltered.length})</h3>
           <div className="flex gap-2 items-center">
             <input
               className="bg-background border-[1.5px] border-border rounded-lg py-1 px-2.5 text-xs text-foreground outline-none w-[140px] font-sans placeholder:text-muted-foreground focus:border-primary focus:ring-[3px] focus:ring-primary/10"
@@ -105,6 +110,8 @@ export default function JournalPage() {
               value={search}
               onChange={e => { setSearch(e.target.value); pagination.resetPage(); }}
             />
+            <DateFilter month={month} setMonth={setMonth} availableMonths={availableMonths} />
+            <button onClick={handleExport} className="bg-background border-[1.5px] border-border text-muted-foreground py-1.5 px-2.5 rounded-lg text-xs font-bold hover:border-primary hover:text-primary transition-all" title="Exporter CSV">📥</button>
             <button onClick={openNew} className="gradient-primary text-primary-foreground border-none py-1.5 px-3 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all">
               ＋ Transaction
             </button>
@@ -154,9 +161,13 @@ export default function JournalPage() {
             <table className="w-full border-collapse min-w-[560px]">
               <thead>
                 <tr>
-                  {['Date', 'Libellé', 'Type', 'Mode', 'Compte', 'Montant', ''].map(h => (
-                    <th key={h} className="px-3.5 py-2.5 text-[10.5px] font-bold text-muted-foreground uppercase tracking-wider text-left border-b border-border bg-background">{h}</th>
-                  ))}
+                  <th className={thClass} onClick={() => toggleSort('date_operation')}>Date{sortIndicator('date_operation')}</th>
+                  <th className={thClass} onClick={() => toggleSort('libelle')}>Libellé{sortIndicator('libelle')}</th>
+                  <th className={thClass} onClick={() => toggleSort('type')}>Type{sortIndicator('type')}</th>
+                  <th className={thClass} onClick={() => toggleSort('mode_paiement')}>Mode{sortIndicator('mode_paiement')}</th>
+                  <th className={thClass} onClick={() => toggleSort('compte')}>Compte{sortIndicator('compte')}</th>
+                  <th className={thClass} onClick={() => toggleSort('montant')}>Montant{sortIndicator('montant')}</th>
+                  <th className="px-3.5 py-2.5 text-[10.5px] font-bold text-muted-foreground uppercase tracking-wider text-left border-b border-border bg-background"></th>
                 </tr>
               </thead>
               <tbody>
