@@ -42,11 +42,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
       <div className="fixed top-0 left-0 right-0 h-[52px] bg-card border-b border-border flex items-center justify-between px-4 z-[90] shadow-card lg:hidden">
         <span className="font-black text-base text-primary tracking-tight">G-CRM</span>
-        <div className="relative" ref={menuRef}>
-          <button
-            onClick={() => setShowTopMenu(!showTopMenu)}
-            className="w-[34px] h-[34px] rounded-lg bg-background border border-border flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-primary transition-all"
-          >
+        <div className="flex items-center gap-1.5">
+          <NotificationBell />
+          <div className="relative" ref={menuRef}>
+            <button
+              onClick={() => setShowTopMenu(!showTopMenu)}
+              className="w-[34px] h-[34px] rounded-lg bg-background border border-border flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-primary transition-all"
+            >
             <span className={`w-[15px] h-[1.5px] bg-foreground rounded-sm transition-all ${showTopMenu ? 'rotate-45 translate-y-[5.5px]' : ''}`} />
             <span className={`w-[15px] h-[1.5px] bg-foreground rounded-sm transition-all ${showTopMenu ? 'opacity-0 scale-x-0' : ''}`} />
             <span className={`w-[15px] h-[1.5px] bg-foreground rounded-sm transition-all ${showTopMenu ? '-rotate-45 -translate-y-[5.5px]' : ''}`} />
