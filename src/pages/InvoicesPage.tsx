@@ -21,7 +21,8 @@ const defaultForm = {
 };
 
 export default function InvoicesPage() {
-  const { factures, clients, produits, entreprise, journal, cliName, fmt } = useApp();
+  const { factures, clients, produits, entreprise, journal, cliName, fmt, createModalTrigger } = useApp();
+  const triggerRef = useRef(createModalTrigger);
   const [search, setSearch] = useState('');
   const [statFilter, setStatFilter] = useState('');
   const [showModal, setShowModal] = useState(false);
