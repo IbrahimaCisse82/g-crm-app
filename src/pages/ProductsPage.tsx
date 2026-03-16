@@ -4,6 +4,8 @@ import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { PaginationControls } from '@/components/PaginationControls';
 import { TableSkeleton } from '@/components/LoadingSkeleton';
 import { usePagination } from '@/hooks/usePagination';
+import { useSortableTable } from '@/hooks/useSortableTable';
+import { exportCsv } from '@/utils/exportCsv';
 import { toast } from 'sonner';
 
 export default function ProductsPage() {
@@ -21,15 +23,14 @@ export default function ProductsPage() {
     filtered = filtered.filter(p => (p.nom + ' ' + p.description + ' ' + p.type).toLowerCase().includes(q));
   }
 
-  const pagination = usePagination(filtered);
+  const { sorted, toggleSort, sortIndicator } = useSortableTable(filtered);
+  const pagination = usePagination(sorted);
 
   const openNew = () => { setEditId(null); setForm({ nom: '', type: 'Service', prix: 0, unite: 'forfait', description: '' }); setShowModal(true); };
   const openEdit = (p: typeof produits.data[0]) => { setEditId(p.id); setForm({ nom: p.nom, type: p.type || 'Service', prix: p.prix, unite: p.unite || 'forfait', description: p.description || '' }); setShowModal(true); };
 
   useEffect(() => {
-    if (createModalTrigger > triggerRef.current) {
-      openNew();
-    }
+    if (createModalTrigger > triggerRef.current) openNew();
     triggerRef.current = createModalTrigger;
   }, [createModalTrigger]);
 
@@ -45,14 +46,18 @@ export default function ProductsPage() {
 
   const del = async () => {
     if (!deleteTarget) return;
-    try {
-      await produits.remove(deleteTarget.id);
-      toast.success('Supprimé');
-    } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : 'Erreur');
-    }
+    try { await produits.remove(deleteTarget.id); toast.success('Supprimé'); }
+    catch (e: unknown) { toast.error(e instanceof Error ? e.message : 'Erreur'); }
     setDeleteTarget(null);
   };
+
+  const handleExport = () => {
+    exportCsv('produits', ['Nom', 'Type', 'Prix', 'Unité', 'Description'],
+      filtered.map(p => [p.nom, p.type || '', String(p.prix), p.unite || '', p.description || '']));
+    toast.success('Export CSV téléchargé');
+  };
+
+  const thClass = "px-3.5 py-2.5 text-[10.5px] font-bold text-muted-foreground uppercase tracking-wider text-left border-b border-border bg-background cursor-pointer hover:text-primary transition-colors select-none";
 
   return (
     <div>
@@ -60,16 +65,11 @@ export default function ProductsPage() {
         <div className="px-4 py-3 border-b border-border flex items-center justify-between flex-wrap gap-2">
           <h3 className="font-extrabold text-sm text-foreground">Produits & Services ({filtered.length})</h3>
           <div className="flex gap-2 items-center">
-            <input
-              className="bg-background border-[1.5px] border-border rounded-lg py-1 px-2.5 text-xs text-foreground outline-none w-[140px] font-sans placeholder:text-muted-foreground focus:border-primary focus:ring-[3px] focus:ring-primary/10"
-              placeholder="🔍 Rechercher..."
-              value={search}
-              onChange={e => { setSearch(e.target.value); pagination.resetPage(); }}
-            />
+            <input className="bg-background border-[1.5px] border-border rounded-lg py-1 px-2.5 text-xs text-foreground outline-none w-[140px] font-sans placeholder:text-muted-foreground focus:border-primary focus:ring-[3px] focus:ring-primary/10" placeholder="🔍 Rechercher..." value={search} onChange={e => { setSearch(e.target.value); pagination.resetPage(); }} />
+            <button onClick={handleExport} className="bg-background border-[1.5px] border-border text-muted-foreground py-1.5 px-2.5 rounded-lg text-xs font-bold hover:border-primary hover:text-primary transition-all" title="Exporter CSV">📥</button>
             <button onClick={openNew} className="gradient-primary text-primary-foreground border-none py-1.5 px-3 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all">＋ Nouveau</button>
           </div>
         </div>
-        {/* Mobile card view */}
         <div className="lg:hidden">
           {produits.isLoading ? <TableSkeleton rows={5} cols={3} /> : (
             pagination.items.length ? pagination.items.map(p => (
@@ -92,16 +92,17 @@ export default function ProductsPage() {
             )
           )}
         </div>
-
-        {/* Desktop table */}
         <div className="hidden lg:block overflow-x-auto">
           {produits.isLoading ? <TableSkeleton rows={5} cols={6} /> : (
             <table className="w-full border-collapse min-w-[560px]">
               <thead>
                 <tr>
-                  {['Nom', 'Type', 'Prix unitaire', 'Unité', 'Description', 'Actions'].map(h => (
-                    <th key={h} className="px-3.5 py-2.5 text-[10.5px] font-bold text-muted-foreground uppercase tracking-wider text-left border-b border-border bg-background">{h}</th>
-                  ))}
+                  <th className={thClass} onClick={() => toggleSort('nom')}>Nom{sortIndicator('nom')}</th>
+                  <th className={thClass} onClick={() => toggleSort('type')}>Type{sortIndicator('type')}</th>
+                  <th className={thClass} onClick={() => toggleSort('prix')}>Prix unitaire{sortIndicator('prix')}</th>
+                  <th className={thClass} onClick={() => toggleSort('unite')}>Unité{sortIndicator('unite')}</th>
+                  <th className={thClass}>Description</th>
+                  <th className="px-3.5 py-2.5 text-[10.5px] font-bold text-muted-foreground uppercase tracking-wider text-left border-b border-border bg-background">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -132,14 +133,7 @@ export default function ProductsPage() {
         <PaginationControls {...pagination} />
       </div>
 
-      <ConfirmDialog
-        open={!!deleteTarget}
-        onOpenChange={() => setDeleteTarget(null)}
-        title={`Supprimer "${deleteTarget?.nom}" ?`}
-        description="Ce produit sera définitivement supprimé."
-        onConfirm={del}
-        confirmLabel="Supprimer"
-      />
+      <ConfirmDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)} title={`Supprimer "${deleteTarget?.nom}" ?`} description="Ce produit sera définitivement supprimé." onConfirm={del} confirmLabel="Supprimer" />
 
       {showModal && (
         <div className="fixed inset-0 bg-foreground/50 backdrop-blur-sm z-[1000] flex items-end lg:items-center justify-center">

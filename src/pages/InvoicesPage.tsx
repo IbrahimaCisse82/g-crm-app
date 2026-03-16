@@ -3,8 +3,12 @@ import { useApp } from '@/context/AppContext';
 import { StatusBadge, PayBadge } from '@/components/StatusBadge';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { PaginationControls } from '@/components/PaginationControls';
+import { DateFilter } from '@/components/DateFilter';
 import { TableSkeleton } from '@/components/LoadingSkeleton';
 import { usePagination } from '@/hooks/usePagination';
+import { useDateFilter } from '@/hooks/useDateFilter';
+import { useSortableTable } from '@/hooks/useSortableTable';
+import { exportCsv } from '@/utils/exportCsv';
 import { toast } from 'sonner';
 import { downloadPdf } from '@/utils/generatePdf';
 import { formatDate } from '@/lib/formatDate';
@@ -35,7 +39,6 @@ export default function InvoicesPage() {
   const [payMode, setPayMode] = useState('Espèce');
   const [saving, setSaving] = useState(false);
 
-  // Auto-detect overdue invoices
   const today = new Date().toISOString().slice(0, 10);
   const enrichedData = factures.data.map(f => {
     if (f.statut === 'En attente' && f.date_echeance && f.date_echeance < today) {
@@ -44,14 +47,16 @@ export default function InvoicesPage() {
     return f;
   });
 
-  let filtered = enrichedData;
-  if (statFilter) filtered = filtered.filter(f => f.statut === statFilter);
-  const pagination = usePagination(filtered);
-
+  let preFiltered = enrichedData;
+  if (statFilter) preFiltered = preFiltered.filter(f => f.statut === statFilter);
   if (search) {
     const q = search.toLowerCase();
-    filtered = filtered.filter(f => f.numero?.toLowerCase().includes(q) || cliName(f.client_id).toLowerCase().includes(q));
+    preFiltered = preFiltered.filter(f => f.numero?.toLowerCase().includes(q) || cliName(f.client_id).toLowerCase().includes(q));
   }
+
+  const { filtered: dateFiltered, month, setMonth, availableMonths } = useDateFilter(preFiltered, 'date_facture');
+  const { sorted, toggleSort, sortIndicator } = useSortableTable(dateFiltered, 'date_facture');
+  const pagination = usePagination(sorted);
 
   const tva = entreprise.data?.tva ?? 18;
   const totalHT = articles.reduce((s, a) => s + a.quantite * a.prix_unitaire, 0);
@@ -82,107 +87,58 @@ export default function InvoicesPage() {
   };
 
   useEffect(() => {
-    if (createModalTrigger > triggerRef.current) {
-      openNew();
-    }
+    if (createModalTrigger > triggerRef.current) openNew();
     triggerRef.current = createModalTrigger;
   }, [createModalTrigger]);
 
   const addArticleLine = () => setArticles([...articles, { nom: '', quantite: 1, prix_unitaire: 0 }]);
   const removeArticleLine = (i: number) => setArticles(articles.filter((_, idx) => idx !== i));
   const updateArticle = (i: number, field: keyof ArticleLine, value: string | number) => {
-    const next = articles.map((a, idx) => idx === i ? { ...a, [field]: value } : a);
-    setArticles(next);
+    setArticles(articles.map((a, idx) => idx === i ? { ...a, [field]: value } : a));
   };
-
   const selectProduct = (i: number, produitId: string) => {
     const p = produits.data.find(x => x.id === produitId);
-    if (p) {
-      setArticles(prev => prev.map((a, idx) => idx === i ? { ...a, nom: p.nom, prix_unitaire: p.prix } : a));
-    }
+    if (p) setArticles(prev => prev.map((a, idx) => idx === i ? { ...a, nom: p.nom, prix_unitaire: p.prix } : a));
   };
 
   const save = async () => {
-    if (!form.client_id || articles.every(a => !a.nom)) {
-      toast.error('Sélectionnez un client et au moins un article');
-      return;
-    }
-    if (form.date_echeance && form.date_echeance < form.date_facture) {
-      toast.error("La date d'échéance doit être après la date de facture");
-      return;
-    }
+    if (!form.client_id || articles.every(a => !a.nom)) { toast.error('Sélectionnez un client et au moins un article'); return; }
+    if (form.date_echeance && form.date_echeance < form.date_facture) { toast.error("La date d'échéance doit être après la date de facture"); return; }
     const validArticles = articles.filter(a => a.nom);
-    if (validArticles.some(a => a.quantite <= 0 || a.prix_unitaire < 0)) {
-      toast.error('Vérifiez les quantités et prix des articles');
-      return;
-    }
+    if (validArticles.some(a => a.quantite <= 0 || a.prix_unitaire < 0)) { toast.error('Vérifiez les quantités et prix des articles'); return; }
     const ht = validArticles.reduce((s, a) => s + a.quantite * a.prix_unitaire, 0);
     const tvaMontant = Math.round(ht * tva / 100);
     const ttc = ht + tvaMontant;
-
     setSaving(true);
     try {
       if (editId) {
-        await factures.update(editId, {
-          client_id: form.client_id,
-          articles: validArticles as unknown as Json,
-          montant_ht: ht,
-          montant_tva: tvaMontant,
-          montant_ttc: ttc,
-          mode_paiement: form.mode_paiement,
-          date_facture: form.date_facture,
-          date_echeance: form.date_echeance || null,
-          notes: form.notes || null,
-        });
+        await factures.update(editId, { client_id: form.client_id, articles: validArticles as unknown as Json, montant_ht: ht, montant_tva: tvaMontant, montant_ttc: ttc, mode_paiement: form.mode_paiement, date_facture: form.date_facture, date_echeance: form.date_echeance || null, notes: form.notes || null });
         toast.success('Facture modifiée');
       } else {
         const numero = await factures.nextNumero();
-        await factures.add({
-          numero,
-          client_id: form.client_id,
-          articles: validArticles as unknown as Json,
-          montant_ht: ht,
-          montant_tva: tvaMontant,
-          montant_ttc: ttc,
-          montant_regle: 0,
-          mode_paiement: form.mode_paiement,
-          date_facture: form.date_facture,
-          date_echeance: form.date_echeance || null,
-          notes: form.notes || null,
-          statut: 'En attente',
-        });
+        await factures.add({ numero, client_id: form.client_id, articles: validArticles as unknown as Json, montant_ht: ht, montant_tva: tvaMontant, montant_ttc: ttc, montant_regle: 0, mode_paiement: form.mode_paiement, date_facture: form.date_facture, date_echeance: form.date_echeance || null, notes: form.notes || null, statut: 'En attente' });
         toast.success('Facture créée');
       }
       setShowModal(false);
-    } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : 'Erreur');
-    }
+    } catch (e: unknown) { toast.error(e instanceof Error ? e.message : 'Erreur'); }
     setSaving(false);
   };
 
   const del = async () => {
     if (!deleteTarget) return;
-    // Block deletion of paid invoices
     const fac = factures.data.find(f => f.id === deleteTarget.id);
-    if (fac?.statut === 'Payée') {
-      toast.error('Impossible de supprimer une facture payée. Annulez-la d\'abord.');
-      setDeleteTarget(null);
-      return;
-    }
+    if (fac?.statut === 'Payée') { toast.error('Impossible de supprimer une facture payée.'); setDeleteTarget(null); return; }
     try {
       await journal.removeByFactureId(deleteTarget.id);
       await factures.remove(deleteTarget.id);
-      toast.success('Facture supprimée (+ écritures journal nettoyées)');
-    } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : 'Erreur');
-    }
+      toast.success('Facture supprimée');
+    } catch (e: unknown) { toast.error(e instanceof Error ? e.message : 'Erreur'); }
     setDeleteTarget(null);
   };
 
   const openPayModal = (f: typeof factures.data[0]) => {
-    const reste = f.montant_ttc - (f.montant_regle || 0);
     setPayTarget(f);
-    setPayAmount(String(reste));
+    setPayAmount(String(f.montant_ttc - (f.montant_regle || 0)));
     setPayMode(f.mode_paiement || 'Espèce');
   };
 
@@ -190,57 +146,36 @@ export default function InvoicesPage() {
     if (!payTarget) return;
     const amount = Number(payAmount);
     const reste = payTarget.montant_ttc - (payTarget.montant_regle || 0);
-    if (!amount || amount <= 0) {
-      toast.error('Montant invalide');
-      return;
-    }
-    if (amount > reste) {
-      toast.error(`Le montant ne peut pas dépasser le reste à payer (${fmt(reste)})`);
-      return;
-    }
+    if (!amount || amount <= 0) { toast.error('Montant invalide'); return; }
+    if (amount > reste) { toast.error(`Le montant ne peut pas dépasser ${fmt(reste)}`); return; }
     setSaving(true);
     try {
       const newRegle = (payTarget.montant_regle || 0) + amount;
       const isFullyPaid = newRegle >= payTarget.montant_ttc;
-      await factures.update(payTarget.id, {
-        montant_regle: newRegle,
-        statut: isFullyPaid ? 'Payée' : 'Partielle',
-        mode_paiement: payMode,
-      });
-      await journal.add({
-        libelle: `Paiement ${isFullyPaid ? 'total' : 'partiel'} facture ${payTarget.numero}`,
-        type: 'Recette',
-        montant: amount,
-        mode_paiement: payMode,
-        categorie: 'Vente',
-        date_operation: new Date().toISOString().slice(0, 10),
-        facture_id: payTarget.id,
-      });
+      await factures.update(payTarget.id, { montant_regle: newRegle, statut: isFullyPaid ? 'Payée' : 'Partielle', mode_paiement: payMode });
+      await journal.add({ libelle: `Paiement ${isFullyPaid ? 'total' : 'partiel'} facture ${payTarget.numero}`, type: 'Recette', montant: amount, mode_paiement: payMode, categorie: 'Vente', date_operation: new Date().toISOString().slice(0, 10), facture_id: payTarget.id });
       toast.success(isFullyPaid ? 'Facture entièrement payée' : `Paiement partiel de ${fmt(amount)} enregistré`);
-    } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : 'Erreur');
-    }
+    } catch (e: unknown) { toast.error(e instanceof Error ? e.message : 'Erreur'); }
     setSaving(false);
     setPayTarget(null);
   };
+
+  const handleExport = () => {
+    exportCsv('factures', ['N°', 'Client', 'Date', 'TTC', 'Réglé', 'Reste', 'Statut', 'Paiement'],
+      dateFiltered.map(f => [f.numero, cliName(f.client_id), f.date_facture, String(f.montant_ttc), String(f.montant_regle), String(f.montant_ttc - f.montant_regle), f.statut, f.mode_paiement || '']));
+    toast.success('Export CSV téléchargé');
+  };
+
+  const thClass = "px-3.5 py-2.5 text-[10.5px] font-bold text-muted-foreground uppercase tracking-wider text-left border-b border-border bg-background cursor-pointer hover:text-primary transition-colors select-none";
 
   return (
     <div>
       <div className="bg-card border border-border rounded-xl overflow-hidden shadow-card">
         <div className="px-4 py-3 border-b border-border flex items-center justify-between flex-wrap gap-2">
-          <h3 className="font-extrabold text-sm text-foreground">Factures ({filtered.length})</h3>
-          <div className="flex gap-2 items-center">
-            <input
-              className="bg-background border-[1.5px] border-border rounded-lg py-1 px-2.5 text-xs text-foreground outline-none w-[160px] font-sans placeholder:text-muted-foreground focus:border-primary focus:ring-[3px] focus:ring-primary/10"
-              placeholder="🔍 N°, client..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-            />
-            <select
-              className="bg-background border-[1.5px] border-border rounded-lg py-1 px-2 text-xs text-foreground outline-none font-sans"
-              value={statFilter}
-              onChange={e => setStatFilter(e.target.value)}
-            >
+          <h3 className="font-extrabold text-sm text-foreground">Factures ({dateFiltered.length})</h3>
+          <div className="flex gap-2 items-center flex-wrap">
+            <input className="bg-background border-[1.5px] border-border rounded-lg py-1 px-2.5 text-xs text-foreground outline-none w-[160px] font-sans placeholder:text-muted-foreground focus:border-primary focus:ring-[3px] focus:ring-primary/10" placeholder="🔍 N°, client..." value={search} onChange={e => setSearch(e.target.value)} />
+            <select className="bg-background border-[1.5px] border-border rounded-lg py-1 px-2 text-xs text-foreground outline-none font-sans" value={statFilter} onChange={e => setStatFilter(e.target.value)}>
               <option value="">Tous statuts</option>
               <option>Payée</option>
               <option>Partielle</option>
@@ -248,9 +183,9 @@ export default function InvoicesPage() {
               <option>En retard</option>
               <option>Annulée</option>
             </select>
-            <button onClick={openNew} className="gradient-primary text-primary-foreground border-none py-1.5 px-3 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all">
-              ＋ Nouvelle
-            </button>
+            <DateFilter month={month} setMonth={setMonth} availableMonths={availableMonths} />
+            <button onClick={handleExport} className="bg-background border-[1.5px] border-border text-muted-foreground py-1.5 px-2.5 rounded-lg text-xs font-bold hover:border-primary hover:text-primary transition-all" title="Exporter CSV">📥</button>
+            <button onClick={openNew} className="gradient-primary text-primary-foreground border-none py-1.5 px-3 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all">＋ Nouvelle</button>
           </div>
         </div>
         {/* Mobile card view */}
@@ -272,19 +207,10 @@ export default function InvoicesPage() {
                   </div>
                 </div>
                 <div className="flex gap-1 mt-2">
-                  <button
-                    onClick={() => downloadPdf({ type: 'facture', numero: f.numero, date: f.date_facture, echeance: f.date_echeance, client: cliName(f.client_id), articles: (f.articles as unknown as ArticleLine[]) || [], montant_ht: f.montant_ht, montant_tva: f.montant_tva, montant_ttc: f.montant_ttc, tva_pct: entreprise.data?.tva ?? 18, mode_paiement: f.mode_paiement, notes: f.notes, entreprise: entreprise.data })}
-                    className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs"
-                  >📄</button>
-                  {f.statut !== 'Payée' && (
-                    <button onClick={() => openEdit(f)} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs">✏️</button>
-                  )}
-                  {(f.statut === 'En attente' || f.statut === 'En retard' || f.statut === 'Partielle') && (
-                    <button onClick={() => openPayModal(f)} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs">💳</button>
-                  )}
-                  {f.statut !== 'Payée' && (
-                    <button onClick={() => setDeleteTarget({ id: f.id, numero: f.numero })} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs">🗑️</button>
-                  )}
+                  <button onClick={() => downloadPdf({ type: 'facture', numero: f.numero, date: f.date_facture, echeance: f.date_echeance, client: cliName(f.client_id), articles: (f.articles as unknown as ArticleLine[]) || [], montant_ht: f.montant_ht, montant_tva: f.montant_tva, montant_ttc: f.montant_ttc, tva_pct: entreprise.data?.tva ?? 18, mode_paiement: f.mode_paiement, notes: f.notes, entreprise: entreprise.data })} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs">📄</button>
+                  {f.statut !== 'Payée' && <button onClick={() => openEdit(f)} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs">✏️</button>}
+                  {(f.statut === 'En attente' || f.statut === 'En retard' || f.statut === 'Partielle') && <button onClick={() => openPayModal(f)} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs">💳</button>}
+                  {f.statut !== 'Payée' && <button onClick={() => setDeleteTarget({ id: f.id, numero: f.numero })} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs">🗑️</button>}
                 </div>
               </div>
             )) : (
@@ -302,9 +228,15 @@ export default function InvoicesPage() {
             <table className="w-full border-collapse min-w-[700px]">
               <thead>
                 <tr>
-                  {['N°', 'Client', 'TTC', 'Réglé', 'Reste', 'Paiement', 'Date', 'Statut', 'Actions'].map(h => (
-                    <th key={h} className="px-3.5 py-2.5 text-[10.5px] font-bold text-muted-foreground uppercase tracking-wider text-left border-b border-border bg-background">{h}</th>
-                  ))}
+                  <th className={thClass} onClick={() => toggleSort('numero')}>N°{sortIndicator('numero')}</th>
+                  <th className={thClass}>Client</th>
+                  <th className={thClass} onClick={() => toggleSort('montant_ttc')}>TTC{sortIndicator('montant_ttc')}</th>
+                  <th className={thClass} onClick={() => toggleSort('montant_regle')}>Réglé{sortIndicator('montant_regle')}</th>
+                  <th className={thClass}>Reste</th>
+                  <th className={thClass}>Paiement</th>
+                  <th className={thClass} onClick={() => toggleSort('date_facture')}>Date{sortIndicator('date_facture')}</th>
+                  <th className={thClass} onClick={() => toggleSort('statut')}>Statut{sortIndicator('statut')}</th>
+                  <th className="px-3.5 py-2.5 text-[10.5px] font-bold text-muted-foreground uppercase tracking-wider text-left border-b border-border bg-background">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -317,27 +249,15 @@ export default function InvoicesPage() {
                     <td className="px-3.5 py-3 text-sm font-bold border-b border-border">
                       <span className={f.montant_ttc - f.montant_regle > 0 ? 'text-destructive' : 'text-success'}>{fmt(f.montant_ttc - f.montant_regle)}</span>
                     </td>
-                    <td className="px-3.5 py-3 text-sm border-b border-border">
-                      <PayBadge mode={f.mode_paiement || ''} />
-                    </td>
+                    <td className="px-3.5 py-3 text-sm border-b border-border"><PayBadge mode={f.mode_paiement || ''} /></td>
                     <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{formatDate(f.date_facture)}</td>
                     <td className="px-3.5 py-3 text-sm border-b border-border"><StatusBadge status={f.statut} /></td>
                     <td className="px-3.5 py-3 text-sm border-b border-border">
                       <div className="flex gap-1">
-                        <button
-                          onClick={() => downloadPdf({ type: 'facture', numero: f.numero, date: f.date_facture, echeance: f.date_echeance, client: cliName(f.client_id), articles: (f.articles as unknown as ArticleLine[]) || [], montant_ht: f.montant_ht, montant_tva: f.montant_tva, montant_ttc: f.montant_ttc, tva_pct: entreprise.data?.tva ?? 18, mode_paiement: f.mode_paiement, notes: f.notes, entreprise: entreprise.data })}
-                          className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-primary hover:text-primary transition-all"
-                          title="Télécharger PDF"
-                        >📄</button>
-                        {f.statut !== 'Payée' && (
-                          <button onClick={() => openEdit(f)} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-primary hover:text-primary transition-all" title="Modifier">✏️</button>
-                        )}
-                        {(f.statut === 'En attente' || f.statut === 'En retard' || f.statut === 'Partielle') && (
-                          <button onClick={() => openPayModal(f)} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-success hover:text-success transition-all" title="Enregistrer paiement">💳</button>
-                        )}
-                        {f.statut !== 'Payée' && (
-                          <button onClick={() => setDeleteTarget({ id: f.id, numero: f.numero })} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-destructive hover:text-destructive transition-all" title="Supprimer">🗑️</button>
-                        )}
+                        <button onClick={() => downloadPdf({ type: 'facture', numero: f.numero, date: f.date_facture, echeance: f.date_echeance, client: cliName(f.client_id), articles: (f.articles as unknown as ArticleLine[]) || [], montant_ht: f.montant_ht, montant_tva: f.montant_tva, montant_ttc: f.montant_ttc, tva_pct: entreprise.data?.tva ?? 18, mode_paiement: f.mode_paiement, notes: f.notes, entreprise: entreprise.data })} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-primary hover:text-primary transition-all" title="PDF">📄</button>
+                        {f.statut !== 'Payée' && <button onClick={() => openEdit(f)} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-primary hover:text-primary transition-all" title="Modifier">✏️</button>}
+                        {(f.statut === 'En attente' || f.statut === 'En retard' || f.statut === 'Partielle') && <button onClick={() => openPayModal(f)} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-success hover:text-success transition-all" title="Paiement">💳</button>}
+                        {f.statut !== 'Payée' && <button onClick={() => setDeleteTarget({ id: f.id, numero: f.numero })} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-destructive hover:text-destructive transition-all" title="Supprimer">🗑️</button>}
                       </div>
                     </td>
                   </tr>
@@ -354,15 +274,7 @@ export default function InvoicesPage() {
         <PaginationControls {...pagination} />
       </div>
 
-      {/* Confirm delete */}
-      <ConfirmDialog
-        open={!!deleteTarget}
-        onOpenChange={() => setDeleteTarget(null)}
-        title={`Supprimer la facture ${deleteTarget?.numero} ?`}
-        description="Cette action est irréversible. Les écritures journal liées seront également supprimées."
-        onConfirm={del}
-        confirmLabel="Supprimer"
-      />
+      <ConfirmDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)} title={`Supprimer la facture ${deleteTarget?.numero} ?`} description="Cette action est irréversible. Les écritures journal liées seront également supprimées." onConfirm={del} confirmLabel="Supprimer" />
 
       {/* Payment modal */}
       {payTarget && (
@@ -380,14 +292,7 @@ export default function InvoicesPage() {
               </div>
               <div className="flex flex-col gap-1.5 mb-3">
                 <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Montant du paiement *</label>
-                <input
-                  type="number"
-                  min="1"
-                  max={payTarget.montant_ttc - (payTarget.montant_regle || 0)}
-                  className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full"
-                  value={payAmount}
-                  onChange={e => setPayAmount(e.target.value)}
-                />
+                <input type="number" min="1" max={payTarget.montant_ttc - (payTarget.montant_regle || 0)} className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={payAmount} onChange={e => setPayAmount(e.target.value)} />
               </div>
               <div className="flex flex-col gap-1.5 mb-4">
                 <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Mode de paiement</label>
@@ -437,7 +342,6 @@ export default function InvoicesPage() {
                   <input type="date" className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.date_echeance} onChange={e => setForm({ ...form, date_echeance: e.target.value })} />
                 </div>
               </div>
-
               <div className="mb-4">
                 <div className="flex items-center justify-between mb-2">
                   <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Articles</label>
@@ -446,59 +350,27 @@ export default function InvoicesPage() {
                 {articles.map((a, i) => (
                   <div key={i} className="flex gap-2 items-end mb-2 flex-wrap">
                     <div className="flex-1 min-w-[140px]">
-                      <select
-                        className="bg-background border-[1.5px] border-border rounded-lg py-2 px-2.5 text-xs text-foreground outline-none font-sans focus:border-primary w-full mb-1"
-                        value=""
-                        onChange={e => selectProduct(i, e.target.value)}
-                      >
+                      <select className="bg-background border-[1.5px] border-border rounded-lg py-2 px-2.5 text-xs text-foreground outline-none font-sans focus:border-primary w-full mb-1" value="" onChange={e => selectProduct(i, e.target.value)}>
                         <option value="">📦 Choisir produit...</option>
                         {produits.data.map(p => <option key={p.id} value={p.id}>{p.nom} ({fmt(p.prix)})</option>)}
                       </select>
-                      <input
-                        className="bg-background border-[1.5px] border-border rounded-lg py-2 px-2.5 text-xs text-foreground outline-none font-sans focus:border-primary w-full"
-                        placeholder="Désignation"
-                        value={a.nom}
-                        onChange={e => updateArticle(i, 'nom', e.target.value)}
-                      />
+                      <input className="bg-background border-[1.5px] border-border rounded-lg py-2 px-2.5 text-xs text-foreground outline-none font-sans focus:border-primary w-full" placeholder="Désignation" value={a.nom} onChange={e => updateArticle(i, 'nom', e.target.value)} />
                     </div>
-                    <input
-                      type="number"
-                      min="1"
-                      className="bg-background border-[1.5px] border-border rounded-lg py-2 px-2.5 text-xs text-foreground outline-none font-sans focus:border-primary w-16"
-                      placeholder="Qté"
-                      value={a.quantite}
-                      onChange={e => updateArticle(i, 'quantite', Number(e.target.value))}
-                    />
-                    <input
-                      type="number"
-                      min="0"
-                      className="bg-background border-[1.5px] border-border rounded-lg py-2 px-2.5 text-xs text-foreground outline-none font-sans focus:border-primary w-24"
-                      placeholder="Prix"
-                      value={a.prix_unitaire}
-                      onChange={e => updateArticle(i, 'prix_unitaire', Number(e.target.value))}
-                    />
+                    <input type="number" min="1" className="bg-background border-[1.5px] border-border rounded-lg py-2 px-2.5 text-xs text-foreground outline-none font-sans focus:border-primary w-16" placeholder="Qté" value={a.quantite} onChange={e => updateArticle(i, 'quantite', Number(e.target.value))} />
+                    <input type="number" min="0" className="bg-background border-[1.5px] border-border rounded-lg py-2 px-2.5 text-xs text-foreground outline-none font-sans focus:border-primary w-24" placeholder="Prix" value={a.prix_unitaire} onChange={e => updateArticle(i, 'prix_unitaire', Number(e.target.value))} />
                     <span className="text-xs font-bold text-foreground w-24 text-right">{fmt(a.quantite * a.prix_unitaire)}</span>
-                    {articles.length > 1 && (
-                      <button onClick={() => removeArticleLine(i)} className="text-destructive text-xs px-1">✕</button>
-                    )}
+                    {articles.length > 1 && <button onClick={() => removeArticleLine(i)} className="text-destructive text-xs px-1">✕</button>}
                   </div>
                 ))}
               </div>
-
               <div className="bg-background border border-border rounded-lg p-3 mb-3.5">
                 <div className="flex justify-between text-xs mb-1"><span>Total HT</span><span className="font-bold">{fmt(totalHT)}</span></div>
                 <div className="flex justify-between text-xs mb-1"><span>TVA ({tva}%)</span><span className="font-bold">{fmt(totalTVA)}</span></div>
                 <div className="flex justify-between text-sm font-black border-t border-border pt-1.5 mt-1.5"><span>Total TTC</span><span className="text-primary">{fmt(totalTTC)}</span></div>
               </div>
-
               <div className="flex flex-col gap-1.5">
                 <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Notes</label>
-                <textarea
-                  className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans resize-y min-h-[60px] focus:border-primary w-full"
-                  value={form.notes}
-                  onChange={e => setForm({ ...form, notes: e.target.value })}
-                  maxLength={500}
-                />
+                <textarea className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans resize-y min-h-[60px] focus:border-primary w-full" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} maxLength={500} />
               </div>
             </div>
             <div className="px-5 py-3.5 border-t border-border flex gap-2 justify-end">

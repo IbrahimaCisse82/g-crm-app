@@ -5,6 +5,8 @@ import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { PaginationControls } from '@/components/PaginationControls';
 import { TableSkeleton } from '@/components/LoadingSkeleton';
 import { usePagination } from '@/hooks/usePagination';
+import { useSortableTable } from '@/hooks/useSortableTable';
+import { exportCsv } from '@/utils/exportCsv';
 import { toast } from 'sonner';
 
 export default function ClientsPage() {
@@ -24,7 +26,8 @@ export default function ClientsPage() {
     filtered = filtered.filter(c => (c.nom + ' ' + c.prenom + ' ' + c.entreprise + ' ' + c.email + ' ' + c.telephone).toLowerCase().includes(q));
   }
 
-  const pagination = usePagination(filtered);
+  const { sorted, toggleSort, sortIndicator } = useSortableTable(filtered);
+  const pagination = usePagination(sorted);
 
   const openNew = () => {
     setEditId(null);
@@ -32,11 +35,8 @@ export default function ClientsPage() {
     setShowModal(true);
   };
 
-  // Listen to context-based create trigger instead of CustomEvent
   useEffect(() => {
-    if (createModalTrigger > triggerRef.current) {
-      openNew();
-    }
+    if (createModalTrigger > triggerRef.current) openNew();
     triggerRef.current = createModalTrigger;
   }, [createModalTrigger]);
 
@@ -49,16 +49,11 @@ export default function ClientsPage() {
   const save = async () => {
     if (!form.prenom && !form.nom) { toast.error('Renseignez au moins le prénom ou le nom'); return; }
     try {
-      if (editId) {
-        await clients.update(editId, form);
-      } else {
-        await clients.add(form);
-      }
+      if (editId) await clients.update(editId, form);
+      else await clients.add(form);
       setShowModal(false);
       toast.success(editId ? 'Client modifié' : 'Client ajouté');
-    } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : 'Erreur');
-    }
+    } catch (e: unknown) { toast.error(e instanceof Error ? e.message : 'Erreur'); }
   };
 
   const del = async () => {
@@ -73,11 +68,17 @@ export default function ClientsPage() {
     try {
       await clients.remove(deleteTarget.id);
       toast.success('Client supprimé');
-    } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : 'Erreur');
-    }
+    } catch (e: unknown) { toast.error(e instanceof Error ? e.message : 'Erreur'); }
     setDeleteTarget(null);
   };
+
+  const handleExport = () => {
+    exportCsv('clients', ['Prénom', 'Nom', 'Email', 'Téléphone', 'Entreprise', 'Statut'], 
+      filtered.map(c => [c.prenom, c.nom, c.email || '', c.telephone || '', c.entreprise || '', c.statut]));
+    toast.success('Export CSV téléchargé');
+  };
+
+  const thClass = "px-3.5 py-2.5 text-[10.5px] font-bold text-muted-foreground uppercase tracking-wider text-left border-b border-border bg-background cursor-pointer hover:text-primary transition-colors select-none";
 
   return (
     <div>
@@ -101,6 +102,7 @@ export default function ClientsPage() {
               <option>Prospect</option>
               <option>Inactif</option>
             </select>
+            <button onClick={handleExport} className="bg-background border-[1.5px] border-border text-muted-foreground py-1.5 px-2.5 rounded-lg text-xs font-bold hover:border-primary hover:text-primary transition-all" title="Exporter CSV">📥</button>
             <button onClick={openNew} className="gradient-primary text-primary-foreground border-none py-1.5 px-3 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all">
               ＋ Nouveau
             </button>
@@ -136,9 +138,12 @@ export default function ClientsPage() {
             <table className="w-full border-collapse min-w-[560px]">
               <thead>
                 <tr>
-                  {['Nom', 'Email', 'Téléphone', 'Entreprise', 'Statut', 'Actions'].map(h => (
-                    <th key={h} className="px-3.5 py-2.5 text-[10.5px] font-bold text-muted-foreground uppercase tracking-wider text-left border-b border-border bg-background">{h}</th>
-                  ))}
+                  <th className={thClass} onClick={() => toggleSort('nom')}>Nom{sortIndicator('nom')}</th>
+                  <th className={thClass} onClick={() => toggleSort('email')}>Email{sortIndicator('email')}</th>
+                  <th className={thClass} onClick={() => toggleSort('telephone')}>Téléphone{sortIndicator('telephone')}</th>
+                  <th className={thClass} onClick={() => toggleSort('entreprise')}>Entreprise{sortIndicator('entreprise')}</th>
+                  <th className={thClass} onClick={() => toggleSort('statut')}>Statut{sortIndicator('statut')}</th>
+                  <th className="px-3.5 py-2.5 text-[10.5px] font-bold text-muted-foreground uppercase tracking-wider text-left border-b border-border bg-background">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -194,11 +199,7 @@ export default function ClientsPage() {
                 <FormField label="Entreprise" value={form.entreprise} onChange={v => setForm({ ...form, entreprise: v })} />
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Statut</label>
-                  <select
-                    className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary focus:ring-[3px] focus:ring-primary/10 w-full"
-                    value={form.statut}
-                    onChange={e => setForm({ ...form, statut: e.target.value })}
-                  >
+                  <select className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary focus:ring-[3px] focus:ring-primary/10 w-full" value={form.statut} onChange={e => setForm({ ...form, statut: e.target.value })}>
                     <option>Actif</option>
                     <option>Prospect</option>
                     <option>Inactif</option>
@@ -210,11 +211,7 @@ export default function ClientsPage() {
                 <div className="lg:col-span-2">
                   <div className="flex flex-col gap-1.5">
                     <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Notes</label>
-                    <textarea
-                      className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans resize-y min-h-[70px] focus:border-primary focus:ring-[3px] focus:ring-primary/10 w-full"
-                      value={form.notes}
-                      onChange={e => setForm({ ...form, notes: e.target.value })}
-                    />
+                    <textarea className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans resize-y min-h-[70px] focus:border-primary focus:ring-[3px] focus:ring-primary/10 w-full" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} />
                   </div>
                 </div>
               </div>
@@ -234,12 +231,7 @@ function FormField({ label, value, onChange, type = 'text' }: { label: string; v
   return (
     <div className="flex flex-col gap-1.5">
       <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">{label}</label>
-      <input
-        type={type}
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary focus:ring-[3px] focus:ring-primary/10 w-full"
-      />
+      <input type={type} value={value} onChange={e => onChange(e.target.value)} className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary focus:ring-[3px] focus:ring-primary/10 w-full" />
     </div>
   );
 }
