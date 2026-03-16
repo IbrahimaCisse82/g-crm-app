@@ -279,8 +279,8 @@ export default function InvoicesPage() {
                   {f.statut !== 'Payée' && (
                     <button onClick={() => openEdit(f)} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs">✏️</button>
                   )}
-                  {(f.statut === 'En attente' || f.statut === 'En retard') && (
-                    <button onClick={() => setPayTarget(f)} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs">💳</button>
+                  {(f.statut === 'En attente' || f.statut === 'En retard' || f.statut === 'Partielle') && (
+                    <button onClick={() => openPayModal(f)} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs">💳</button>
                   )}
                   {f.statut !== 'Payée' && (
                     <button onClick={() => setDeleteTarget({ id: f.id, numero: f.numero })} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs">🗑️</button>
