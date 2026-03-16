@@ -233,7 +233,7 @@ export default function InvoicesPage() {
         {/* Mobile card view */}
         <div className="lg:hidden">
           {factures.isLoading ? <TableSkeleton rows={5} cols={3} /> : (
-            filtered.length ? filtered.map(f => (
+            pagination.items.length ? pagination.items.map(f => (
               <div key={f.id} className="px-4 py-3 border-b border-border">
                 <div className="flex items-center justify-between mb-1">
                   <div className="font-bold text-xs text-foreground">{f.numero}</div>
