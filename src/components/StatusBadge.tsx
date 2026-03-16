@@ -1,5 +1,6 @@
 export function StatusBadge({ status }: { status: string }) {
   const cls = status === 'Payée' ? 'bg-success/10 text-success'
+    : status === 'Partielle' ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
     : status === 'En retard' ? 'bg-destructive/10 text-destructive'
     : status === 'Annulée' ? 'bg-muted-foreground/15 text-muted-foreground'
     : status === 'Accepté' ? 'bg-primary/10 text-primary'

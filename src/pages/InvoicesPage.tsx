@@ -364,15 +364,47 @@ export default function InvoicesPage() {
         confirmLabel="Supprimer"
       />
 
-      {/* Confirm mark as paid */}
-      <ConfirmDialog
-        open={!!payTarget}
-        onOpenChange={() => setPayTarget(null)}
-        title={`Marquer "${payTarget?.numero}" comme payée ?`}
-        description={`Le montant de ${fmt(payTarget?.montant_ttc || 0)} sera enregistré comme recette dans le journal. Cette action ne peut pas être annulée facilement.`}
-        onConfirm={markPaid}
-        confirmLabel="Confirmer le paiement"
-      />
+      {/* Payment modal */}
+      {payTarget && (
+        <div className="fixed inset-0 bg-foreground/50 backdrop-blur-sm z-[1000] flex items-end lg:items-center justify-center">
+          <div className="bg-card border border-border rounded-2xl lg:rounded-2xl rounded-b-none w-full lg:max-w-[420px] shadow-2xl animate-[slideUp_0.22s_ease]">
+            <div className="px-5 py-4 border-b border-border flex items-center justify-between">
+              <h3 className="font-extrabold text-[15px] text-foreground">💳 Paiement — {payTarget.numero}</h3>
+              <button onClick={() => setPayTarget(null)} className="text-muted-foreground text-xl bg-transparent border-none cursor-pointer">✕</button>
+            </div>
+            <div className="p-5">
+              <div className="bg-background border border-border rounded-lg p-3 mb-4">
+                <div className="flex justify-between text-xs mb-1"><span>Total TTC</span><span className="font-bold">{fmt(payTarget.montant_ttc)}</span></div>
+                <div className="flex justify-between text-xs mb-1"><span>Déjà réglé</span><span className="font-bold text-success">{fmt(payTarget.montant_regle)}</span></div>
+                <div className="flex justify-between text-sm font-black border-t border-border pt-1.5 mt-1.5"><span>Reste à payer</span><span className="text-destructive">{fmt(payTarget.montant_ttc - (payTarget.montant_regle || 0))}</span></div>
+              </div>
+              <div className="flex flex-col gap-1.5 mb-3">
+                <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Montant du paiement *</label>
+                <input
+                  type="number"
+                  min="1"
+                  max={payTarget.montant_ttc - (payTarget.montant_regle || 0)}
+                  className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full"
+                  value={payAmount}
+                  onChange={e => setPayAmount(e.target.value)}
+                />
+              </div>
+              <div className="flex flex-col gap-1.5 mb-4">
+                <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Mode de paiement</label>
+                <select className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={payMode} onChange={e => setPayMode(e.target.value)}>
+                  {PAYMENT_MODES.map(m => <option key={m}>{m}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="px-5 py-3.5 border-t border-border flex gap-2 justify-end">
+              <button onClick={() => setPayTarget(null)} className="bg-card border-[1.5px] border-border text-muted-foreground py-2 px-4 rounded-lg text-xs font-bold hover:bg-background transition-all">Annuler</button>
+              <button onClick={submitPayment} disabled={saving} className="gradient-primary text-primary-foreground border-none py-2 px-4 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all disabled:opacity-60">
+                {saving ? '⏳...' : '✅ Valider le paiement'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showModal && (
         <div className="fixed inset-0 bg-foreground/50 backdrop-blur-sm z-[1000] flex items-end lg:items-center justify-center">
