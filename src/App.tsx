@@ -1,4 +1,5 @@
 import { AuthProvider, useAuth } from '@/hooks/useAuth';
+import { PWAInstallBanner } from '@/components/PWAInstallBanner';
 import { AppProvider } from '@/context/AppContext';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
@@ -78,6 +79,7 @@ export default function App() {
         <BrowserRouter>
           <AuthProvider>
             <AppContent />
+            <PWAInstallBanner />
             <Toaster />
           </AuthProvider>
         </BrowserRouter>
