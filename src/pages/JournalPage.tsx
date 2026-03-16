@@ -262,36 +262,73 @@ export default function JournalPage() {
             <DialogTitle>Nouvelle Transaction</DialogTitle>
           </DialogHeader>
           <div className="grid gap-3.5">
+            {/* Type first */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Libellé *</label>
-              <input className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.libelle} onChange={e => setForm({ ...form, libelle: e.target.value })} />
+              <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Type</label>
+              <select className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.type} onChange={e => setForm({ ...form, type: e.target.value, libelle: '', montant: 0, facture_id: '', categorie: '' })}>
+                <option>Recette</option>
+                <option>Dépense</option>
+              </select>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+
+            {/* Recette: invoice selector */}
+            {form.type === 'Recette' ? (
               <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Type</label>
-                <select className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.type} onChange={e => setForm({ ...form, type: e.target.value })}>
-                  <option>Recette</option>
-                  <option>Dépense</option>
+                <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Facture à encaisser *</label>
+                <select
+                  className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full"
+                  value={form.facture_id}
+                  onChange={e => handleSelectInvoice(e.target.value)}
+                >
+                  <option value="">— Sélectionner une facture —</option>
+                  {pendingInvoices.map(f => {
+                    const reste = f.montant_ttc - (f.montant_regle || 0);
+                    return (
+                      <option key={f.id} value={f.id}>
+                        {f.numero} — {cliName(f.client_id)} — Reste: {fmt(reste)}
+                      </option>
+                    );
+                  })}
                 </select>
+                {form.facture_id && (
+                  <div className="text-[10.5px] text-muted-foreground bg-muted/50 rounded-lg p-2 mt-1">
+                    📄 {form.libelle}
+                  </div>
+                )}
               </div>
+            ) : (
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Libellé *</label>
+                <input className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.libelle} onChange={e => setForm({ ...form, libelle: e.target.value })} />
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">
                 <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Montant *</label>
                 <input type="number" className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.montant} onChange={e => setForm({ ...form, montant: Number(e.target.value) })} />
               </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">
                 <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Mode paiement</label>
                 <select className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.mode_paiement} onChange={e => setForm({ ...form, mode_paiement: e.target.value })}>
                   {PAYMENT_MODES.map(m => <option key={m}>{m}</option>)}
                 </select>
               </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">
                 <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Date</label>
                 <input type="date" className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.date_operation} onChange={e => setForm({ ...form, date_operation: e.target.value })} />
               </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Compte</label>
+                <input className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.compte} onChange={e => setForm({ ...form, compte: e.target.value })} placeholder="Caisse, Banque..." />
+              </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+
+            {/* Catégorie only for Dépense */}
+            {form.type === 'Dépense' && (
               <div className="flex flex-col gap-1.5">
                 <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Catégorie</label>
                 <select className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.categorie} onChange={e => setForm({ ...form, categorie: e.target.value })}>
@@ -299,15 +336,11 @@ export default function JournalPage() {
                   {JOURNAL_CATEGORIES.map(c => <option key={c}>{c}</option>)}
                 </select>
               </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Compte</label>
-                <input className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.compte} onChange={e => setForm({ ...form, compte: e.target.value })} placeholder="Caisse, Banque..." />
-              </div>
-            </div>
+            )}
           </div>
-          <DialogFooter>
-            <button onClick={() => setShowModal(false)} className="bg-card border-[1.5px] border-border text-muted-foreground py-2 px-4 rounded-lg text-xs font-bold hover:bg-background transition-all">Annuler</button>
-            <button onClick={save} className="gradient-primary text-primary-foreground border-none py-2 px-4 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all">💾 Enregistrer</button>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <button onClick={() => setShowModal(false)} className="bg-card border-[1.5px] border-border text-muted-foreground py-2 px-4 rounded-lg text-xs font-bold hover:bg-background transition-all w-full sm:w-auto">Annuler</button>
+            <button onClick={save} className="gradient-primary text-primary-foreground border-none py-2 px-4 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all w-full sm:w-auto">💾 Enregistrer</button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
