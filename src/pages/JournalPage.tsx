@@ -111,7 +111,7 @@ export default function JournalPage() {
               <div key={j.id} className="px-4 py-3 border-b border-border flex items-center justify-between gap-2">
                 <div className="min-w-0 flex-1">
                   <div className="font-bold text-xs text-foreground truncate">{j.libelle || '—'}</div>
-                  <div className="text-[10px] text-muted-foreground truncate">{j.date_operation} · {j.mode_paiement} {j.categorie ? `· ${j.categorie}` : ''}</div>
+                  <div className="text-[10px] text-muted-foreground truncate">{formatDate(j.date_operation)} · {j.mode_paiement} {j.categorie ? `· ${j.categorie}` : ''}</div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <span className={`font-bold text-sm ${j.type === 'Recette' ? 'text-success' : 'text-destructive'}`}>
