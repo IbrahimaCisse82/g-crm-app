@@ -80,11 +80,11 @@ export default function InvoicesPage() {
   };
 
   useEffect(() => {
-    const handler = () => openNew();
-    window.addEventListener('open-create-modal', handler);
-    return () => window.removeEventListener('open-create-modal', handler);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (createModalTrigger > triggerRef.current) {
+      openNew();
+    }
+    triggerRef.current = createModalTrigger;
+  }, [createModalTrigger]);
 
   const addArticleLine = () => setArticles([...articles, { nom: '', quantite: 1, prix_unitaire: 0 }]);
   const removeArticleLine = (i: number) => setArticles(articles.filter((_, idx) => idx !== i));
