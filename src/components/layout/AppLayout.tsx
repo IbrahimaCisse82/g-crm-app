@@ -3,6 +3,8 @@ import { useApp } from '@/context/AppContext';
 import { useNavigate } from 'react-router-dom';
 import { Building2, LogOut, Package } from 'lucide-react';
 import AppSidebar from './AppSidebar';
+import NotificationBell from '@/components/NotificationBell';
+import { useOverdueNotifications } from '@/hooks/useOverdueNotifications';
 
 const sectionTitles: Record<string, string> = {
   dashboard: 'Tableau de bord',
@@ -16,10 +18,13 @@ const sectionTitles: Record<string, string> = {
 };
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const { currentSection, sidebarOpen, setSidebarOpen, logout } = useApp();
+  const { currentSection, sidebarOpen, setSidebarOpen, logout, factures, cliName, fmt } = useApp();
   const navigate = useNavigate();
   const [showTopMenu, setShowTopMenu] = React.useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // Browser push notifications for overdue invoices
+  useOverdueNotifications({ factures: factures.data, enabled: !factures.isLoading, cliName, fmt });
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -37,11 +42,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
       <div className="fixed top-0 left-0 right-0 h-[52px] bg-card border-b border-border flex items-center justify-between px-4 z-[90] shadow-card lg:hidden">
         <span className="font-black text-base text-primary tracking-tight">G-CRM</span>
-        <div className="relative" ref={menuRef}>
-          <button
-            onClick={() => setShowTopMenu(!showTopMenu)}
-            className="w-[34px] h-[34px] rounded-lg bg-background border border-border flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-primary transition-all"
-          >
+        <div className="flex items-center gap-1.5">
+          <NotificationBell />
+          <div className="relative" ref={menuRef}>
+            <button
+              onClick={() => setShowTopMenu(!showTopMenu)}
+              className="w-[34px] h-[34px] rounded-lg bg-background border border-border flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-primary transition-all"
+            >
             <span className={`w-[15px] h-[1.5px] bg-foreground rounded-sm transition-all ${showTopMenu ? 'rotate-45 translate-y-[5.5px]' : ''}`} />
             <span className={`w-[15px] h-[1.5px] bg-foreground rounded-sm transition-all ${showTopMenu ? 'opacity-0 scale-x-0' : ''}`} />
             <span className={`w-[15px] h-[1.5px] bg-foreground rounded-sm transition-all ${showTopMenu ? '-rotate-45 -translate-y-[5.5px]' : ''}`} />
@@ -72,12 +79,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               </button>
             </div>
           )}
+          </div>
         </div>
       </div>
 
       <div className="lg:ml-[252px] flex-1 flex flex-col min-h-screen pt-[52px] lg:pt-0">
         <div className="hidden lg:flex h-14 bg-card border-b border-border items-center px-6 sticky top-0 z-[80] gap-3 shadow-card shrink-0">
           <h2 className="font-extrabold text-base flex-1 text-foreground tracking-tight">{sectionTitles[currentSection]}</h2>
+          <NotificationBell />
         </div>
 
         <div className="flex-1 p-4 lg:p-6 pb-20 lg:pb-6">
