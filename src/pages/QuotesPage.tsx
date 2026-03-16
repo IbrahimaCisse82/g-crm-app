@@ -14,6 +14,7 @@ import { downloadPdf } from '@/utils/generatePdf';
 import { formatDate } from '@/lib/formatDate';
 import type { ArticleLine } from '@/types';
 import type { Json } from '@/integrations/supabase/types';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 
 export default function QuotesPage() {
   const { devis, factures, clients, produits, entreprise, cliName, fmt, createModalTrigger } = useApp();
@@ -234,71 +235,68 @@ export default function QuotesPage() {
 
       <ConfirmDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)} title={`Supprimer le devis ${deleteTarget?.numero} ?`} description="Cette action est irréversible." onConfirm={del} confirmLabel="Supprimer" />
 
-      {showModal && (
-        <div className="fixed inset-0 bg-foreground/50 backdrop-blur-sm z-[1000] flex items-end lg:items-center justify-center">
-          <div className="bg-card border border-border rounded-2xl lg:rounded-2xl rounded-b-none w-full lg:max-w-[640px] max-h-[90vh] overflow-y-auto shadow-2xl animate-[slideUp_0.22s_ease]">
-            <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-              <h3 className="font-extrabold text-[15px] text-foreground">{editId ? 'Modifier Devis' : 'Nouveau Devis'}</h3>
-              <button onClick={() => setShowModal(false)} className="text-muted-foreground text-xl bg-transparent border-none cursor-pointer">✕</button>
-            </div>
-            <div className="p-5">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5 mb-4">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Client *</label>
-                  <select className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.client_id} onChange={e => setForm({ ...form, client_id: e.target.value })}>
-                    <option value="">— Sélectionner —</option>
-                    {clients.data.map(c => <option key={c.id} value={c.id}>{c.prenom} {c.nom}</option>)}
-                  </select>
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Validité (jours)</label>
-                  <input type="number" min="1" className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.validite_jours} onChange={e => setForm({ ...form, validite_jours: Number(e.target.value) })} />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Date devis</label>
-                  <input type="date" className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.date_devis} onChange={e => setForm({ ...form, date_devis: e.target.value })} />
-                </div>
-              </div>
-              <div className="mb-4">
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Articles</label>
-                  <button onClick={addLine} className="text-xs text-primary font-bold hover:underline">＋ Ajouter</button>
-                </div>
-                {articles.map((a, i) => (
-                  <div key={i} className="flex gap-2 items-end mb-2 flex-wrap">
-                    <div className="flex-1 min-w-[140px]">
-                      <select className="bg-background border-[1.5px] border-border rounded-lg py-2 px-2.5 text-xs text-foreground outline-none font-sans focus:border-primary w-full mb-1" value="" onChange={e => selectProduct(i, e.target.value)}>
-                        <option value="">📦 Choisir produit...</option>
-                        {produits.data.map(p => <option key={p.id} value={p.id}>{p.nom} ({fmt(p.prix)})</option>)}
-                      </select>
-                      <input className="bg-background border-[1.5px] border-border rounded-lg py-2 px-2.5 text-xs text-foreground outline-none font-sans focus:border-primary w-full" placeholder="Désignation" value={a.nom} onChange={e => updateArticle(i, 'nom', e.target.value)} />
-                    </div>
-                    <input type="number" min="1" className="bg-background border-[1.5px] border-border rounded-lg py-2 px-2.5 text-xs text-foreground outline-none font-sans focus:border-primary w-16" placeholder="Qté" value={a.quantite} onChange={e => updateArticle(i, 'quantite', Number(e.target.value))} />
-                    <input type="number" min="0" className="bg-background border-[1.5px] border-border rounded-lg py-2 px-2.5 text-xs text-foreground outline-none font-sans focus:border-primary w-24" placeholder="Prix" value={a.prix_unitaire} onChange={e => updateArticle(i, 'prix_unitaire', Number(e.target.value))} />
-                    <span className="text-xs font-bold text-foreground w-24 text-right">{fmt(a.quantite * a.prix_unitaire)}</span>
-                    {articles.length > 1 && <button onClick={() => removeLine(i)} className="text-destructive text-xs px-1">✕</button>}
-                  </div>
-                ))}
-              </div>
-              <div className="bg-background border border-border rounded-lg p-3 mb-3.5">
-                <div className="flex justify-between text-xs mb-1"><span>Total HT</span><span className="font-bold">{fmt(totalHT)}</span></div>
-                <div className="flex justify-between text-xs mb-1"><span>TVA ({tva}%)</span><span className="font-bold">{fmt(totalTVA)}</span></div>
-                <div className="flex justify-between text-sm font-black border-t border-border pt-1.5 mt-1.5"><span>Total TTC</span><span className="text-primary">{fmt(totalTTC)}</span></div>
+      <Dialog open={showModal} onOpenChange={setShowModal}>
+        <DialogContent className="max-w-[640px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editId ? 'Modifier Devis' : 'Nouveau Devis'}</DialogTitle>
+          </DialogHeader>
+          <div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5 mb-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Client *</label>
+                <select className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.client_id} onChange={e => setForm({ ...form, client_id: e.target.value })}>
+                  <option value="">— Sélectionner —</option>
+                  {clients.data.map(c => <option key={c.id} value={c.id}>{c.prenom} {c.nom}</option>)}
+                </select>
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Notes</label>
-                <textarea className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans resize-y min-h-[60px] focus:border-primary w-full" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} maxLength={500} />
+                <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Validité (jours)</label>
+                <input type="number" min="1" className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.validite_jours} onChange={e => setForm({ ...form, validite_jours: Number(e.target.value) })} />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Date devis</label>
+                <input type="date" className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.date_devis} onChange={e => setForm({ ...form, date_devis: e.target.value })} />
               </div>
             </div>
-            <div className="px-5 py-3.5 border-t border-border flex gap-2 justify-end">
-              <button onClick={() => setShowModal(false)} className="bg-card border-[1.5px] border-border text-muted-foreground py-2 px-4 rounded-lg text-xs font-bold hover:bg-background transition-all">Annuler</button>
-              <button onClick={save} disabled={saving} className="gradient-primary text-primary-foreground border-none py-2 px-4 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all disabled:opacity-60">
-                {saving ? '⏳ Enregistrement...' : '💾 Enregistrer'}
-              </button>
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Articles</label>
+                <button onClick={addLine} className="text-xs text-primary font-bold hover:underline">＋ Ajouter</button>
+              </div>
+              {articles.map((a, i) => (
+                <div key={i} className="flex gap-2 items-end mb-2 flex-wrap">
+                  <div className="flex-1 min-w-[140px]">
+                    <select className="bg-background border-[1.5px] border-border rounded-lg py-2 px-2.5 text-xs text-foreground outline-none font-sans focus:border-primary w-full mb-1" value="" onChange={e => selectProduct(i, e.target.value)}>
+                      <option value="">📦 Choisir produit...</option>
+                      {produits.data.map(p => <option key={p.id} value={p.id}>{p.nom} ({fmt(p.prix)})</option>)}
+                    </select>
+                    <input className="bg-background border-[1.5px] border-border rounded-lg py-2 px-2.5 text-xs text-foreground outline-none font-sans focus:border-primary w-full" placeholder="Désignation" value={a.nom} onChange={e => updateArticle(i, 'nom', e.target.value)} />
+                  </div>
+                  <input type="number" min="1" className="bg-background border-[1.5px] border-border rounded-lg py-2 px-2.5 text-xs text-foreground outline-none font-sans focus:border-primary w-16" placeholder="Qté" value={a.quantite} onChange={e => updateArticle(i, 'quantite', Number(e.target.value))} />
+                  <input type="number" min="0" className="bg-background border-[1.5px] border-border rounded-lg py-2 px-2.5 text-xs text-foreground outline-none font-sans focus:border-primary w-24" placeholder="Prix" value={a.prix_unitaire} onChange={e => updateArticle(i, 'prix_unitaire', Number(e.target.value))} />
+                  <span className="text-xs font-bold text-foreground w-24 text-right">{fmt(a.quantite * a.prix_unitaire)}</span>
+                  {articles.length > 1 && <button onClick={() => removeLine(i)} className="text-destructive text-xs px-1">✕</button>}
+                </div>
+              ))}
+            </div>
+            <div className="bg-background border border-border rounded-lg p-3 mb-3.5">
+              <div className="flex justify-between text-xs mb-1"><span>Total HT</span><span className="font-bold">{fmt(totalHT)}</span></div>
+              <div className="flex justify-between text-xs mb-1"><span>TVA ({tva}%)</span><span className="font-bold">{fmt(totalTVA)}</span></div>
+              <div className="flex justify-between text-sm font-black border-t border-border pt-1.5 mt-1.5"><span>Total TTC</span><span className="text-primary">{fmt(totalTTC)}</span></div>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Notes</label>
+              <textarea className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans resize-y min-h-[60px] focus:border-primary w-full" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} maxLength={500} />
             </div>
           </div>
-        </div>
-      )}
+          <DialogFooter>
+            <button onClick={() => setShowModal(false)} className="bg-card border-[1.5px] border-border text-muted-foreground py-2 px-4 rounded-lg text-xs font-bold hover:bg-background transition-all">Annuler</button>
+            <button onClick={save} disabled={saving} className="gradient-primary text-primary-foreground border-none py-2 px-4 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all disabled:opacity-60">
+              {saving ? '⏳ Enregistrement...' : '💾 Enregistrer'}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

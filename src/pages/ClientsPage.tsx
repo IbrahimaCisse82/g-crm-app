@@ -8,6 +8,7 @@ import { usePagination } from '@/hooks/usePagination';
 import { useSortableTable } from '@/hooks/useSortableTable';
 import { exportCsv } from '@/utils/exportCsv';
 import { toast } from 'sonner';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 
 export default function ClientsPage() {
   const { clients, factures, devis, createModalTrigger } = useApp();
@@ -183,46 +184,41 @@ export default function ClientsPage() {
         confirmLabel="Supprimer"
       />
 
-      {showModal && (
-        <div className="fixed inset-0 bg-foreground/50 backdrop-blur-sm z-[1000] flex items-center lg:items-center items-end justify-center">
-          <div className="bg-card border border-border rounded-2xl lg:rounded-2xl rounded-b-none w-full lg:max-w-[560px] max-h-[90vh] overflow-y-auto shadow-2xl animate-[slideUp_0.22s_ease]">
-            <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-              <h3 className="font-extrabold text-[15px] text-foreground">{editId ? 'Modifier Client' : 'Nouveau Client'}</h3>
-              <button onClick={() => setShowModal(false)} className="text-muted-foreground text-xl bg-transparent border-none cursor-pointer">✕</button>
+      <Dialog open={showModal} onOpenChange={setShowModal}>
+        <DialogContent className="max-w-[560px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editId ? 'Modifier Client' : 'Nouveau Client'}</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5">
+            <FormField label="Prénom *" value={form.prenom} onChange={v => setForm({ ...form, prenom: v })} />
+            <FormField label="Nom *" value={form.nom} onChange={v => setForm({ ...form, nom: v })} />
+            <FormField label="Email" value={form.email} onChange={v => setForm({ ...form, email: v })} type="email" />
+            <FormField label="Téléphone" value={form.telephone} onChange={v => setForm({ ...form, telephone: v })} />
+            <FormField label="Entreprise" value={form.entreprise} onChange={v => setForm({ ...form, entreprise: v })} />
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Statut</label>
+              <select className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary focus:ring-[3px] focus:ring-primary/10 w-full" value={form.statut} onChange={e => setForm({ ...form, statut: e.target.value })}>
+                <option>Actif</option>
+                <option>Prospect</option>
+                <option>Inactif</option>
+              </select>
             </div>
-            <div className="p-5">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5">
-                <FormField label="Prénom *" value={form.prenom} onChange={v => setForm({ ...form, prenom: v })} />
-                <FormField label="Nom *" value={form.nom} onChange={v => setForm({ ...form, nom: v })} />
-                <FormField label="Email" value={form.email} onChange={v => setForm({ ...form, email: v })} type="email" />
-                <FormField label="Téléphone" value={form.telephone} onChange={v => setForm({ ...form, telephone: v })} />
-                <FormField label="Entreprise" value={form.entreprise} onChange={v => setForm({ ...form, entreprise: v })} />
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Statut</label>
-                  <select className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary focus:ring-[3px] focus:ring-primary/10 w-full" value={form.statut} onChange={e => setForm({ ...form, statut: e.target.value })}>
-                    <option>Actif</option>
-                    <option>Prospect</option>
-                    <option>Inactif</option>
-                  </select>
-                </div>
-                <div className="lg:col-span-2">
-                  <FormField label="Adresse" value={form.adresse} onChange={v => setForm({ ...form, adresse: v })} />
-                </div>
-                <div className="lg:col-span-2">
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Notes</label>
-                    <textarea className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans resize-y min-h-[70px] focus:border-primary focus:ring-[3px] focus:ring-primary/10 w-full" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} />
-                  </div>
-                </div>
+            <div className="lg:col-span-2">
+              <FormField label="Adresse" value={form.adresse} onChange={v => setForm({ ...form, adresse: v })} />
+            </div>
+            <div className="lg:col-span-2">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Notes</label>
+                <textarea className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans resize-y min-h-[70px] focus:border-primary focus:ring-[3px] focus:ring-primary/10 w-full" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} />
               </div>
             </div>
-            <div className="px-5 py-3.5 border-t border-border flex gap-2 justify-end">
-              <button onClick={() => setShowModal(false)} className="bg-card border-[1.5px] border-border text-muted-foreground py-2 px-4 rounded-lg text-xs font-bold hover:bg-background transition-all">Annuler</button>
-              <button onClick={save} className="gradient-primary text-primary-foreground border-none py-2 px-4 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all">💾 Enregistrer</button>
-            </div>
           </div>
-        </div>
-      )}
+          <DialogFooter>
+            <button onClick={() => setShowModal(false)} className="bg-card border-[1.5px] border-border text-muted-foreground py-2 px-4 rounded-lg text-xs font-bold hover:bg-background transition-all">Annuler</button>
+            <button onClick={save} className="gradient-primary text-primary-foreground border-none py-2 px-4 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all">💾 Enregistrer</button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

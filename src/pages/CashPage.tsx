@@ -3,6 +3,7 @@ import { useApp } from '@/context/AppContext';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { CardSkeleton } from '@/components/LoadingSkeleton';
 import { toast } from 'sonner';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 
 export default function CashPage() {
   const { comptes, journal, fmt, createModalTrigger } = useApp();
@@ -33,7 +34,6 @@ export default function CashPage() {
     return { mm, sol, mIn, mOut };
   });
 
-  // Filter MM cards by search
   const filteredMmCards = search
     ? mmCards.filter(({ mm }) => (mm.operateur + ' ' + mm.numero + ' ' + mm.titulaire).toLowerCase().includes(search.toLowerCase()))
     : mmCards;
@@ -126,15 +126,8 @@ export default function CashPage() {
           <div className="px-4 py-3 border-b border-border flex items-center justify-between flex-wrap gap-2">
             <h3 className="font-extrabold text-sm text-foreground">📱 Comptes Mobile Money</h3>
             <div className="flex gap-2 items-center">
-              <input
-                className="bg-background border-[1.5px] border-border rounded-lg py-1 px-2.5 text-xs text-foreground outline-none w-[120px] font-sans placeholder:text-muted-foreground focus:border-primary focus:ring-[3px] focus:ring-primary/10"
-                placeholder="🔍 Rechercher..."
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-              />
-              <button onClick={openNew} className="gradient-primary text-primary-foreground border-none py-1.5 px-3 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all">
-                ＋ Compte
-              </button>
+              <input className="bg-background border-[1.5px] border-border rounded-lg py-1 px-2.5 text-xs text-foreground outline-none w-[120px] font-sans placeholder:text-muted-foreground focus:border-primary focus:ring-[3px] focus:ring-primary/10" placeholder="🔍 Rechercher..." value={search} onChange={e => setSearch(e.target.value)} />
+              <button onClick={openNew} className="gradient-primary text-primary-foreground border-none py-1.5 px-3 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all">＋ Compte</button>
             </div>
           </div>
           <div className="p-4">
@@ -143,9 +136,7 @@ export default function CashPage() {
                 <div>
                   <div className="font-bold text-sm">{icons[mm.operateur] || '📱'} {mm.operateur}</div>
                   <div className="text-[11px] text-muted-foreground">{mm.titulaire ? mm.titulaire + ' · ' : ''}{mm.numero}</div>
-                  <div className="text-[10px] text-muted-foreground mt-1">
-                    Init: {fmt(mm.solde)} · +{fmt(mIn)} · -{fmt(mOut)}
-                  </div>
+                  <div className="text-[10px] text-muted-foreground mt-1">Init: {fmt(mm.solde)} · +{fmt(mIn)} · -{fmt(mOut)}</div>
                 </div>
                 <div className="text-right">
                   <div className={`font-black text-base ${sol >= 0 ? 'text-success' : 'text-destructive'}`}>{fmt(sol)}</div>
@@ -204,42 +195,39 @@ export default function CashPage() {
 
       <ConfirmDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)} title="Supprimer ce compte ?" description={`Le compte "${deleteTarget?.label}" sera définitivement supprimé.`} onConfirm={del} confirmLabel="Supprimer" />
 
-      {showModal && (
-        <div className="fixed inset-0 bg-foreground/50 backdrop-blur-sm z-[1000] flex items-end lg:items-center justify-center">
-          <div className="bg-card border border-border rounded-2xl lg:rounded-2xl rounded-b-none w-full lg:max-w-[480px] max-h-[90vh] overflow-y-auto shadow-2xl animate-[slideUp_0.22s_ease]">
-            <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-              <h3 className="font-extrabold text-[15px] text-foreground">{editId ? 'Modifier Compte' : 'Nouveau Compte Mobile Money'}</h3>
-              <button onClick={() => setShowModal(false)} className="text-muted-foreground text-xl bg-transparent border-none cursor-pointer">✕</button>
+      <Dialog open={showModal} onOpenChange={setShowModal}>
+        <DialogContent className="max-w-[480px]">
+          <DialogHeader>
+            <DialogTitle>{editId ? 'Modifier Compte' : 'Nouveau Compte Mobile Money'}</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-3.5">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Opérateur</label>
+              <select className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.operateur} onChange={e => setForm({ ...form, operateur: e.target.value })}>
+                <option>Wave</option>
+                <option>Orange Money</option>
+                <option>Yas Money</option>
+              </select>
             </div>
-            <div className="p-5 grid gap-3.5">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Opérateur</label>
-                <select className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.operateur} onChange={e => setForm({ ...form, operateur: e.target.value })}>
-                  <option>Wave</option>
-                  <option>Orange Money</option>
-                  <option>Yas Money</option>
-                </select>
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Numéro *</label>
-                <input className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.numero} onChange={e => setForm({ ...form, numero: e.target.value })} placeholder="77 123 45 67" />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Titulaire</label>
-                <input className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.titulaire} onChange={e => setForm({ ...form, titulaire: e.target.value })} />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Solde initial</label>
-                <input type="number" className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.solde} onChange={e => setForm({ ...form, solde: Number(e.target.value) })} />
-              </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Numéro *</label>
+              <input className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.numero} onChange={e => setForm({ ...form, numero: e.target.value })} placeholder="77 123 45 67" />
             </div>
-            <div className="px-5 py-3.5 border-t border-border flex gap-2 justify-end">
-              <button onClick={() => setShowModal(false)} className="bg-card border-[1.5px] border-border text-muted-foreground py-2 px-4 rounded-lg text-xs font-bold hover:bg-background transition-all">Annuler</button>
-              <button onClick={save} className="gradient-primary text-primary-foreground border-none py-2 px-4 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all">💾 Enregistrer</button>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Titulaire</label>
+              <input className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.titulaire} onChange={e => setForm({ ...form, titulaire: e.target.value })} />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Solde initial</label>
+              <input type="number" className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.solde} onChange={e => setForm({ ...form, solde: Number(e.target.value) })} />
             </div>
           </div>
-        </div>
-      )}
+          <DialogFooter>
+            <button onClick={() => setShowModal(false)} className="bg-card border-[1.5px] border-border text-muted-foreground py-2 px-4 rounded-lg text-xs font-bold hover:bg-background transition-all">Annuler</button>
+            <button onClick={save} className="gradient-primary text-primary-foreground border-none py-2 px-4 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all">💾 Enregistrer</button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

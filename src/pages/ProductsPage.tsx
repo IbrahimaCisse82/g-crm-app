@@ -7,6 +7,7 @@ import { usePagination } from '@/hooks/usePagination';
 import { useSortableTable } from '@/hooks/useSortableTable';
 import { exportCsv } from '@/utils/exportCsv';
 import { toast } from 'sonner';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 
 export default function ProductsPage() {
   const { produits, fmt, createModalTrigger } = useApp();
@@ -135,40 +136,37 @@ export default function ProductsPage() {
 
       <ConfirmDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)} title={`Supprimer "${deleteTarget?.nom}" ?`} description="Ce produit sera définitivement supprimé." onConfirm={del} confirmLabel="Supprimer" />
 
-      {showModal && (
-        <div className="fixed inset-0 bg-foreground/50 backdrop-blur-sm z-[1000] flex items-end lg:items-center justify-center">
-          <div className="bg-card border border-border rounded-2xl lg:rounded-2xl rounded-b-none w-full lg:max-w-[560px] max-h-[90vh] overflow-y-auto shadow-2xl animate-[slideUp_0.22s_ease]">
-            <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-              <h3 className="font-extrabold text-[15px] text-foreground">{editId ? 'Modifier Produit' : 'Nouveau Produit'}</h3>
-              <button onClick={() => setShowModal(false)} className="text-muted-foreground text-xl bg-transparent border-none cursor-pointer">✕</button>
+      <Dialog open={showModal} onOpenChange={setShowModal}>
+        <DialogContent className="max-w-[560px]">
+          <DialogHeader>
+            <DialogTitle>{editId ? 'Modifier Produit' : 'Nouveau Produit'}</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-3.5">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Nom *</label>
+              <input className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.nom} onChange={e => setForm({ ...form, nom: e.target.value })} />
             </div>
-            <div className="p-5 grid gap-3.5">
+            <div className="grid grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Nom *</label>
-                <input className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.nom} onChange={e => setForm({ ...form, nom: e.target.value })} />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Prix</label>
-                  <input type="number" className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.prix} onChange={e => setForm({ ...form, prix: Number(e.target.value) })} />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Unité</label>
-                  <input className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.unite} onChange={e => setForm({ ...form, unite: e.target.value })} />
-                </div>
+                <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Prix</label>
+                <input type="number" className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.prix} onChange={e => setForm({ ...form, prix: Number(e.target.value) })} />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Description</label>
-                <textarea className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans resize-y min-h-[70px] focus:border-primary w-full" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
+                <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Unité</label>
+                <input className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.unite} onChange={e => setForm({ ...form, unite: e.target.value })} />
               </div>
             </div>
-            <div className="px-5 py-3.5 border-t border-border flex gap-2 justify-end">
-              <button onClick={() => setShowModal(false)} className="bg-card border-[1.5px] border-border text-muted-foreground py-2 px-4 rounded-lg text-xs font-bold hover:bg-background transition-all">Annuler</button>
-              <button onClick={save} className="gradient-primary text-primary-foreground border-none py-2 px-4 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all">💾 Enregistrer</button>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Description</label>
+              <textarea className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans resize-y min-h-[70px] focus:border-primary w-full" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
             </div>
           </div>
-        </div>
-      )}
+          <DialogFooter>
+            <button onClick={() => setShowModal(false)} className="bg-card border-[1.5px] border-border text-muted-foreground py-2 px-4 rounded-lg text-xs font-bold hover:bg-background transition-all">Annuler</button>
+            <button onClick={save} className="gradient-primary text-primary-foreground border-none py-2 px-4 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all">💾 Enregistrer</button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
