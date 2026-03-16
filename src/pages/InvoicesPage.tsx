@@ -302,7 +302,7 @@ export default function InvoicesPage() {
             <table className="w-full border-collapse min-w-[700px]">
               <thead>
                 <tr>
-                  {['N°', 'Client', 'HT', 'TVA', 'TTC', 'Paiement', 'Date', 'Statut', 'Actions'].map(h => (
+                  {['N°', 'Client', 'TTC', 'Réglé', 'Reste', 'Paiement', 'Date', 'Statut', 'Actions'].map(h => (
                     <th key={h} className="px-3.5 py-2.5 text-[10.5px] font-bold text-muted-foreground uppercase tracking-wider text-left border-b border-border bg-background">{h}</th>
                   ))}
                 </tr>
