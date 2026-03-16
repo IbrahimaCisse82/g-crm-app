@@ -45,6 +45,8 @@ export default function QuotesPage() {
     filtered = filtered.filter(d => d.numero?.toLowerCase().includes(q) || cliName(d.client_id).toLowerCase().includes(q));
   }
 
+  const pagination = usePagination(filtered);
+
   const tva = entreprise.data?.tva ?? 18;
   const totalHT = articles.reduce((s, a) => s + a.quantite * a.prix_unitaire, 0);
   const totalTVA = Math.round(totalHT * tva / 100);
