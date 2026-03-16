@@ -79,6 +79,7 @@ export default function App() {
         <BrowserRouter>
           <AuthProvider>
             <AppContent />
+            <PWAInstallBanner />
             <Toaster />
           </AuthProvider>
         </BrowserRouter>
