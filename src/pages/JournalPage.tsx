@@ -3,6 +3,7 @@ import { useApp } from '@/context/AppContext';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { TableSkeleton } from '@/components/LoadingSkeleton';
 import { toast } from 'sonner';
+import { formatDate } from '@/lib/formatDate';
 import { JOURNAL_CATEGORIES, PAYMENT_MODES } from '@/types';
 
 export default function JournalPage() {
