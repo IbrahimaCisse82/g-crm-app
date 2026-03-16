@@ -23,6 +23,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [showTopMenu, setShowTopMenu] = React.useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
+  // Browser push notifications for overdue invoices
+  useOverdueNotifications({ factures: factures.data, enabled: !factures.isLoading, cliName, fmt });
+
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
