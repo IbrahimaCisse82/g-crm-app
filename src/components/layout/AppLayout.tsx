@@ -3,6 +3,8 @@ import { useApp } from '@/context/AppContext';
 import { useNavigate } from 'react-router-dom';
 import { Building2, LogOut, Package } from 'lucide-react';
 import AppSidebar from './AppSidebar';
+import NotificationBell from '@/components/NotificationBell';
+import { useOverdueNotifications } from '@/hooks/useOverdueNotifications';
 
 const sectionTitles: Record<string, string> = {
   dashboard: 'Tableau de bord',
