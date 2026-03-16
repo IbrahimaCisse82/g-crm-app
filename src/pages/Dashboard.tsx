@@ -2,6 +2,7 @@ import { useApp } from '@/context/AppContext';
 import { useNavigate } from 'react-router-dom';
 import { StatusBadge } from '@/components/StatusBadge';
 import { CardSkeleton, TableSkeleton } from '@/components/LoadingSkeleton';
+import { formatDate } from '@/lib/formatDate';
 
 function StatCard({ icon, value, label, sub }: { icon: string; value: string; label: string; sub?: string }) {
   return (
