@@ -16,10 +16,9 @@ const sectionTitles: Record<string, string> = {
 };
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const { currentSection, sidebarOpen, setSidebarOpen, logout, triggerCreateModal } = useApp();
+  const { currentSection, sidebarOpen, setSidebarOpen, logout } = useApp();
   const navigate = useNavigate();
-  const [showFabMenu, setShowFabMenu] = useState(false);
-  const [showTopMenu, setShowTopMenu] = useState(false);
+  const [showTopMenu, setShowTopMenu] = React.useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -31,13 +30,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     if (showTopMenu) document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showTopMenu]);
-
-  const handleFabAction = (path: string) => {
-    setShowFabMenu(false);
-    navigate(path);
-    // Use context trigger instead of CustomEvent
-    setTimeout(() => triggerCreateModal(), 100);
-  };
 
   return (
     <div className="flex min-h-screen">
