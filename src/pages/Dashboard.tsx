@@ -105,7 +105,7 @@ export default function Dashboard() {
             <div key={j.id} className="flex justify-between px-4 py-2.5 border-b border-border text-xs">
               <div>
                 <div className="font-semibold text-foreground">{j.libelle || '—'}</div>
-                <div className="text-[10.5px] text-muted-foreground">{j.date_operation} · {j.mode_paiement}</div>
+                <div className="text-[10.5px] text-muted-foreground">{formatDate(j.date_operation)} · {j.mode_paiement}</div>
               </div>
               <div className={`font-bold ${j.type === 'Recette' ? 'text-success' : 'text-destructive'}`}>
                 {j.type === 'Recette' ? '+' : '-'}{fmt(j.montant || 0)}
