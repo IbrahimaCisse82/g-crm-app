@@ -212,7 +212,7 @@ export default function QuotesPage() {
         {/* Mobile card view */}
         <div className="lg:hidden">
           {devis.isLoading ? <TableSkeleton rows={5} cols={3} /> : (
-            filtered.length ? filtered.map(d => (
+            pagination.items.length ? pagination.items.map(d => (
               <div key={d.id} className="px-4 py-3 border-b border-border">
                 <div className="flex items-center justify-between mb-1">
                   <div className="font-bold text-xs text-foreground">{d.numero}</div>
