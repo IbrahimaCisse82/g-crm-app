@@ -264,7 +264,12 @@ export default function InvoicesPage() {
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="text-[10.5px] text-muted-foreground truncate">{cliName(f.client_id)} · {formatDate(f.date_facture)}</div>
-                  <span className="font-bold text-sm text-foreground">{fmt(f.montant_ttc)}</span>
+                  <div className="text-right">
+                    <span className="font-bold text-sm text-foreground">{fmt(f.montant_ttc)}</span>
+                    {f.montant_regle > 0 && f.statut !== 'Payée' && (
+                      <div className="text-[9px] text-muted-foreground">Réglé {fmt(f.montant_regle)} · Reste {fmt(f.montant_ttc - f.montant_regle)}</div>
+                    )}
+                  </div>
                 </div>
                 <div className="flex gap-1 mt-2">
                   <button
