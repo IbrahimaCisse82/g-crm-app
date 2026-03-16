@@ -157,7 +157,7 @@ export default function Dashboard() {
                   <td className="px-3.5 py-3 text-sm font-bold text-foreground border-b border-border">{f.numero}</td>
                   <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{cliName(f.client_id)}</td>
                   <td className="px-3.5 py-3 text-sm font-bold text-foreground border-b border-border">{fmt(f.montant_ttc)}</td>
-                  <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{f.date_facture}</td>
+                  <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{formatDate(f.date_facture)}</td>
                   <td className="px-3.5 py-3 text-sm border-b border-border">
                     <StatusBadge status={f.statut} />
                   </td>

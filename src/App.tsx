@@ -45,6 +45,8 @@ function AppContent() {
         <Route path="/confidentialite" element={<PrivacyPage />} />
         <Route path="/protection-donnees" element={<DataProtectionPage />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="*" element={<LandingPage />} />
       </Routes>
     );

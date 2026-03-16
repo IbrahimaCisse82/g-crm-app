@@ -5,6 +5,7 @@ import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { TableSkeleton } from '@/components/LoadingSkeleton';
 import { toast } from 'sonner';
 import { downloadPdf } from '@/utils/generatePdf';
+import { formatDate } from '@/lib/formatDate';
 import type { ArticleLine } from '@/types';
 import { PAYMENT_MODES } from '@/types';
 import type { Json } from '@/integrations/supabase/types';
@@ -26,6 +27,8 @@ export default function InvoicesPage() {
   const [form, setForm] = useState(defaultForm);
   const [articles, setArticles] = useState<ArticleLine[]>([{ nom: '', quantite: 1, prix_unitaire: 0 }]);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; numero: string } | null>(null);
+  const [payTarget, setPayTarget] = useState<typeof factures.data[0] | null>(null);
+  const [saving, setSaving] = useState(false);
 
   // Auto-detect overdue invoices
   const today = new Date().toISOString().slice(0, 10);
@@ -102,10 +105,15 @@ export default function InvoicesPage() {
       return;
     }
     const validArticles = articles.filter(a => a.nom);
+    if (validArticles.some(a => a.quantite <= 0 || a.prix_unitaire < 0)) {
+      toast.error('Vérifiez les quantités et prix des articles');
+      return;
+    }
     const ht = validArticles.reduce((s, a) => s + a.quantite * a.prix_unitaire, 0);
     const tvaMontant = Math.round(ht * tva / 100);
     const ttc = ht + tvaMontant;
 
+    setSaving(true);
     try {
       if (editId) {
         await factures.update(editId, {
@@ -121,7 +129,7 @@ export default function InvoicesPage() {
         });
         toast.success('Facture modifiée');
       } else {
-        const numero = `FAC-${Date.now().toString(36).toUpperCase()}`;
+        const numero = await factures.nextNumero();
         await factures.add({
           numero,
           client_id: form.client_id,
@@ -142,12 +150,19 @@ export default function InvoicesPage() {
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : 'Erreur');
     }
+    setSaving(false);
   };
 
   const del = async () => {
     if (!deleteTarget) return;
+    // Block deletion of paid invoices
+    const fac = factures.data.find(f => f.id === deleteTarget.id);
+    if (fac?.statut === 'Payée') {
+      toast.error('Impossible de supprimer une facture payée. Annulez-la d\'abord.');
+      setDeleteTarget(null);
+      return;
+    }
     try {
-      // Clean up journal entries linked to this invoice
       await journal.removeByFactureId(deleteTarget.id);
       await factures.remove(deleteTarget.id);
       toast.success('Facture supprimée (+ écritures journal nettoyées)');
@@ -157,27 +172,29 @@ export default function InvoicesPage() {
     setDeleteTarget(null);
   };
 
-  const markPaid = async (f: typeof factures.data[0]) => {
-    // Guard against double payment
-    if (f.statut === 'Payée') {
+  const markPaid = async () => {
+    if (!payTarget) return;
+    if (payTarget.statut === 'Payée') {
       toast.info('Cette facture est déjà marquée comme payée');
+      setPayTarget(null);
       return;
     }
     try {
-      await factures.update(f.id, { statut: 'Payée', montant_regle: f.montant_ttc });
+      await factures.update(payTarget.id, { statut: 'Payée', montant_regle: payTarget.montant_ttc });
       await journal.add({
-        libelle: `Paiement facture ${f.numero}`,
+        libelle: `Paiement facture ${payTarget.numero}`,
         type: 'Recette',
-        montant: f.montant_ttc,
-        mode_paiement: f.mode_paiement || 'Espèce',
+        montant: payTarget.montant_ttc,
+        mode_paiement: payTarget.mode_paiement || 'Espèce',
         categorie: 'Vente',
         date_operation: new Date().toISOString().slice(0, 10),
-        facture_id: f.id,
+        facture_id: payTarget.id,
       });
       toast.success('Facture marquée comme payée + écriture journal');
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : 'Erreur');
     }
+    setPayTarget(null);
   };
 
   return (
@@ -218,7 +235,7 @@ export default function InvoicesPage() {
                   <StatusBadge status={f.statut} />
                 </div>
                 <div className="flex items-center justify-between">
-                  <div className="text-[10.5px] text-muted-foreground truncate">{cliName(f.client_id)} · {f.date_facture}</div>
+                  <div className="text-[10.5px] text-muted-foreground truncate">{cliName(f.client_id)} · {formatDate(f.date_facture)}</div>
                   <span className="font-bold text-sm text-foreground">{fmt(f.montant_ttc)}</span>
                 </div>
                 <div className="flex gap-1 mt-2">
@@ -230,9 +247,11 @@ export default function InvoicesPage() {
                     <button onClick={() => openEdit(f)} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs">✏️</button>
                   )}
                   {(f.statut === 'En attente' || f.statut === 'En retard') && (
-                    <button onClick={() => markPaid(f)} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs">💳</button>
+                    <button onClick={() => setPayTarget(f)} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs">💳</button>
                   )}
-                  <button onClick={() => setDeleteTarget({ id: f.id, numero: f.numero })} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs">🗑️</button>
+                  {f.statut !== 'Payée' && (
+                    <button onClick={() => setDeleteTarget({ id: f.id, numero: f.numero })} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs">🗑️</button>
+                  )}
                 </div>
               </div>
             )) : (
@@ -266,7 +285,7 @@ export default function InvoicesPage() {
                     <td className="px-3.5 py-3 text-sm border-b border-border">
                       <PayBadge mode={f.mode_paiement || ''} />
                     </td>
-                    <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{f.date_facture}</td>
+                    <td className="px-3.5 py-3 text-sm text-foreground border-b border-border">{formatDate(f.date_facture)}</td>
                     <td className="px-3.5 py-3 text-sm border-b border-border"><StatusBadge status={f.statut} /></td>
                     <td className="px-3.5 py-3 text-sm border-b border-border">
                       <div className="flex gap-1">
@@ -279,9 +298,11 @@ export default function InvoicesPage() {
                           <button onClick={() => openEdit(f)} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-primary hover:text-primary transition-all" title="Modifier">✏️</button>
                         )}
                         {(f.statut === 'En attente' || f.statut === 'En retard') && (
-                          <button onClick={() => markPaid(f)} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-success hover:text-success transition-all" title="Marquer payée">💳</button>
+                          <button onClick={() => setPayTarget(f)} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-success hover:text-success transition-all" title="Marquer payée">💳</button>
                         )}
-                        <button onClick={() => setDeleteTarget({ id: f.id, numero: f.numero })} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-destructive hover:text-destructive transition-all" title="Supprimer">🗑️</button>
+                        {f.statut !== 'Payée' && (
+                          <button onClick={() => setDeleteTarget({ id: f.id, numero: f.numero })} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-destructive hover:text-destructive transition-all" title="Supprimer">🗑️</button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -297,6 +318,7 @@ export default function InvoicesPage() {
         </div>
       </div>
 
+      {/* Confirm delete */}
       <ConfirmDialog
         open={!!deleteTarget}
         onOpenChange={() => setDeleteTarget(null)}
@@ -304,6 +326,16 @@ export default function InvoicesPage() {
         description="Cette action est irréversible. Les écritures journal liées seront également supprimées."
         onConfirm={del}
         confirmLabel="Supprimer"
+      />
+
+      {/* Confirm mark as paid */}
+      <ConfirmDialog
+        open={!!payTarget}
+        onOpenChange={() => setPayTarget(null)}
+        title={`Marquer "${payTarget?.numero}" comme payée ?`}
+        description={`Le montant de ${fmt(payTarget?.montant_ttc || 0)} sera enregistré comme recette dans le journal. Cette action ne peut pas être annulée facilement.`}
+        onConfirm={markPaid}
+        confirmLabel="Confirmer le paiement"
       />
 
       {showModal && (
@@ -334,7 +366,7 @@ export default function InvoicesPage() {
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Date échéance</label>
-                  <input type="date" className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.date_echeance} onChange={e => setForm({ ...form, date_echeance: e.target.value })} min={form.date_facture} />
+                  <input type="date" className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.date_echeance} onChange={e => setForm({ ...form, date_echeance: e.target.value })} />
                 </div>
               </div>
 
@@ -344,47 +376,68 @@ export default function InvoicesPage() {
                   <button onClick={addArticleLine} className="text-xs text-primary font-bold hover:underline">＋ Ajouter</button>
                 </div>
                 {articles.map((a, i) => (
-                  <div key={i} className="flex gap-2 mb-2 items-end">
-                    <div className="flex-1 flex flex-col gap-1">
-                      {i === 0 && <span className="text-[10px] text-muted-foreground">Produit</span>}
-                      <select className="bg-background border-[1.5px] border-border rounded-lg py-2 px-2 text-xs text-foreground outline-none font-sans focus:border-primary w-full" value="" onChange={e => selectProduct(i, e.target.value)}>
-                        <option value="">Choisir...</option>
-                        {produits.data.map(p => <option key={p.id} value={p.id}>{p.nom} — {fmt(p.prix)}</option>)}
+                  <div key={i} className="flex gap-2 items-end mb-2 flex-wrap">
+                    <div className="flex-1 min-w-[140px]">
+                      <select
+                        className="bg-background border-[1.5px] border-border rounded-lg py-2 px-2.5 text-xs text-foreground outline-none font-sans focus:border-primary w-full mb-1"
+                        value=""
+                        onChange={e => selectProduct(i, e.target.value)}
+                      >
+                        <option value="">📦 Choisir produit...</option>
+                        {produits.data.map(p => <option key={p.id} value={p.id}>{p.nom} ({fmt(p.prix)})</option>)}
                       </select>
+                      <input
+                        className="bg-background border-[1.5px] border-border rounded-lg py-2 px-2.5 text-xs text-foreground outline-none font-sans focus:border-primary w-full"
+                        placeholder="Désignation"
+                        value={a.nom}
+                        onChange={e => updateArticle(i, 'nom', e.target.value)}
+                      />
                     </div>
-                    <div className="flex-1 flex flex-col gap-1">
-                      {i === 0 && <span className="text-[10px] text-muted-foreground">Désignation</span>}
-                      <input className="bg-background border-[1.5px] border-border rounded-lg py-2 px-2 text-xs text-foreground outline-none font-sans focus:border-primary w-full" value={a.nom} onChange={e => updateArticle(i, 'nom', e.target.value)} placeholder="Nom article" />
-                    </div>
-                    <div className="w-16 flex flex-col gap-1">
-                      {i === 0 && <span className="text-[10px] text-muted-foreground">Qté</span>}
-                      <input type="number" min={1} className="bg-background border-[1.5px] border-border rounded-lg py-2 px-2 text-xs text-foreground outline-none font-sans focus:border-primary w-full" value={a.quantite} onChange={e => updateArticle(i, 'quantite', Number(e.target.value))} />
-                    </div>
-                    <div className="w-24 flex flex-col gap-1">
-                      {i === 0 && <span className="text-[10px] text-muted-foreground">Prix U.</span>}
-                      <input type="number" className="bg-background border-[1.5px] border-border rounded-lg py-2 px-2 text-xs text-foreground outline-none font-sans focus:border-primary w-full" value={a.prix_unitaire} onChange={e => updateArticle(i, 'prix_unitaire', Number(e.target.value))} />
-                    </div>
+                    <input
+                      type="number"
+                      min="1"
+                      className="bg-background border-[1.5px] border-border rounded-lg py-2 px-2.5 text-xs text-foreground outline-none font-sans focus:border-primary w-16"
+                      placeholder="Qté"
+                      value={a.quantite}
+                      onChange={e => updateArticle(i, 'quantite', Number(e.target.value))}
+                    />
+                    <input
+                      type="number"
+                      min="0"
+                      className="bg-background border-[1.5px] border-border rounded-lg py-2 px-2.5 text-xs text-foreground outline-none font-sans focus:border-primary w-24"
+                      placeholder="Prix"
+                      value={a.prix_unitaire}
+                      onChange={e => updateArticle(i, 'prix_unitaire', Number(e.target.value))}
+                    />
+                    <span className="text-xs font-bold text-foreground w-24 text-right">{fmt(a.quantite * a.prix_unitaire)}</span>
                     {articles.length > 1 && (
-                      <button onClick={() => removeArticleLine(i)} className="text-destructive text-sm mb-0.5">✕</button>
+                      <button onClick={() => removeArticleLine(i)} className="text-destructive text-xs px-1">✕</button>
                     )}
                   </div>
                 ))}
               </div>
 
-              <div className="bg-background border-[1.5px] border-border rounded-xl p-3 space-y-1 text-sm">
-                <div className="flex justify-between"><span className="text-muted-foreground">Total HT</span><span className="font-bold">{fmt(totalHT)}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">TVA ({tva}%)</span><span className="font-bold">{fmt(totalTVA)}</span></div>
-                <div className="flex justify-between border-t border-border pt-1 mt-1"><span className="font-bold">Total TTC</span><span className="font-black text-primary">{fmt(totalTTC)}</span></div>
+              <div className="bg-background border border-border rounded-lg p-3 mb-3.5">
+                <div className="flex justify-between text-xs mb-1"><span>Total HT</span><span className="font-bold">{fmt(totalHT)}</span></div>
+                <div className="flex justify-between text-xs mb-1"><span>TVA ({tva}%)</span><span className="font-bold">{fmt(totalTVA)}</span></div>
+                <div className="flex justify-between text-sm font-black border-t border-border pt-1.5 mt-1.5"><span>Total TTC</span><span className="text-primary">{fmt(totalTTC)}</span></div>
               </div>
 
-              <div className="mt-3 flex flex-col gap-1.5">
+              <div className="flex flex-col gap-1.5">
                 <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Notes</label>
-                <textarea className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans resize-y min-h-[60px] focus:border-primary w-full" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} />
+                <textarea
+                  className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans resize-y min-h-[60px] focus:border-primary w-full"
+                  value={form.notes}
+                  onChange={e => setForm({ ...form, notes: e.target.value })}
+                  maxLength={500}
+                />
               </div>
             </div>
             <div className="px-5 py-3.5 border-t border-border flex gap-2 justify-end">
               <button onClick={() => setShowModal(false)} className="bg-card border-[1.5px] border-border text-muted-foreground py-2 px-4 rounded-lg text-xs font-bold hover:bg-background transition-all">Annuler</button>
-              <button onClick={save} className="gradient-primary text-primary-foreground border-none py-2 px-4 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all">💾 {editId ? 'Modifier' : 'Créer la facture'}</button>
+              <button onClick={save} disabled={saving} className="gradient-primary text-primary-foreground border-none py-2 px-4 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all disabled:opacity-60">
+                {saving ? '⏳ Enregistrement...' : '💾 Enregistrer'}
+              </button>
             </div>
           </div>
         </div>
