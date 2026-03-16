@@ -1,4 +1,5 @@
 import { AuthProvider, useAuth } from '@/hooks/useAuth';
+import { Navigate } from 'react-router-dom';
 import { PWAInstallBanner } from '@/components/PWAInstallBanner';
 import { AppProvider } from '@/context/AppContext';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -65,6 +66,7 @@ function AppContent() {
           <Route path="/journal" element={<JournalPage />} />
           <Route path="/caisse" element={<CashPage />} />
           <Route path="/entreprise" element={<CompanyPage />} />
+          <Route path="/login" element={<Navigate to="/" replace />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </AppLayout>
