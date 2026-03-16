@@ -129,7 +129,7 @@ export default function Dashboard() {
             <div key={f.id} className="px-4 py-3 border-b border-border flex items-center justify-between" onClick={() => navigate('/factures')}>
               <div className="min-w-0 flex-1">
                 <div className="font-bold text-xs text-foreground truncate">{f.numero}</div>
-                <div className="text-[10.5px] text-muted-foreground truncate">{cliName(f.client_id)} · {f.date_facture}</div>
+                <div className="text-[10.5px] text-muted-foreground truncate">{cliName(f.client_id)} · {formatDate(f.date_facture)}</div>
               </div>
               <div className="flex items-center gap-2 shrink-0 ml-2">
                 <span className="font-bold text-xs text-foreground">{fmt(f.montant_ttc)}</span>
