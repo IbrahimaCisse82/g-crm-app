@@ -13,7 +13,8 @@ import type { ArticleLine } from '@/types';
 import type { Json } from '@/integrations/supabase/types';
 
 export default function QuotesPage() {
-  const { devis, factures, clients, produits, entreprise, cliName, fmt } = useApp();
+  const { devis, factures, clients, produits, entreprise, cliName, fmt, createModalTrigger } = useApp();
+  const triggerRef = useRef(createModalTrigger);
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [statFilter, setStatFilter] = useState('');
