@@ -293,7 +293,7 @@ export default function JournalPage() {
                 </select>
                 {form.facture_id && (
                   <div className="text-[10.5px] text-muted-foreground bg-muted/50 rounded-lg p-2 mt-1">
-                    📄 {form.libelle}
+                    {form.libelle}
                   </div>
                 )}
               </div>
