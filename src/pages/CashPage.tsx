@@ -174,7 +174,7 @@ export default function CashPage() {
                 </tr>
                 {mmCards.map(({ mm, sol }) => (
                   <tr key={mm.id} className="hover:bg-background">
-                    <td className="px-3.5 py-3 text-sm font-bold border-b border-border">{icons[mm.operateur] || '📱'} {mm.operateur}</td>
+                    <td className="px-3.5 py-3 text-sm font-bold border-b border-border"><span className="flex items-center gap-1.5"><Smartphone className="h-4 w-4" /> {mm.operateur}</span></td>
                     <td className="px-3.5 py-3 text-[11.5px] text-muted-foreground border-b border-border">Mobile Money</td>
                     <td className={`px-3.5 py-3 text-sm font-bold border-b border-border ${sol >= 0 ? 'text-success' : 'text-destructive'}`}>{fmt(sol)}</td>
                   </tr>
