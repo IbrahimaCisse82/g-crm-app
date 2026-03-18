@@ -232,7 +232,7 @@ export default function JournalPage() {
                       {j.type === 'Recette' ? '+' : '-'}{fmt(j.montant || 0)}
                     </td>
                     <td className="px-3.5 py-3 text-sm border-b border-border">
-                      <button onClick={() => setDeleteTarget({ id: j.id, libelle: j.libelle })} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-destructive hover:text-destructive transition-all">🗑️</button>
+                      <button onClick={() => setDeleteTarget({ id: j.id, libelle: j.libelle })} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-destructive hover:text-destructive transition-all"><Trash2 className="h-3.5 w-3.5" /></button>
                     </td>
                   </tr>
                 )) : (
