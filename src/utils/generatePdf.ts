@@ -26,6 +26,7 @@ interface PdfData {
     ninea?: string | null;
     rccm?: string | null;
     devise?: string;
+    logo_url?: string | null;
   } | null;
 }
 
@@ -58,7 +59,8 @@ export function downloadPdf(data: PdfData) {
   html, body { height: 100%; }
   body { font-family: 'Segoe UI', system-ui, sans-serif; color: #1a1a2e; padding: 40px; font-size: 13px; display: flex; flex-direction: column; min-height: 100vh; }
   .header { display: flex; justify-content: space-between; margin-bottom: 40px; }
-  .company { max-width: 50%; }
+  .company { max-width: 50%; display: flex; align-items: flex-start; gap: 12px; }
+  .company-logo { height: 50px; width: 50px; object-fit: contain; border-radius: 4px; }
   .company h1 { font-size: 22px; color: #10b981; margin-bottom: 4px; }
   .company p { color: #666; font-size: 12px; line-height: 1.6; }
   .doc-info { text-align: right; }
@@ -91,12 +93,15 @@ export function downloadPdf(data: PdfData) {
   <div class="content">
   <div class="header">
     <div class="company">
+      ${data.entreprise?.logo_url ? `<img class="company-logo" src="${esc(data.entreprise.logo_url)}" alt="Logo"/>` : ''}
+      <div>
       <h1>${esc(data.entreprise?.nom) || 'Mon Entreprise'}</h1>
       ${data.entreprise?.adresse ? `<p>${esc(data.entreprise.adresse)}</p>` : ''}
       ${data.entreprise?.telephone ? `<p>Tél: ${esc(data.entreprise.telephone)}</p>` : ''}
       ${data.entreprise?.email ? `<p>${esc(data.entreprise.email)}</p>` : ''}
       ${data.entreprise?.ninea ? `<p>NINEA: ${esc(data.entreprise.ninea)}</p>` : ''}
       ${data.entreprise?.rccm ? `<p>RCCM: ${esc(data.entreprise.rccm)}</p>` : ''}
+      </div>
     </div>
     <div class="doc-info">
       <h2>${esc(title)}</h2>
