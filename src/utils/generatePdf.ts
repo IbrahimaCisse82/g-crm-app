@@ -59,7 +59,8 @@ export function downloadPdf(data: PdfData) {
   html, body { height: 100%; }
   body { font-family: 'Segoe UI', system-ui, sans-serif; color: #1a1a2e; padding: 40px; font-size: 13px; display: flex; flex-direction: column; min-height: 100vh; }
   .header { display: flex; justify-content: space-between; margin-bottom: 40px; }
-  .company { max-width: 50%; }
+  .company { max-width: 50%; display: flex; align-items: flex-start; gap: 12px; }
+  .company-logo { height: 50px; width: 50px; object-fit: contain; border-radius: 4px; }
   .company h1 { font-size: 22px; color: #10b981; margin-bottom: 4px; }
   .company p { color: #666; font-size: 12px; line-height: 1.6; }
   .doc-info { text-align: right; }
