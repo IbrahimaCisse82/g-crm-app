@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { FileText, Share2, Pencil, Trash2, Check, X, ArrowRightLeft } from 'lucide-react';
+import { FileText, Share2, Pencil, Trash2, Check, X, ArrowRightLeft, Save, ClipboardList } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { useNavigate } from 'react-router-dom';
 import { StatusBadge } from '@/components/StatusBadge';
@@ -142,7 +142,7 @@ export default function QuotesPage() {
             <button onClick={openNew} className="gradient-primary text-primary-foreground border-none py-1.5 px-3 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all lg:hidden">＋ Nouveau</button>
           </div>
           <div className="flex gap-2 items-center flex-wrap">
-            <input className="bg-background border-[1.5px] border-border rounded-lg py-1.5 px-2.5 text-xs text-foreground outline-none flex-1 min-w-[100px] max-w-[160px] font-sans placeholder:text-muted-foreground focus:border-primary" placeholder="🔍 N°, client..." value={search} onChange={e => setSearch(e.target.value)} />
+            <input className="bg-background border-[1.5px] border-border rounded-lg py-1.5 px-2.5 text-xs text-foreground outline-none flex-1 min-w-[100px] max-w-[160px] font-sans placeholder:text-muted-foreground focus:border-primary" placeholder="N°, client..." value={search} onChange={e => setSearch(e.target.value)} />
             <select className="bg-background border-[1.5px] border-border rounded-lg py-1.5 px-2 text-xs text-foreground outline-none font-sans" value={statFilter} onChange={e => setStatFilter(e.target.value)}>
               <option value="">Tous statuts</option>
               <option>En attente</option>
@@ -182,7 +182,7 @@ export default function QuotesPage() {
               </div>
             )) : (
               <div className="text-center py-10 text-muted-foreground">
-                <div className="text-4xl opacity-30 mb-2">📋</div>
+                <ClipboardList className="h-10 w-10 mx-auto opacity-30 mb-2" />
                 <div className="text-sm">Aucun devis</div>
               </div>
             )
@@ -229,7 +229,7 @@ export default function QuotesPage() {
                   </tr>
                 )) : (
                   <tr><td colSpan={7} className="text-center py-10 text-muted-foreground">
-                    <div className="text-4xl opacity-30 mb-2">📋</div>
+                    <ClipboardList className="h-10 w-10 mx-auto opacity-30 mb-2" />
                     <div className="text-sm">Aucun devis</div>
                   </td></tr>
                 )}
@@ -274,7 +274,7 @@ export default function QuotesPage() {
                 <div key={i} className="flex gap-2 items-end mb-2 flex-wrap">
                   <div className="flex-1 min-w-[140px]">
                     <select className="bg-background border-[1.5px] border-border rounded-lg py-2 px-2.5 text-xs text-foreground outline-none font-sans focus:border-primary w-full mb-1" value="" onChange={e => selectProduct(i, e.target.value)}>
-                      <option value="">📦 Choisir produit...</option>
+                      <option value="">Choisir produit...</option>
                       {produits.data.map(p => <option key={p.id} value={p.id}>{p.nom} ({fmt(p.prix)})</option>)}
                     </select>
                     <input className="bg-background border-[1.5px] border-border rounded-lg py-2 px-2.5 text-xs text-foreground outline-none font-sans focus:border-primary w-full" placeholder="Désignation" value={a.nom} onChange={e => updateArticle(i, 'nom', e.target.value)} />
@@ -298,8 +298,8 @@ export default function QuotesPage() {
           </div>
           <DialogFooter>
             <button onClick={() => setShowModal(false)} className="bg-card border-[1.5px] border-border text-muted-foreground py-2 px-4 rounded-lg text-xs font-bold hover:bg-background transition-all">Annuler</button>
-            <button onClick={save} disabled={saving} className="gradient-primary text-primary-foreground border-none py-2 px-4 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all disabled:opacity-60">
-              {saving ? '⏳ Enregistrement...' : '💾 Enregistrer'}
+            <button onClick={save} disabled={saving} className="gradient-primary text-primary-foreground border-none py-2 px-4 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all disabled:opacity-60 flex items-center gap-1.5">
+              {saving ? 'Enregistrement...' : <><Save className="h-3.5 w-3.5" /> Enregistrer</>}
             </button>
           </DialogFooter>
         </DialogContent>

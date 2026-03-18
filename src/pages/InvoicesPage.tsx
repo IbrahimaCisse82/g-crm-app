@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { FileText, Share2, Pencil, CreditCard, Trash2, Check, X } from 'lucide-react';
+import { FileText, Share2, Pencil, CreditCard, Trash2, Download, Save } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { StatusBadge, PayBadge } from '@/components/StatusBadge';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
@@ -180,7 +180,7 @@ export default function InvoicesPage() {
             <button onClick={openNew} className="gradient-primary text-primary-foreground border-none py-1.5 px-3 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all lg:hidden">＋ Nouvelle</button>
           </div>
           <div className="flex gap-2 items-center flex-wrap">
-            <input className="bg-background border-[1.5px] border-border rounded-lg py-1.5 px-2.5 text-xs text-foreground outline-none flex-1 min-w-[100px] max-w-[160px] font-sans placeholder:text-muted-foreground focus:border-primary focus:ring-[3px] focus:ring-primary/10" placeholder="🔍 N°, client..." value={search} onChange={e => setSearch(e.target.value)} />
+            <input className="bg-background border-[1.5px] border-border rounded-lg py-1.5 px-2.5 text-xs text-foreground outline-none flex-1 min-w-[100px] max-w-[160px] font-sans placeholder:text-muted-foreground focus:border-primary focus:ring-[3px] focus:ring-primary/10" placeholder="N°, client..." value={search} onChange={e => setSearch(e.target.value)} />
             <select className="bg-background border-[1.5px] border-border rounded-lg py-1.5 px-2 text-xs text-foreground outline-none font-sans" value={statFilter} onChange={e => setStatFilter(e.target.value)}>
               <option value="">Tous statuts</option>
               <option>Payée</option>
@@ -190,7 +190,7 @@ export default function InvoicesPage() {
               <option>Annulée</option>
             </select>
             <DateFilter month={month} setMonth={setMonth} availableMonths={availableMonths} />
-            <button onClick={handleExport} className="bg-background border-[1.5px] border-border text-muted-foreground py-1.5 px-2.5 rounded-lg text-xs font-bold hover:border-primary hover:text-primary transition-all" title="Exporter CSV">📥</button>
+            <button onClick={handleExport} className="bg-background border-[1.5px] border-border text-muted-foreground py-1.5 px-2.5 rounded-lg text-xs font-bold hover:border-primary hover:text-primary transition-all" title="Exporter CSV"><Download className="h-3.5 w-3.5" /></button>
             <button onClick={openNew} className="gradient-primary text-primary-foreground border-none py-1.5 px-3 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all hidden lg:inline-flex">＋ Nouvelle</button>
           </div>
         </div>
@@ -222,7 +222,7 @@ export default function InvoicesPage() {
               </div>
             )) : (
               <div className="text-center py-10 text-muted-foreground">
-                <div className="text-4xl opacity-30 mb-2">🧾</div>
+                <FileText className="h-10 w-10 mx-auto opacity-30 mb-2" />
                 <div className="text-sm">Aucune facture</div>
               </div>
             )
@@ -271,7 +271,7 @@ export default function InvoicesPage() {
                   </tr>
                 )) : (
                   <tr><td colSpan={9} className="text-center py-10 text-muted-foreground">
-                    <div className="text-4xl opacity-30 mb-2">🧾</div>
+                    <FileText className="h-10 w-10 mx-auto opacity-30 mb-2" />
                     <div className="text-sm">Aucune facture</div>
                   </td></tr>
                 )}
@@ -357,7 +357,7 @@ export default function InvoicesPage() {
                 <div key={i} className="flex gap-2 items-end mb-2 flex-wrap">
                   <div className="flex-1 min-w-[140px]">
                     <select className="bg-background border-[1.5px] border-border rounded-lg py-2 px-2.5 text-xs text-foreground outline-none font-sans focus:border-primary w-full mb-1" value="" onChange={e => selectProduct(i, e.target.value)}>
-                      <option value="">📦 Choisir produit...</option>
+                      <option value="">Choisir produit...</option>
                       {produits.data.map(p => <option key={p.id} value={p.id}>{p.nom} ({fmt(p.prix)})</option>)}
                     </select>
                     <input className="bg-background border-[1.5px] border-border rounded-lg py-2 px-2.5 text-xs text-foreground outline-none font-sans focus:border-primary w-full" placeholder="Désignation" value={a.nom} onChange={e => updateArticle(i, 'nom', e.target.value)} />
@@ -381,8 +381,8 @@ export default function InvoicesPage() {
           </div>
           <DialogFooter>
             <button onClick={() => setShowModal(false)} className="bg-card border-[1.5px] border-border text-muted-foreground py-2 px-4 rounded-lg text-xs font-bold hover:bg-background transition-all">Annuler</button>
-            <button onClick={save} disabled={saving} className="gradient-primary text-primary-foreground border-none py-2 px-4 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all disabled:opacity-60">
-              {saving ? '⏳ Enregistrement...' : '💾 Enregistrer'}
+            <button onClick={save} disabled={saving} className="gradient-primary text-primary-foreground border-none py-2 px-4 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all disabled:opacity-60 flex items-center gap-1.5">
+              {saving ? 'Enregistrement...' : <><Save className="h-3.5 w-3.5" /> Enregistrer</>}
             </button>
           </DialogFooter>
         </DialogContent>

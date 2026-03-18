@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useApp } from '@/context/AppContext';
+import { Pencil, Trash2, Save, Banknote, Smartphone, Landmark, Wallet } from 'lucide-react';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { CardSkeleton } from '@/components/LoadingSkeleton';
 import { toast } from 'sonner';
@@ -98,35 +99,35 @@ export default function CashPage() {
       <div className="grid grid-cols-3 gap-2 lg:gap-3 mb-3.5">
         <div className="bg-card border border-border rounded-xl p-2.5 lg:p-4 relative overflow-hidden shadow-card">
           <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-primary to-secondary" />
-          <div className="text-lg lg:text-2xl mb-1 lg:mb-2">💵</div>
+          <div className="text-lg lg:text-2xl mb-1 lg:mb-2 text-success"><Banknote className="h-6 w-6 lg:h-7 lg:w-7" /></div>
           <div className={`font-black text-xs lg:text-lg truncate ${soldeCaisse >= 0 ? '' : 'text-destructive'}`}>{fmt(soldeCaisse)}</div>
           <div className="text-[9px] lg:text-[11px] text-muted-foreground">Caisse</div>
         </div>
         <div className="bg-card border border-border rounded-xl p-2.5 lg:p-4 relative overflow-hidden shadow-card">
           <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-secondary to-primary" />
-          <div className="text-lg lg:text-2xl mb-1 lg:mb-2">📱</div>
+          <div className="text-lg lg:text-2xl mb-1 lg:mb-2 text-primary"><Smartphone className="h-6 w-6 lg:h-7 lg:w-7" /></div>
           <div className="font-black text-xs lg:text-lg truncate">{fmt(mmTot)}</div>
           <div className="text-[9px] lg:text-[11px] text-muted-foreground">Mobile Money</div>
         </div>
         <div className="bg-card border border-border rounded-xl p-2.5 lg:p-4 relative overflow-hidden shadow-card">
           <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-primary to-success" />
-          <div className="text-lg lg:text-2xl mb-1 lg:mb-2">🏦</div>
+          <div className="text-lg lg:text-2xl mb-1 lg:mb-2 text-secondary"><Landmark className="h-6 w-6 lg:h-7 lg:w-7" /></div>
           <div className="font-black text-xs lg:text-lg truncate">{fmt(soldeBanque)}</div>
           <div className="text-[9px] lg:text-[11px] text-muted-foreground">Banque</div>
         </div>
       </div>
 
       <div className="gradient-primary rounded-xl p-4 px-5 flex justify-between items-center text-primary-foreground mb-4 shadow-primary">
-        <div className="text-sm font-bold opacity-85">💰 Trésorerie totale</div>
+        <div className="text-sm font-bold opacity-85 flex items-center gap-2"><Wallet className="h-4 w-4" /> Trésorerie totale</div>
         <div className="font-black text-xl">{fmt(total)}</div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="bg-card border border-border rounded-xl overflow-hidden shadow-card">
           <div className="px-4 py-3 border-b border-border flex items-center justify-between flex-wrap gap-2">
-            <h3 className="font-extrabold text-sm text-foreground">📱 Comptes Mobile Money</h3>
+            <h3 className="font-extrabold text-sm text-foreground flex items-center gap-1.5"><Smartphone className="h-4 w-4" /> Comptes Mobile Money</h3>
             <div className="flex gap-2 items-center">
-              <input className="bg-background border-[1.5px] border-border rounded-lg py-1 px-2.5 text-xs text-foreground outline-none w-[120px] font-sans placeholder:text-muted-foreground focus:border-primary focus:ring-[3px] focus:ring-primary/10" placeholder="🔍 Rechercher..." value={search} onChange={e => setSearch(e.target.value)} />
+              <input className="bg-background border-[1.5px] border-border rounded-lg py-1 px-2.5 text-xs text-foreground outline-none w-[120px] font-sans placeholder:text-muted-foreground focus:border-primary focus:ring-[3px] focus:ring-primary/10" placeholder="Rechercher..." value={search} onChange={e => setSearch(e.target.value)} />
               <button onClick={openNew} className="gradient-primary text-primary-foreground border-none py-1.5 px-3 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all">＋ Compte</button>
             </div>
           </div>
@@ -134,15 +135,15 @@ export default function CashPage() {
             {filteredMmCards.length ? filteredMmCards.map(({ mm, sol, mIn, mOut }) => (
               <div key={mm.id} className="bg-background border-[1.5px] border-border rounded-xl p-3 flex items-center justify-between mb-2 hover:border-primary/30 transition-all">
                 <div>
-                  <div className="font-bold text-sm">{icons[mm.operateur] || '📱'} {mm.operateur}</div>
+                  <div className="font-bold text-sm">{mm.operateur}</div>
                   <div className="text-[11px] text-muted-foreground">{mm.titulaire ? mm.titulaire + ' · ' : ''}{mm.numero}</div>
                   <div className="text-[10px] text-muted-foreground mt-1">Init: {fmt(mm.solde)} · +{fmt(mIn)} · -{fmt(mOut)}</div>
                 </div>
                 <div className="text-right">
                   <div className={`font-black text-base ${sol >= 0 ? 'text-success' : 'text-destructive'}`}>{fmt(sol)}</div>
                   <div className="flex gap-2 mt-1 justify-end">
-                    <button onClick={() => openEdit(mm)} className="text-[10.5px] text-muted-foreground hover:text-primary">✏️ Modifier</button>
-                    <button onClick={() => setDeleteTarget({ id: mm.id, label: `${mm.operateur} ${mm.numero}` })} className="text-[10.5px] text-muted-foreground hover:text-destructive">🗑 Supprimer</button>
+                    <button onClick={() => openEdit(mm)} className="text-[10.5px] text-muted-foreground hover:text-primary flex items-center gap-0.5"><Pencil className="h-3 w-3" /> Modifier</button>
+                    <button onClick={() => setDeleteTarget({ id: mm.id, label: `${mm.operateur} ${mm.numero}` })} className="text-[10.5px] text-muted-foreground hover:text-destructive flex items-center gap-0.5"><Trash2 className="h-3 w-3" /> Supprimer</button>
                   </div>
                 </div>
               </div>
@@ -167,19 +168,19 @@ export default function CashPage() {
               </thead>
               <tbody>
                 <tr className="hover:bg-background">
-                  <td className="px-3.5 py-3 text-sm font-bold border-b border-border">💵 Caisse</td>
+                  <td className="px-3.5 py-3 text-sm font-bold border-b border-border flex items-center gap-1.5"><Banknote className="h-4 w-4" /> Caisse</td>
                   <td className="px-3.5 py-3 text-[11.5px] text-muted-foreground border-b border-border">Espèce</td>
                   <td className={`px-3.5 py-3 text-sm font-bold border-b border-border ${soldeCaisse >= 0 ? 'text-success' : 'text-destructive'}`}>{fmt(soldeCaisse)}</td>
                 </tr>
                 {mmCards.map(({ mm, sol }) => (
                   <tr key={mm.id} className="hover:bg-background">
-                    <td className="px-3.5 py-3 text-sm font-bold border-b border-border">{icons[mm.operateur] || '📱'} {mm.operateur}</td>
+                    <td className="px-3.5 py-3 text-sm font-bold border-b border-border"><span className="flex items-center gap-1.5"><Smartphone className="h-4 w-4" /> {mm.operateur}</span></td>
                     <td className="px-3.5 py-3 text-[11.5px] text-muted-foreground border-b border-border">Mobile Money</td>
                     <td className={`px-3.5 py-3 text-sm font-bold border-b border-border ${sol >= 0 ? 'text-success' : 'text-destructive'}`}>{fmt(sol)}</td>
                   </tr>
                 ))}
                 <tr className="hover:bg-background">
-                  <td className="px-3.5 py-3 text-sm font-bold border-b border-border">🏦 Banque</td>
+                  <td className="px-3.5 py-3 text-sm font-bold border-b border-border flex items-center gap-1.5"><Landmark className="h-4 w-4" /> Banque</td>
                   <td className="px-3.5 py-3 text-[11.5px] text-muted-foreground border-b border-border">Virement / Chèque</td>
                   <td className={`px-3.5 py-3 text-sm font-bold border-b border-border ${soldeBanque >= 0 ? 'text-success' : 'text-destructive'}`}>{fmt(soldeBanque)}</td>
                 </tr>
@@ -224,7 +225,7 @@ export default function CashPage() {
           </div>
           <DialogFooter>
             <button onClick={() => setShowModal(false)} className="bg-card border-[1.5px] border-border text-muted-foreground py-2 px-4 rounded-lg text-xs font-bold hover:bg-background transition-all">Annuler</button>
-            <button onClick={save} className="gradient-primary text-primary-foreground border-none py-2 px-4 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all">💾 Enregistrer</button>
+            <button onClick={save} className="gradient-primary text-primary-foreground border-none py-2 px-4 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all flex items-center gap-1.5"><Save className="h-3.5 w-3.5" /> Enregistrer</button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

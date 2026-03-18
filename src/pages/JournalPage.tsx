@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useApp } from '@/context/AppContext';
+import { Trash2, Download, Save, BookOpen, ArrowDownCircle, ArrowUpCircle, Scale } from 'lucide-react';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { PaginationControls } from '@/components/PaginationControls';
 import { DateFilter } from '@/components/DateFilter';
@@ -43,7 +44,7 @@ export default function JournalPage() {
   const pagination = usePagination(sorted);
 
   const filters = ['all', 'Recette', 'Dépense', ...PAYMENT_MODES];
-  const filterLabels: Record<string, string> = { all: 'Tous', Recette: '📥 Recettes', 'Dépense': '📤 Dépenses', Espèce: '💵 Espèce', Wave: 'Wave', 'Orange Money': '🟠 Orange', 'Yas Money': '🟣 Yas', Virement: '🏦 Virement', Chèque: '✉️ Chèque' };
+  const filterLabels: Record<string, string> = { all: 'Tous', Recette: 'Recettes', 'Dépense': 'Dépenses', Espèce: 'Espèce', Wave: 'Wave', 'Orange Money': 'Orange', 'Yas Money': 'Yas', Virement: 'Virement', Chèque: 'Chèque' };
 
   const openNew = () => {
     setForm({ libelle: '', type: 'Recette', montant: 0, mode_paiement: 'Espèce', categorie: '', compte: '', date_operation: new Date().toISOString().slice(0, 10), facture_id: '' });
@@ -121,19 +122,19 @@ export default function JournalPage() {
       <div className="grid grid-cols-3 gap-2 lg:gap-3 mb-4">
         <div className="bg-card border border-border rounded-xl p-2.5 lg:p-4 relative overflow-hidden shadow-card">
           <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-primary to-secondary" />
-          <div className="text-lg lg:text-2xl mb-1 lg:mb-2">📥</div>
+          <div className="text-lg lg:text-2xl mb-1 lg:mb-2 text-success"><ArrowDownCircle className="h-6 w-6 lg:h-7 lg:w-7" /></div>
           <div className="font-black text-xs lg:text-lg text-success truncate">{fmt(totR)}</div>
           <div className="text-[9px] lg:text-[11px] text-muted-foreground">Recettes</div>
         </div>
         <div className="bg-card border border-border rounded-xl p-2.5 lg:p-4 relative overflow-hidden shadow-card">
           <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-destructive to-accent" />
-          <div className="text-lg lg:text-2xl mb-1 lg:mb-2">📤</div>
+          <div className="text-lg lg:text-2xl mb-1 lg:mb-2 text-destructive"><ArrowUpCircle className="h-6 w-6 lg:h-7 lg:w-7" /></div>
           <div className="font-black text-xs lg:text-lg text-destructive truncate">{fmt(totD)}</div>
           <div className="text-[9px] lg:text-[11px] text-muted-foreground">Dépenses</div>
         </div>
         <div className="bg-card border border-border rounded-xl p-2.5 lg:p-4 relative overflow-hidden shadow-card">
           <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-primary to-success" />
-          <div className="text-lg lg:text-2xl mb-1 lg:mb-2">⚖️</div>
+          <div className="text-lg lg:text-2xl mb-1 lg:mb-2 text-primary"><Scale className="h-6 w-6 lg:h-7 lg:w-7" /></div>
           <div className={`font-black text-xs lg:text-lg truncate ${bal >= 0 ? 'text-success' : 'text-destructive'}`}>{fmt(Math.abs(bal))}</div>
           <div className="text-[9px] lg:text-[11px] text-muted-foreground">Balance</div>
         </div>
@@ -150,12 +151,12 @@ export default function JournalPage() {
           <div className="flex gap-2 items-center flex-wrap">
             <input
               className="bg-background border-[1.5px] border-border rounded-lg py-1.5 px-2.5 text-xs text-foreground outline-none flex-1 min-w-[100px] max-w-[160px] font-sans placeholder:text-muted-foreground focus:border-primary focus:ring-[3px] focus:ring-primary/10"
-              placeholder="🔍 Rechercher..."
+              placeholder="Rechercher..."
               value={search}
               onChange={e => { setSearch(e.target.value); pagination.resetPage(); }}
             />
             <DateFilter month={month} setMonth={setMonth} availableMonths={availableMonths} />
-            <button onClick={handleExport} className="bg-background border-[1.5px] border-border text-muted-foreground py-1.5 px-2.5 rounded-lg text-xs font-bold hover:border-primary hover:text-primary transition-all" title="Exporter CSV">📥</button>
+            <button onClick={handleExport} className="bg-background border-[1.5px] border-border text-muted-foreground py-1.5 px-2.5 rounded-lg text-xs font-bold hover:border-primary hover:text-primary transition-all" title="Exporter CSV"><Download className="h-3.5 w-3.5" /></button>
             <button onClick={openNew} className="gradient-primary text-primary-foreground border-none py-1.5 px-3 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all hidden lg:inline-flex">
               ＋ Transaction
             </button>
@@ -187,12 +188,12 @@ export default function JournalPage() {
                   <span className={`font-bold text-sm ${j.type === 'Recette' ? 'text-success' : 'text-destructive'}`}>
                     {j.type === 'Recette' ? '+' : '-'}{fmt(j.montant || 0)}
                   </span>
-                  <button onClick={() => setDeleteTarget({ id: j.id, libelle: j.libelle })} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs">🗑️</button>
+                  <button onClick={() => setDeleteTarget({ id: j.id, libelle: j.libelle })} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs"><Trash2 className="h-3.5 w-3.5" /></button>
                 </div>
               </div>
             )) : (
               <div className="text-center py-10 text-muted-foreground">
-                <div className="text-4xl opacity-30 mb-2">📒</div>
+                <BookOpen className="h-10 w-10 mx-auto opacity-30 mb-2" />
                 <div className="text-sm">Aucune transaction</div>
               </div>
             )
@@ -231,12 +232,12 @@ export default function JournalPage() {
                       {j.type === 'Recette' ? '+' : '-'}{fmt(j.montant || 0)}
                     </td>
                     <td className="px-3.5 py-3 text-sm border-b border-border">
-                      <button onClick={() => setDeleteTarget({ id: j.id, libelle: j.libelle })} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-destructive hover:text-destructive transition-all">🗑️</button>
+                      <button onClick={() => setDeleteTarget({ id: j.id, libelle: j.libelle })} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-destructive hover:text-destructive transition-all"><Trash2 className="h-3.5 w-3.5" /></button>
                     </td>
                   </tr>
                 )) : (
                   <tr><td colSpan={7} className="text-center py-10 text-muted-foreground">
-                    <div className="text-4xl opacity-30 mb-2">📒</div>
+                    <BookOpen className="h-10 w-10 mx-auto opacity-30 mb-2" />
                     <div className="text-sm">Aucune transaction</div>
                   </td></tr>
                 )}
@@ -292,7 +293,7 @@ export default function JournalPage() {
                 </select>
                 {form.facture_id && (
                   <div className="text-[10.5px] text-muted-foreground bg-muted/50 rounded-lg p-2 mt-1">
-                    📄 {form.libelle}
+                    {form.libelle}
                   </div>
                 )}
               </div>
@@ -340,7 +341,7 @@ export default function JournalPage() {
           </div>
           <DialogFooter className="flex-col sm:flex-row gap-2">
             <button onClick={() => setShowModal(false)} className="bg-card border-[1.5px] border-border text-muted-foreground py-2 px-4 rounded-lg text-xs font-bold hover:bg-background transition-all w-full sm:w-auto">Annuler</button>
-            <button onClick={save} className="gradient-primary text-primary-foreground border-none py-2 px-4 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all w-full sm:w-auto">💾 Enregistrer</button>
+            <button onClick={save} className="gradient-primary text-primary-foreground border-none py-2 px-4 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all w-full sm:w-auto flex items-center justify-center gap-1.5"><Save className="h-3.5 w-3.5" /> Enregistrer</button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
