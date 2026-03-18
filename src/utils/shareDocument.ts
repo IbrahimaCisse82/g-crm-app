@@ -59,5 +59,4 @@ async function copyToClipboard(text: string) {
   } catch {
     toast.error('Partage non supporté sur ce navigateur');
   }
-  }
 }
