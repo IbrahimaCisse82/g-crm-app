@@ -1,4 +1,5 @@
 import { toast } from 'sonner';
+import { generatePdfHtml, type PdfData } from './generatePdf';
 
 interface ShareDocData {
   type: 'facture' | 'devis';
@@ -7,6 +8,7 @@ interface ShareDocData {
   montant_ttc: number;
   devise?: string;
   date: string;
+  pdfData?: PdfData;
 }
 
 const fmtMoney = (n: number, devise = 'FCFA') =>
@@ -17,17 +19,31 @@ export async function shareDocument(data: ShareDocData) {
   const title = `${label} ${data.numero}`;
   const text = `${label} ${data.numero}\nClient : ${data.client}\nMontant TTC : ${fmtMoney(data.montant_ttc, data.devise)}\nDate : ${data.date}`;
 
+  // Generate file attachment if pdfData provided
+  let files: File[] | undefined;
+  if (data.pdfData) {
+    const html = generatePdfHtml(data.pdfData);
+    const blob = new Blob([html], { type: 'text/html' });
+    const fileName = `${label}_${data.numero.replace(/[/\\]/g, '-')}.html`;
+    files = [new File([blob], fileName, { type: 'text/html' })];
+  }
+
   if (navigator.share) {
+    // Check if file sharing is supported
+    const canShareFiles = files && navigator.canShare?.({ files });
+
     try {
-      await navigator.share({ title, text });
+      await navigator.share({
+        title,
+        text,
+        ...(canShareFiles ? { files } : {}),
+      });
     } catch (e: unknown) {
-      // User cancelled share - ignore AbortError
       if (e instanceof Error && e.name !== 'AbortError') {
         toast.error('Erreur de partage');
       }
     }
   } else {
-    // Fallback: copy to clipboard
     try {
       await navigator.clipboard.writeText(text);
       toast.success('Contenu copié dans le presse-papiers');

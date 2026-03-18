@@ -44,7 +44,9 @@ function esc(str: string | null | undefined): string {
 const fmt = (n: number, devise = 'FCFA') =>
   new Intl.NumberFormat('fr-FR').format(Math.round(n || 0)) + ' ' + esc(devise);
 
-export function downloadPdf(data: PdfData) {
+export type { PdfData };
+
+export function generatePdfHtml(data: PdfData): string {
   const devise = data.entreprise?.devise || 'FCFA';
   const title = data.type === 'facture' ? 'FACTURE' : 'DEVIS';
   const articles = Array.isArray(data.articles) ? data.articles as PdfArticle[] : [];
@@ -156,6 +158,11 @@ export function downloadPdf(data: PdfData) {
 </body>
 </html>`;
 
+  return html;
+}
+
+export function downloadPdf(data: PdfData) {
+  const html = generatePdfHtml(data);
   const blob = new Blob([html], { type: 'text/html' });
   const url = URL.createObjectURL(blob);
   const win = window.open(url, '_blank');
