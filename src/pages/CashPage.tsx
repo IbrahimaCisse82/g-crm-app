@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useApp } from '@/context/AppContext';
+import { Pencil, Trash2, Save, Banknote, Smartphone, Landmark, Wallet } from 'lucide-react';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { CardSkeleton } from '@/components/LoadingSkeleton';
 import { toast } from 'sonner';
