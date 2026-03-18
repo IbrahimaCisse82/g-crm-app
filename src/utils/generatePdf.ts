@@ -101,6 +101,7 @@ export function downloadPdf(data: PdfData) {
       ${data.entreprise?.email ? `<p>${esc(data.entreprise.email)}</p>` : ''}
       ${data.entreprise?.ninea ? `<p>NINEA: ${esc(data.entreprise.ninea)}</p>` : ''}
       ${data.entreprise?.rccm ? `<p>RCCM: ${esc(data.entreprise.rccm)}</p>` : ''}
+      </div>
     </div>
     <div class="doc-info">
       <h2>${esc(title)}</h2>
