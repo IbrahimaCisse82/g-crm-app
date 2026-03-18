@@ -28,8 +28,11 @@ export async function shareDocument(data: ShareDocData) {
     files = [new File([blob], fileName, { type: 'text/html' })];
   }
 
-  if (navigator.share) {
-    // Check if file sharing is supported
+  const canShare = typeof navigator.share === 'function';
+  // In iframes (e.g. Lovable preview), navigator.share throws NotAllowedError
+  const isInIframe = window.self !== window.top;
+
+  if (canShare && !isInIframe) {
     const canShareFiles = files && navigator.canShare?.({ files });
 
     try {
@@ -40,15 +43,21 @@ export async function shareDocument(data: ShareDocData) {
       });
     } catch (e: unknown) {
       if (e instanceof Error && e.name !== 'AbortError') {
-        toast.error('Erreur de partage');
+        // Fallback to clipboard
+        await copyToClipboard(text);
       }
     }
   } else {
-    try {
-      await navigator.clipboard.writeText(text);
-      toast.success('Contenu copié dans le presse-papiers');
-    } catch {
-      toast.error('Partage non supporté sur ce navigateur');
-    }
+    await copyToClipboard(text);
+  }
+}
+
+async function copyToClipboard(text: string) {
+  try {
+    await navigator.clipboard.writeText(text);
+    toast.success('Contenu copié dans le presse-papiers');
+  } catch {
+    toast.error('Partage non supporté sur ce navigateur');
+  }
   }
 }
