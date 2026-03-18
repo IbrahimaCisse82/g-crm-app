@@ -26,6 +26,7 @@ interface PdfData {
     ninea?: string | null;
     rccm?: string | null;
     devise?: string;
+    logo_url?: string | null;
   } | null;
 }
 

@@ -1,11 +1,17 @@
-import { useState, useEffect, forwardRef } from 'react';
+import { useState, useEffect, forwardRef, useRef } from 'react';
 import { useApp } from '@/context/AppContext';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { Upload, X } from 'lucide-react';
 
 export default function CompanyPage() {
   const { entreprise } = useApp();
+  const { user } = useAuth();
   const [saving, setSaving] = useState(false);
   const [prevId, setPrevId] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const co = entreprise.data;
   const [form, setForm] = useState({
@@ -18,6 +24,7 @@ export default function CompanyPage() {
     slogan: co?.slogan || '',
     tva: co?.tva ?? 18,
     devise: co?.devise || 'FCFA',
+    logo_url: co?.logo_url || '',
   });
 
   useEffect(() => {
@@ -33,9 +40,49 @@ export default function CompanyPage() {
         slogan: co.slogan || '',
         tva: co.tva ?? 18,
         devise: co.devise || 'FCFA',
+        logo_url: co.logo_url || '',
       });
     }
   }, [co, prevId]);
+
+  const uploadLogo = async (file: File) => {
+    if (!user) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error('Veuillez sélectionner une image');
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Le fichier est trop volumineux (max 2 Mo)');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const ext = file.name.split('.').pop();
+      const path = `${user.id}/logo.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('logos')
+        .upload(path, file, { upsert: true });
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('logos')
+        .getPublicUrl(path);
+
+      // Add cache-busting
+      const url = `${publicUrl}?t=${Date.now()}`;
+      setForm(f => ({ ...f, logo_url: url }));
+      toast.success('Logo uploadé !');
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Erreur upload');
+    }
+    setUploading(false);
+  };
+
+  const removeLogo = () => {
+    setForm(f => ({ ...f, logo_url: '' }));
+  };
 
   const save = async () => {
     setSaving(true);
@@ -56,6 +103,53 @@ export default function CompanyPage() {
         </div>
         <div className="p-5">
           <div className="grid gap-3.5">
+            {/* Logo upload */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Logo entreprise</label>
+              <div className="flex items-center gap-3">
+                {form.logo_url ? (
+                  <div className="relative group">
+                    <img
+                      src={form.logo_url}
+                      alt="Logo"
+                      className="h-16 w-16 object-contain rounded-lg border border-border bg-background"
+                    />
+                    <button
+                      onClick={removeLogo}
+                      className="absolute -top-1.5 -right-1.5 bg-destructive text-destructive-foreground rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <div
+                    onClick={() => fileRef.current?.click()}
+                    className="h-16 w-16 rounded-lg border-2 border-dashed border-border flex items-center justify-center cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors"
+                  >
+                    <Upload className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                )}
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={e => {
+                    const file = e.target.files?.[0];
+                    if (file) uploadLogo(file);
+                    e.target.value = '';
+                  }}
+                />
+                <button
+                  onClick={() => fileRef.current?.click()}
+                  disabled={uploading}
+                  className="text-xs text-primary font-semibold hover:underline disabled:opacity-50"
+                >
+                  {uploading ? '⏳ Upload...' : form.logo_url ? 'Changer' : 'Uploader un logo'}
+                </button>
+              </div>
+            </div>
+
             <Field label="Nom entreprise" value={form.nom} onChange={v => setForm({ ...form, nom: v })} />
             <Field label="Adresse" value={form.adresse} onChange={v => setForm({ ...form, adresse: v })} />
             <div className="grid grid-cols-2 gap-3">
@@ -102,9 +196,14 @@ export default function CompanyPage() {
         <div className="p-5">
           <div className="bg-card border border-border rounded-lg p-5 font-sans text-[11px]">
             <div className="flex justify-between items-start border-b-2 border-primary pb-2.5 mb-2.5">
-              <div>
-                <div className="text-lg font-black text-foreground">{form.nom || 'Mon Entreprise'}</div>
-                <div className="text-[10px] text-muted-foreground mt-0.5">{form.slogan}</div>
+              <div className="flex items-start gap-3">
+                {form.logo_url && (
+                  <img src={form.logo_url} alt="Logo" className="h-12 w-12 object-contain rounded" />
+                )}
+                <div>
+                  <div className="text-lg font-black text-foreground">{form.nom || 'Mon Entreprise'}</div>
+                  <div className="text-[10px] text-muted-foreground mt-0.5">{form.slogan}</div>
+                </div>
               </div>
               <div className="text-right text-muted-foreground text-[10px] leading-relaxed">
                 {form.adresse && <div>{form.adresse}</div>}
