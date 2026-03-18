@@ -11,6 +11,7 @@ import { useSortableTable } from '@/hooks/useSortableTable';
 import { exportCsv } from '@/utils/exportCsv';
 import { toast } from 'sonner';
 import { downloadPdf } from '@/utils/generatePdf';
+import { shareDocument } from '@/utils/shareDocument';
 import { formatDate } from '@/lib/formatDate';
 import type { ArticleLine } from '@/types';
 import { PAYMENT_MODES } from '@/types';
