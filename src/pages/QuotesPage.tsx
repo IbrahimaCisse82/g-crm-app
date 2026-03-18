@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { FileText, Share2, Pencil, Trash2, Check, X, ArrowRightLeft } from 'lucide-react';
+import { FileText, Share2, Pencil, Trash2, Check, X, ArrowRightLeft, Save, ClipboardList } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { useNavigate } from 'react-router-dom';
 import { StatusBadge } from '@/components/StatusBadge';
