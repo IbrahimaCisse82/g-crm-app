@@ -44,7 +44,7 @@ export default function JournalPage() {
   const pagination = usePagination(sorted);
 
   const filters = ['all', 'Recette', 'Dépense', ...PAYMENT_MODES];
-  const filterLabels: Record<string, string> = { all: 'Tous', Recette: '📥 Recettes', 'Dépense': '📤 Dépenses', Espèce: '💵 Espèce', Wave: 'Wave', 'Orange Money': '🟠 Orange', 'Yas Money': '🟣 Yas', Virement: '🏦 Virement', Chèque: '✉️ Chèque' };
+  const filterLabels: Record<string, string> = { all: 'Tous', Recette: 'Recettes', 'Dépense': 'Dépenses', Espèce: 'Espèce', Wave: 'Wave', 'Orange Money': 'Orange', 'Yas Money': 'Yas', Virement: 'Virement', Chèque: 'Chèque' };
 
   const openNew = () => {
     setForm({ libelle: '', type: 'Recette', montant: 0, mode_paiement: 'Espèce', categorie: '', compte: '', date_operation: new Date().toISOString().slice(0, 10), facture_id: '' });
