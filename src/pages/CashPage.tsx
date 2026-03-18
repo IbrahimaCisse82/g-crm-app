@@ -135,7 +135,7 @@ export default function CashPage() {
             {filteredMmCards.length ? filteredMmCards.map(({ mm, sol, mIn, mOut }) => (
               <div key={mm.id} className="bg-background border-[1.5px] border-border rounded-xl p-3 flex items-center justify-between mb-2 hover:border-primary/30 transition-all">
                 <div>
-                  <div className="font-bold text-sm">{icons[mm.operateur] || '📱'} {mm.operateur}</div>
+                  <div className="font-bold text-sm">{mm.operateur}</div>
                   <div className="text-[11px] text-muted-foreground">{mm.titulaire ? mm.titulaire + ' · ' : ''}{mm.numero}</div>
                   <div className="text-[10px] text-muted-foreground mt-1">Init: {fmt(mm.solde)} · +{fmt(mIn)} · -{fmt(mOut)}</div>
                 </div>
