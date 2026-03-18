@@ -188,7 +188,7 @@ export default function JournalPage() {
                   <span className={`font-bold text-sm ${j.type === 'Recette' ? 'text-success' : 'text-destructive'}`}>
                     {j.type === 'Recette' ? '+' : '-'}{fmt(j.montant || 0)}
                   </span>
-                  <button onClick={() => setDeleteTarget({ id: j.id, libelle: j.libelle })} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs">🗑️</button>
+                  <button onClick={() => setDeleteTarget({ id: j.id, libelle: j.libelle })} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs"><Trash2 className="h-3.5 w-3.5" /></button>
                 </div>
               </div>
             )) : (
