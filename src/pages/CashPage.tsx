@@ -118,7 +118,7 @@ export default function CashPage() {
       </div>
 
       <div className="gradient-primary rounded-xl p-4 px-5 flex justify-between items-center text-primary-foreground mb-4 shadow-primary">
-        <div className="text-sm font-bold opacity-85">💰 Trésorerie totale</div>
+        <div className="text-sm font-bold opacity-85 flex items-center gap-2"><Wallet className="h-4 w-4" /> Trésorerie totale</div>
         <div className="font-black text-xl">{fmt(total)}</div>
       </div>
 
