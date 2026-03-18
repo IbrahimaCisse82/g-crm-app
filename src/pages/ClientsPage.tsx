@@ -128,7 +128,7 @@ export default function ClientsPage() {
               </div>
             )) : (
               <div className="text-center py-10 text-muted-foreground">
-                <div className="text-4xl opacity-30 mb-2">👥</div>
+                <Users className="h-10 w-10 mx-auto opacity-30 mb-2" />
                 <div className="text-sm">Aucun client</div>
               </div>
             )
