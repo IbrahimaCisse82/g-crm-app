@@ -105,7 +105,7 @@ export default function CashPage() {
         </div>
         <div className="bg-card border border-border rounded-xl p-2.5 lg:p-4 relative overflow-hidden shadow-card">
           <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-secondary to-primary" />
-          <div className="text-lg lg:text-2xl mb-1 lg:mb-2">📱</div>
+          <div className="text-lg lg:text-2xl mb-1 lg:mb-2 text-primary"><Smartphone className="h-6 w-6 lg:h-7 lg:w-7" /></div>
           <div className="font-black text-xs lg:text-lg truncate">{fmt(mmTot)}</div>
           <div className="text-[9px] lg:text-[11px] text-muted-foreground">Mobile Money</div>
         </div>
