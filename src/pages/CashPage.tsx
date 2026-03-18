@@ -125,9 +125,9 @@ export default function CashPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="bg-card border border-border rounded-xl overflow-hidden shadow-card">
           <div className="px-4 py-3 border-b border-border flex items-center justify-between flex-wrap gap-2">
-            <h3 className="font-extrabold text-sm text-foreground">📱 Comptes Mobile Money</h3>
+            <h3 className="font-extrabold text-sm text-foreground flex items-center gap-1.5"><Smartphone className="h-4 w-4" /> Comptes Mobile Money</h3>
             <div className="flex gap-2 items-center">
-              <input className="bg-background border-[1.5px] border-border rounded-lg py-1 px-2.5 text-xs text-foreground outline-none w-[120px] font-sans placeholder:text-muted-foreground focus:border-primary focus:ring-[3px] focus:ring-primary/10" placeholder="🔍 Rechercher..." value={search} onChange={e => setSearch(e.target.value)} />
+              <input className="bg-background border-[1.5px] border-border rounded-lg py-1 px-2.5 text-xs text-foreground outline-none w-[120px] font-sans placeholder:text-muted-foreground focus:border-primary focus:ring-[3px] focus:ring-primary/10" placeholder="Rechercher..." value={search} onChange={e => setSearch(e.target.value)} />
               <button onClick={openNew} className="gradient-primary text-primary-foreground border-none py-1.5 px-3 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all">＋ Compte</button>
             </div>
           </div>
