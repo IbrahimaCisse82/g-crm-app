@@ -93,7 +93,7 @@ export default function ClientsPage() {
           <div className="flex gap-2 items-center flex-wrap">
             <input
               className="bg-background border-[1.5px] border-border rounded-lg py-1.5 px-2.5 text-xs text-foreground outline-none flex-1 min-w-[100px] max-w-[160px] font-sans placeholder:text-muted-foreground focus:border-primary focus:ring-[3px] focus:ring-primary/10"
-              placeholder="🔍 Rechercher..."
+              placeholder="Rechercher..."
               value={search}
               onChange={e => { setSearch(e.target.value); pagination.resetPage(); }}
             />
