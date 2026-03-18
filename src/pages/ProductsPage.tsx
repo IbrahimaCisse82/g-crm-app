@@ -167,7 +167,7 @@ export default function ProductsPage() {
           </div>
           <DialogFooter>
             <button onClick={() => setShowModal(false)} className="bg-card border-[1.5px] border-border text-muted-foreground py-2 px-4 rounded-lg text-xs font-bold hover:bg-background transition-all">Annuler</button>
-            <button onClick={save} className="gradient-primary text-primary-foreground border-none py-2 px-4 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all">💾 Enregistrer</button>
+            <button onClick={save} className="gradient-primary text-primary-foreground border-none py-2 px-4 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all flex items-center gap-1.5"><Save className="h-3.5 w-3.5" /> Enregistrer</button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
