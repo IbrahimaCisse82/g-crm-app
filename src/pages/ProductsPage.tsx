@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useApp } from '@/context/AppContext';
+import { Pencil, Trash2, Download, Save, Package } from 'lucide-react';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { PaginationControls } from '@/components/PaginationControls';
 import { TableSkeleton } from '@/components/LoadingSkeleton';
