@@ -3,20 +3,21 @@ import { useNavigate } from 'react-router-dom';
 import { StatusBadge } from '@/components/StatusBadge';
 import { CardSkeleton } from '@/components/LoadingSkeleton';
 import { formatDate } from '@/lib/formatDate';
+import { Users, Coins, FileText, BarChart3, TrendingUp, AlertTriangle } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
   LineChart, Line, CartesianGrid,
 } from 'recharts';
 
-function StatCard({ icon, value, label, sub }: { icon: string; value: string; label: string; sub?: string }) {
+function StatCard({ icon: Icon, value, label, sub, subIcon: SubIcon }: { icon: React.ElementType; value: string; label: string; sub?: string; subIcon?: React.ElementType }) {
   return (
     <div className="bg-card border border-border rounded-xl p-3 lg:p-[18px] relative overflow-hidden shadow-card hover:-translate-y-px hover:shadow-elevated hover:border-primary/25 transition-all cursor-default">
       <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-primary to-secondary" />
-      <div className="text-xl lg:text-[26px] mb-1 lg:mb-2">{icon}</div>
+      <div className="text-xl lg:text-[26px] mb-1 lg:mb-2 text-primary"><Icon className="h-6 w-6 lg:h-7 lg:w-7" /></div>
       <div className="font-black text-sm lg:text-2xl text-foreground truncate">{value}</div>
       <div className="text-[10px] lg:text-[11px] text-muted-foreground mt-0.5 truncate">{label}</div>
-      {sub && <div className="text-[10px] lg:text-[10.5px] text-accent mt-0.5 lg:mt-1 truncate">{sub}</div>}
+      {sub && <div className="text-[10px] lg:text-[10.5px] text-accent mt-0.5 lg:mt-1 truncate flex items-center gap-1">{SubIcon && <SubIcon className="h-3 w-3" />}{sub}</div>}
     </div>
   );
 }
