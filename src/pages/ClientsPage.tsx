@@ -122,8 +122,8 @@ export default function ClientsPage() {
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <StatusBadge status={c.statut} />
-                  <button onClick={() => openEdit(c)} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs">✏️</button>
-                  <button onClick={() => setDeleteTarget({ id: c.id, name: `${c.prenom} ${c.nom}` })} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs">🗑️</button>
+                  <button onClick={() => openEdit(c)} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs"><Pencil className="h-3.5 w-3.5" /></button>
+                  <button onClick={() => setDeleteTarget({ id: c.id, name: `${c.prenom} ${c.nom}` })} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs"><Trash2 className="h-3.5 w-3.5" /></button>
                 </div>
               </div>
             )) : (
