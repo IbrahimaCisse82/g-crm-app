@@ -158,6 +158,11 @@ export function generatePdfHtml(data: PdfData): string {
 </body>
 </html>`;
 
+  return html;
+}
+
+export function downloadPdf(data: PdfData) {
+  const html = generatePdfHtml(data);
   const blob = new Blob([html], { type: 'text/html' });
   const url = URL.createObjectURL(blob);
   const win = window.open(url, '_blank');
