@@ -100,10 +100,10 @@ export default function Dashboard() {
     <div>
       {/* KPI cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 lg:gap-3.5 mb-5">
-        <StatCard icon="👥" value={String(actifs)} label="Clients actifs" />
-        <StatCard icon="💰" value={fmt(totR)} label="Recettes totales" />
-        <StatCard icon="🧾" value={String(factures.data.length)} label="Factures" sub={`En attente: ${pen}`} />
-        <StatCard icon="📊" value={`${bal >= 0 ? '+' : '-'}${fmt(Math.abs(bal))}`} label="Balance nette" sub={bal >= 0 ? '✅ Positif' : '⚠️ Négatif'} />
+        <StatCard icon={Users} value={String(actifs)} label="Clients actifs" />
+        <StatCard icon={Coins} value={fmt(totR)} label="Recettes totales" />
+        <StatCard icon={FileText} value={String(factures.data.length)} label="Factures" sub={`En attente: ${pen}`} />
+        <StatCard icon={BarChart3} value={`${bal >= 0 ? '+' : '-'}${fmt(Math.abs(bal))}`} label="Balance nette" sub={bal >= 0 ? 'Positif' : 'Négatif'} subIcon={bal >= 0 ? TrendingUp : AlertTriangle} />
       </div>
 
       {/* Charts row 1: Revenue bar + Payment pie */}
