@@ -180,7 +180,7 @@ export default function CashPage() {
                   </tr>
                 ))}
                 <tr className="hover:bg-background">
-                  <td className="px-3.5 py-3 text-sm font-bold border-b border-border">🏦 Banque</td>
+                  <td className="px-3.5 py-3 text-sm font-bold border-b border-border flex items-center gap-1.5"><Landmark className="h-4 w-4" /> Banque</td>
                   <td className="px-3.5 py-3 text-[11.5px] text-muted-foreground border-b border-border">Virement / Chèque</td>
                   <td className={`px-3.5 py-3 text-sm font-bold border-b border-border ${soldeBanque >= 0 ? 'text-success' : 'text-destructive'}`}>{fmt(soldeBanque)}</td>
                 </tr>
