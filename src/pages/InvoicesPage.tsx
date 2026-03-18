@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { FileText, Share2, Pencil, CreditCard, Trash2, Check, X } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { StatusBadge, PayBadge } from '@/components/StatusBadge';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
