@@ -357,7 +357,7 @@ export default function InvoicesPage() {
                 <div key={i} className="flex gap-2 items-end mb-2 flex-wrap">
                   <div className="flex-1 min-w-[140px]">
                     <select className="bg-background border-[1.5px] border-border rounded-lg py-2 px-2.5 text-xs text-foreground outline-none font-sans focus:border-primary w-full mb-1" value="" onChange={e => selectProduct(i, e.target.value)}>
-                      <option value="">📦 Choisir produit...</option>
+                      <option value="">Choisir produit...</option>
                       {produits.data.map(p => <option key={p.id} value={p.id}>{p.nom} ({fmt(p.prix)})</option>)}
                     </select>
                     <input className="bg-background border-[1.5px] border-border rounded-lg py-2 px-2.5 text-xs text-foreground outline-none font-sans focus:border-primary w-full" placeholder="Désignation" value={a.nom} onChange={e => updateArticle(i, 'nom', e.target.value)} />
