@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useApp } from '@/context/AppContext';
+import { Trash2, Download, Save, BookOpen, ArrowDownCircle, ArrowUpCircle, Scale } from 'lucide-react';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { PaginationControls } from '@/components/PaginationControls';
 import { DateFilter } from '@/components/DateFilter';
