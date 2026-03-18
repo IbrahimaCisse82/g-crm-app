@@ -169,6 +169,7 @@ export default function QuotesPage() {
                 </div>
                 <div className="flex gap-1 mt-2">
                   <button onClick={() => downloadPdf({ type: 'devis', numero: d.numero, date: d.date_devis, validite_jours: d.validite_jours, client: cliName(d.client_id), articles: (d.articles as unknown as ArticleLine[]) || [], montant_ht: d.montant_ht, montant_tva: d.montant_tva, montant_ttc: d.montant_ttc, tva_pct: entreprise.data?.tva ?? 18, notes: d.notes, entreprise: entreprise.data })} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs">📄</button>
+                  <button onClick={() => shareDocument({ type: 'devis', numero: d.numero, client: cliName(d.client_id), montant_ttc: d.montant_ttc, devise: entreprise.data?.devise, date: d.date_devis })} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs">📤</button>
                   <button onClick={() => openEdit(d)} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs">✏️</button>
                   {d.statut === 'En attente' && <>
                     <button onClick={() => updateStatus(d.id, 'Accepté')} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs">✅</button>
