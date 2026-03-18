@@ -142,8 +142,8 @@ export default function CashPage() {
                 <div className="text-right">
                   <div className={`font-black text-base ${sol >= 0 ? 'text-success' : 'text-destructive'}`}>{fmt(sol)}</div>
                   <div className="flex gap-2 mt-1 justify-end">
-                    <button onClick={() => openEdit(mm)} className="text-[10.5px] text-muted-foreground hover:text-primary">✏️ Modifier</button>
-                    <button onClick={() => setDeleteTarget({ id: mm.id, label: `${mm.operateur} ${mm.numero}` })} className="text-[10.5px] text-muted-foreground hover:text-destructive">🗑 Supprimer</button>
+                    <button onClick={() => openEdit(mm)} className="text-[10.5px] text-muted-foreground hover:text-primary flex items-center gap-0.5"><Pencil className="h-3 w-3" /> Modifier</button>
+                    <button onClick={() => setDeleteTarget({ id: mm.id, label: `${mm.operateur} ${mm.numero}` })} className="text-[10.5px] text-muted-foreground hover:text-destructive flex items-center gap-0.5"><Trash2 className="h-3 w-3" /> Supprimer</button>
                   </div>
                 </div>
               </div>
