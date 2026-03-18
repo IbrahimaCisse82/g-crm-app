@@ -93,6 +93,8 @@ export function downloadPdf(data: PdfData) {
   <div class="content">
   <div class="header">
     <div class="company">
+      ${data.entreprise?.logo_url ? `<img class="company-logo" src="${esc(data.entreprise.logo_url)}" alt="Logo"/>` : ''}
+      <div>
       <h1>${esc(data.entreprise?.nom) || 'Mon Entreprise'}</h1>
       ${data.entreprise?.adresse ? `<p>${esc(data.entreprise.adresse)}</p>` : ''}
       ${data.entreprise?.telephone ? `<p>Tél: ${esc(data.entreprise.telephone)}</p>` : ''}
