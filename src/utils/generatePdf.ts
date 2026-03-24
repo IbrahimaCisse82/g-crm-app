@@ -1,3 +1,6 @@
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
+
 interface PdfArticle {
   nom: string;
   quantite: number;
@@ -30,7 +33,6 @@ interface PdfData {
   } | null;
 }
 
-// Sanitize string to prevent XSS injection
 function esc(str: string | null | undefined): string {
   if (!str) return '';
   return str
@@ -50,6 +52,15 @@ export function generatePdfHtml(data: PdfData): string {
   const devise = data.entreprise?.devise || 'FCFA';
   const title = data.type === 'facture' ? 'FACTURE' : 'DEVIS';
   const articles = Array.isArray(data.articles) ? data.articles as PdfArticle[] : [];
+  const companyName = esc(data.entreprise?.nom) || 'Mon Entreprise';
+
+  // Build footer info parts
+  const footerParts: string[] = [companyName];
+  if (data.entreprise?.adresse) footerParts.push(esc(data.entreprise.adresse));
+  if (data.entreprise?.telephone) footerParts.push('Tél: ' + esc(data.entreprise.telephone));
+  if (data.entreprise?.email) footerParts.push(esc(data.entreprise.email));
+  if (data.entreprise?.ninea) footerParts.push('NINEA: ' + esc(data.entreprise.ninea));
+  if (data.entreprise?.rccm) footerParts.push('RCCM: ' + esc(data.entreprise.rccm));
 
   const html = `<!DOCTYPE html>
 <html lang="fr">
@@ -59,7 +70,7 @@ export function generatePdfHtml(data: PdfData): string {
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { height: 100%; }
-  body { font-family: 'Segoe UI', system-ui, sans-serif; color: #1a1a2e; padding: 40px; font-size: 13px; display: flex; flex-direction: column; min-height: 100vh; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; color: #1a1a2e; padding: 40px; font-size: 13px; display: flex; flex-direction: column; min-height: 100vh; width: 794px; }
   .header { display: flex; justify-content: space-between; margin-bottom: 40px; }
   .company { max-width: 50%; display: flex; align-items: flex-start; gap: 12px; }
   .company-logo { height: 50px; width: 50px; object-fit: contain; border-radius: 4px; }
@@ -86,18 +97,21 @@ export function generatePdfHtml(data: PdfData): string {
   .totals-row.total .val { color: #10b981; }
   .notes { margin-top: 30px; padding: 12px; background: #f8f9fa; border-radius: 6px; font-size: 12px; color: #666; }
   .notes strong { color: #333; }
-  .footer { margin-top: auto; text-align: center; color: #aaa; font-size: 10px; border-top: 1px solid #eee; padding-top: 12px; }
+  .footer { margin-top: auto; text-align: center; color: #888; font-size: 9px; border-top: 1px solid #ddd; padding-top: 10px; line-height: 1.6; }
   .content { flex: 1; }
-  @media print { body { padding: 20px; min-height: 100vh; } }
+  @media print {
+    body { padding: 20px; min-height: 100vh; }
+    @page { margin: 10mm; }
+  }
 </style>
 </head>
 <body>
   <div class="content">
   <div class="header">
     <div class="company">
-      ${data.entreprise?.logo_url ? `<img class="company-logo" src="${esc(data.entreprise.logo_url)}" alt="Logo"/>` : ''}
+      ${data.entreprise?.logo_url ? `<img class="company-logo" src="${esc(data.entreprise.logo_url)}" alt="Logo" crossorigin="anonymous"/>` : ''}
       <div>
-      <h1>${esc(data.entreprise?.nom) || 'Mon Entreprise'}</h1>
+      <h1>${companyName}</h1>
       ${data.entreprise?.adresse ? `<p>${esc(data.entreprise.adresse)}</p>` : ''}
       ${data.entreprise?.telephone ? `<p>Tél: ${esc(data.entreprise.telephone)}</p>` : ''}
       ${data.entreprise?.email ? `<p>${esc(data.entreprise.email)}</p>` : ''}
@@ -153,7 +167,7 @@ export function generatePdfHtml(data: PdfData): string {
   </div>
 
   <div class="footer">
-    ${esc(data.entreprise?.nom) || 'Mon Entreprise'} — Document généré automatiquement
+    ${footerParts.join(' — ')}
   </div>
 </body>
 </html>`;
@@ -161,15 +175,100 @@ export function generatePdfHtml(data: PdfData): string {
   return html;
 }
 
-export function downloadPdf(data: PdfData) {
+/**
+ * Generate a real PDF blob from PdfData using html2canvas + jsPDF
+ */
+export async function generatePdfBlob(data: PdfData): Promise<Blob> {
   const html = generatePdfHtml(data);
-  const blob = new Blob([html], { type: 'text/html' });
-  const url = URL.createObjectURL(blob);
-  const win = window.open(url, '_blank');
-  if (win) {
-    win.onload = () => {
-      setTimeout(() => { win.print(); }, 300);
-    };
+
+  // Create an off-screen container
+  const container = document.createElement('div');
+  container.style.position = 'fixed';
+  container.style.left = '-9999px';
+  container.style.top = '0';
+  container.style.width = '794px'; // A4 width at 96dpi
+  container.style.background = 'white';
+  container.innerHTML = html.replace(/<!DOCTYPE[\s\S]*?<body>/, '<div>').replace(/<\/body>[\s\S]*$/, '</div>');
+
+  // Parse just the body content with styles
+  const iframe = document.createElement('iframe');
+  iframe.style.position = 'fixed';
+  iframe.style.left = '-9999px';
+  iframe.style.top = '0';
+  iframe.style.width = '794px';
+  iframe.style.height = '1123px'; // A4 height
+  iframe.style.border = 'none';
+  document.body.appendChild(iframe);
+
+  const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+  if (!iframeDoc) throw new Error('Cannot create iframe');
+
+  iframeDoc.open();
+  iframeDoc.write(html);
+  iframeDoc.close();
+
+  // Wait for content & images to load
+  await new Promise(resolve => setTimeout(resolve, 500));
+
+  const body = iframeDoc.body;
+
+  const canvas = await html2canvas(body, {
+    scale: 2,
+    useCORS: true,
+    allowTaint: true,
+    width: 794,
+    windowWidth: 794,
+    backgroundColor: '#ffffff',
+  });
+
+  document.body.removeChild(iframe);
+
+  const imgData = canvas.toDataURL('image/jpeg', 0.95);
+  const pdf = new jsPDF('p', 'mm', 'a4');
+  const pdfWidth = 210; // A4 mm
+  const pdfHeight = 297;
+
+  const imgWidth = pdfWidth;
+  const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+
+  if (imgHeight <= pdfHeight) {
+    pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight);
+  } else {
+    // Multi-page
+    let position = 0;
+    let remaining = imgHeight;
+    while (remaining > 0) {
+      pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+      remaining -= pdfHeight;
+      position -= pdfHeight;
+      if (remaining > 0) pdf.addPage();
+    }
   }
-  setTimeout(() => URL.revokeObjectURL(url), 10000);
+
+  return pdf.output('blob');
+}
+
+export async function downloadPdf(data: PdfData) {
+  try {
+    const blob = await generatePdfBlob(data);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const label = data.type === 'facture' ? 'Facture' : 'Devis';
+    a.href = url;
+    a.download = `${label}_${data.numero.replace(/[/\\]/g, '-')}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+  } catch {
+    // Fallback: open HTML for printing
+    const html = generatePdfHtml(data);
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const win = window.open(url, '_blank');
+    if (win) {
+      win.onload = () => setTimeout(() => win.print(), 300);
+    }
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+  }
 }
