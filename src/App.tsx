@@ -59,6 +59,7 @@ function AppContent() {
 
   return (
     <AppProvider>
+      {isLocked && <LockScreen onUnlock={unlock} />}
       <AppLayout>
         <Routes>
           <Route path="/" element={<Dashboard />} />
