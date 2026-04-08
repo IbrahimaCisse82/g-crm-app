@@ -2,6 +2,8 @@ import { AuthProvider, useAuth } from '@/hooks/useAuth';
 import { Navigate } from 'react-router-dom';
 import { PWAInstallBanner } from '@/components/PWAInstallBanner';
 import { AppProvider } from '@/context/AppContext';
+import { useInactivityTimer } from '@/hooks/useInactivityTimer';
+import LockScreen from '@/components/LockScreen';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
@@ -28,6 +30,7 @@ const queryClient = new QueryClient();
 
 function AppContent() {
   const { user, loading } = useAuth();
+  const { isLocked, unlock } = useInactivityTimer(!!user);
 
   if (loading) {
     return (
@@ -56,6 +59,7 @@ function AppContent() {
 
   return (
     <AppProvider>
+      {isLocked && <LockScreen onUnlock={unlock} />}
       <AppLayout>
         <Routes>
           <Route path="/" element={<Dashboard />} />
