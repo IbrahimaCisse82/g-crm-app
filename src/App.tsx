@@ -30,6 +30,7 @@ const queryClient = new QueryClient();
 
 function AppContent() {
   const { user, loading } = useAuth();
+  const { isLocked, unlock } = useInactivityTimer(!!user);
 
   if (loading) {
     return (
