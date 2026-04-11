@@ -18,6 +18,7 @@ import type { ArticleLine } from '@/types';
 import { PAYMENT_MODES } from '@/types';
 import type { Json } from '@/integrations/supabase/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { usePayment } from '@/hooks/usePayment';
 
 const defaultForm = {
   client_id: '',
@@ -145,19 +146,15 @@ export default function InvoicesPage() {
     setPayMode(f.mode_paiement || 'Espèce');
   };
 
+  const { submitPayment: processPayment } = usePayment();
+
   const submitPayment = async () => {
     if (!payTarget) return;
     const amount = Number(payAmount);
-    const reste = payTarget.montant_ttc - (payTarget.montant_regle || 0);
-    if (!amount || amount <= 0) { toast.error('Montant invalide'); return; }
-    if (amount > reste) { toast.error(`Le montant ne peut pas dépasser ${fmt(reste)}`); return; }
     setSaving(true);
     try {
-      const newRegle = (payTarget.montant_regle || 0) + amount;
-      const isFullyPaid = newRegle >= payTarget.montant_ttc;
-      await factures.update(payTarget.id, { montant_regle: newRegle, statut: isFullyPaid ? 'Payée' : 'Partielle', mode_paiement: payMode });
-      await journal.add({ libelle: `Paiement ${isFullyPaid ? 'total' : 'partiel'} facture ${payTarget.numero}`, type: 'Recette', montant: amount, mode_paiement: payMode, categorie: 'Vente', date_operation: new Date().toISOString().slice(0, 10), facture_id: payTarget.id });
-      toast.success(isFullyPaid ? 'Facture entièrement payée' : `Paiement partiel de ${fmt(amount)} enregistré`);
+      const result = await processPayment({ factureId: payTarget.id, amount, mode_paiement: payMode });
+      toast.success(result.isFullyPaid ? 'Facture entièrement payée' : `Paiement partiel de ${fmt(amount)} enregistré`);
     } catch (e: unknown) { toast.error(e instanceof Error ? e.message : 'Erreur'); }
     setSaving(false);
     setPayTarget(null);
