@@ -178,6 +178,31 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Chart row 3: Expense categories pie */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+        <div className="bg-card border border-border rounded-xl overflow-hidden shadow-card">
+          <div className="px-4 py-3 border-b border-border">
+            <h3 className="font-extrabold text-sm text-foreground">Top dépenses par catégorie</h3>
+            <p className="text-[10.5px] text-muted-foreground">Répartition des dépenses</p>
+          </div>
+          <div className="px-2 py-3 h-[220px]">
+            {catPieData.length ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={catPieData} cx="50%" cy="50%" innerRadius={45} outerRadius={75} paddingAngle={3} dataKey="value" nameKey="name" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false} style={{ fontSize: 10 }}>
+                    {catPieData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                  </Pie>
+                  <Tooltip formatter={(v: number) => fmtTooltip(v)} />
+                  <Legend wrapperStyle={{ fontSize: 11 }} />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-full text-sm text-muted-foreground">Aucune donnée</div>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* Transactions + Factures */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
         <div className="bg-card border border-border rounded-xl overflow-hidden shadow-card">
