@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 export default function ProductsPage() {
   const { produits, fmt, createModalTrigger } = useApp();
   const [search, setSearch] = useState('');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'Service' | 'Produit'>('all');
   const [showModal, setShowModal] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({ nom: '', type: 'Service', prix: 0, unite: 'forfait', description: '' });
@@ -20,6 +21,7 @@ export default function ProductsPage() {
   const triggerRef = useRef(createModalTrigger);
 
   let filtered = produits.data;
+  if (typeFilter !== 'all') filtered = filtered.filter(p => p.type === typeFilter);
   if (search) {
     const q = search.toLowerCase();
     filtered = filtered.filter(p => (p.nom + ' ' + p.description + ' ' + p.type).toLowerCase().includes(q));
