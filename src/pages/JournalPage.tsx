@@ -76,11 +76,11 @@ export default function JournalPage() {
   const { submitPayment: processPayment } = usePayment();
 
   const save = async () => {
-    if (!form.libelle || !form.montant) { toast.error('Renseignez le libellé et le montant'); return; }
+    if (!form.libelle || !form.montant || form.montant <= 0) { toast.error('Renseignez le libellé et un montant valide'); return; }
     if (form.type === 'Recette' && !form.facture_id) { toast.error('Sélectionnez une facture pour la recette'); return; }
+    setSaving(true);
     try {
       if (form.type === 'Recette' && form.facture_id) {
-        // Use centralized payment logic
         await processPayment({
           factureId: form.facture_id,
           amount: form.montant,
@@ -88,7 +88,6 @@ export default function JournalPage() {
           date_operation: form.date_operation,
         });
       } else {
-        // Expense: add journal entry directly
         await journal.add({
           libelle: form.libelle,
           type: form.type,
@@ -102,6 +101,18 @@ export default function JournalPage() {
       }
       setShowModal(false);
       toast.success('Transaction ajoutée');
+    } catch (e: unknown) { toast.error(e instanceof Error ? e.message : 'Erreur'); }
+    finally { setSaving(false); }
+  };
+
+  const addNewCategory = async () => {
+    if (!newCatName.trim()) return;
+    try {
+      await categories.add({ nom: newCatName.trim(), type: form.type === 'Recette' ? 'Recette' : 'Dépense' });
+      setForm({ ...form, categorie: newCatName.trim() });
+      setNewCatName('');
+      setShowNewCat(false);
+      toast.success('Catégorie ajoutée');
     } catch (e: unknown) { toast.error(e instanceof Error ? e.message : 'Erreur'); }
   };
 
