@@ -20,6 +20,7 @@ interface AppContextType {
   journal: ReturnType<typeof useJournal>;
   comptes: ReturnType<typeof useComptesTresorerie>;
   entreprise: ReturnType<typeof useEntreprise>;
+  categories: ReturnType<typeof useCategories>;
   cliName: (id: string | null) => string;
   fmt: (n: number) => string;
   // Create modal trigger
@@ -49,6 +50,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const journal = useJournal();
   const comptes = useComptesTresorerie();
   const entreprise = useEntreprise();
+  const categories = useCategories();
 
   const isLoggedIn = !!user;
   const userName = user?.user_metadata?.full_name || user?.email || '';
@@ -77,7 +79,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     <AppContext.Provider value={{
       currentSection, setCurrentSection, sidebarOpen, setSidebarOpen,
       isLoggedIn, userName, logout,
-      clients, factures, devis, produits, journal, comptes, entreprise,
+      clients, factures, devis, produits, journal, comptes, entreprise, categories,
       cliName, fmt,
       createModalTrigger, triggerCreateModal,
     }}>
