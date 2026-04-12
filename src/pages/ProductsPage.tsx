@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 export default function ProductsPage() {
   const { produits, fmt, createModalTrigger } = useApp();
   const [search, setSearch] = useState('');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'Service' | 'Produit'>('all');
   const [showModal, setShowModal] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({ nom: '', type: 'Service', prix: 0, unite: 'forfait', description: '' });
@@ -20,6 +21,7 @@ export default function ProductsPage() {
   const triggerRef = useRef(createModalTrigger);
 
   let filtered = produits.data;
+  if (typeFilter !== 'all') filtered = filtered.filter(p => p.type === typeFilter);
   if (search) {
     const q = search.toLowerCase();
     filtered = filtered.filter(p => (p.nom + ' ' + p.description + ' ' + p.type).toLowerCase().includes(q));
@@ -73,6 +75,16 @@ export default function ProductsPage() {
             <input className="bg-background border-[1.5px] border-border rounded-lg py-1.5 px-2.5 text-xs text-foreground outline-none flex-1 min-w-[100px] max-w-[160px] font-sans placeholder:text-muted-foreground focus:border-primary focus:ring-[3px] focus:ring-primary/10" placeholder="Rechercher..." value={search} onChange={e => { setSearch(e.target.value); pagination.resetPage(); }} />
             <button onClick={handleExport} className="bg-background border-[1.5px] border-border text-muted-foreground py-1.5 px-2.5 rounded-lg text-xs font-bold hover:border-primary hover:text-primary transition-all" title="Exporter CSV"><Download className="h-3.5 w-3.5" /></button>
             <button onClick={openNew} className="gradient-primary text-primary-foreground border-none py-1.5 px-3 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all hidden lg:inline-flex">＋ Nouveau</button>
+          </div>
+        </div>
+        <div className="px-4 py-2 border-b border-border">
+          <div className="flex gap-2">
+            {(['all', 'Service', 'Produit'] as const).map(t => (
+              <button key={t} onClick={() => { setTypeFilter(t); pagination.resetPage(); }}
+                className={`border-[1.5px] rounded-lg px-3 py-1.5 text-[11.5px] font-semibold transition-all ${typeFilter === t ? 'bg-primary/10 text-primary border-primary' : 'bg-background border-border text-muted-foreground hover:bg-card'}`}>
+                {t === 'all' ? 'Tous' : t === 'Service' ? 'Services' : 'Produits'}
+              </button>
+            ))}
           </div>
         </div>
         <div className="lg:hidden">
@@ -150,7 +162,14 @@ export default function ProductsPage() {
               <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Nom *</label>
               <input className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.nom} onChange={e => setForm({ ...form, nom: e.target.value })} />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Type</label>
+                <select className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.type} onChange={e => setForm({ ...form, type: e.target.value })}>
+                  <option>Service</option>
+                  <option>Produit</option>
+                </select>
+              </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Prix</label>
                 <input type="number" className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.prix} onChange={e => setForm({ ...form, prix: Number(e.target.value) })} />

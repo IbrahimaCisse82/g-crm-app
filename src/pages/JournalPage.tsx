@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useApp } from '@/context/AppContext';
-import { Trash2, Download, Save, BookOpen, ArrowDownCircle, ArrowUpCircle, Scale } from 'lucide-react';
+import { Trash2, Download, Save, BookOpen, ArrowDownCircle, ArrowUpCircle, Scale, Plus, Loader2 } from 'lucide-react';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { PaginationControls } from '@/components/PaginationControls';
 import { DateFilter } from '@/components/DateFilter';
@@ -16,10 +16,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { usePayment } from '@/hooks/usePayment';
 
 export default function JournalPage() {
-  const { journal, factures, comptes, fmt, cliName, createModalTrigger } = useApp();
+  const { journal, factures, comptes, fmt, cliName, createModalTrigger, categories } = useApp();
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [newCatName, setNewCatName] = useState('');
+  const [showNewCat, setShowNewCat] = useState(false);
   const [form, setForm] = useState({ libelle: '', type: 'Recette', montant: 0, mode_paiement: 'Espèce', categorie: '', compte: '', date_operation: new Date().toISOString().slice(0, 10), facture_id: '' });
 
   // Factures en attente de paiement (non payées ou partielles)
@@ -73,11 +76,11 @@ export default function JournalPage() {
   const { submitPayment: processPayment } = usePayment();
 
   const save = async () => {
-    if (!form.libelle || !form.montant) { toast.error('Renseignez le libellé et le montant'); return; }
+    if (!form.libelle || !form.montant || form.montant <= 0) { toast.error('Renseignez le libellé et un montant valide'); return; }
     if (form.type === 'Recette' && !form.facture_id) { toast.error('Sélectionnez une facture pour la recette'); return; }
+    setSaving(true);
     try {
       if (form.type === 'Recette' && form.facture_id) {
-        // Use centralized payment logic
         await processPayment({
           factureId: form.facture_id,
           amount: form.montant,
@@ -85,7 +88,6 @@ export default function JournalPage() {
           date_operation: form.date_operation,
         });
       } else {
-        // Expense: add journal entry directly
         await journal.add({
           libelle: form.libelle,
           type: form.type,
@@ -99,6 +101,18 @@ export default function JournalPage() {
       }
       setShowModal(false);
       toast.success('Transaction ajoutée');
+    } catch (e: unknown) { toast.error(e instanceof Error ? e.message : 'Erreur'); }
+    finally { setSaving(false); }
+  };
+
+  const addNewCategory = async () => {
+    if (!newCatName.trim()) return;
+    try {
+      await categories.add({ nom: newCatName.trim(), type: form.type === 'Recette' ? 'Recette' : 'Dépense' });
+      setForm({ ...form, categorie: newCatName.trim() });
+      setNewCatName('');
+      setShowNewCat(false);
+      toast.success('Catégorie ajoutée');
     } catch (e: unknown) { toast.error(e instanceof Error ? e.message : 'Erreur'); }
   };
 
@@ -334,16 +348,30 @@ export default function JournalPage() {
             {form.type === 'Dépense' && (
               <div className="flex flex-col gap-1.5">
                 <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Catégorie</label>
-                <select className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.categorie} onChange={e => setForm({ ...form, categorie: e.target.value })}>
-                  <option value="">— Choisir —</option>
-                  {JOURNAL_CATEGORIES.map(c => <option key={c}>{c}</option>)}
-                </select>
+                {showNewCat ? (
+                  <div className="flex gap-2">
+                    <input className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary flex-1" placeholder="Nom de la catégorie" value={newCatName} onChange={e => setNewCatName(e.target.value)} onKeyDown={e => e.key === 'Enter' && addNewCategory()} />
+                    <button onClick={addNewCategory} className="gradient-primary text-primary-foreground border-none py-2 px-3 rounded-lg text-xs font-bold"><Plus className="h-3.5 w-3.5" /></button>
+                    <button onClick={() => setShowNewCat(false)} className="bg-card border-[1.5px] border-border text-muted-foreground py-2 px-3 rounded-lg text-xs font-bold">✕</button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <select className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary flex-1" value={form.categorie} onChange={e => setForm({ ...form, categorie: e.target.value })}>
+                      <option value="">— Choisir —</option>
+                      {(categories.data.length ? categories.data.filter(c => c.type === 'Dépense') : JOURNAL_CATEGORIES.map(c => ({ nom: c }))).map(c => <option key={c.nom} value={c.nom}>{c.nom}</option>)}
+                    </select>
+                    <button onClick={() => setShowNewCat(true)} className="bg-background border-[1.5px] border-border text-primary py-2 px-3 rounded-lg text-xs font-bold hover:border-primary transition-all" title="Nouvelle catégorie"><Plus className="h-3.5 w-3.5" /></button>
+                  </div>
+                )}
               </div>
             )}
           </div>
           <DialogFooter className="flex-col sm:flex-row gap-2">
             <button onClick={() => setShowModal(false)} className="bg-card border-[1.5px] border-border text-muted-foreground py-2 px-4 rounded-lg text-xs font-bold hover:bg-background transition-all w-full sm:w-auto">Annuler</button>
-            <button onClick={save} className="gradient-primary text-primary-foreground border-none py-2 px-4 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all w-full sm:w-auto flex items-center justify-center gap-1.5"><Save className="h-3.5 w-3.5" /> Enregistrer</button>
+            <button onClick={save} disabled={saving} className="gradient-primary text-primary-foreground border-none py-2 px-4 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all w-full sm:w-auto flex items-center justify-center gap-1.5 disabled:opacity-50">
+              {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+              {saving ? 'Enregistrement...' : 'Enregistrer'}
+            </button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
