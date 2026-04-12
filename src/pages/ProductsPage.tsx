@@ -87,6 +87,7 @@ export default function ProductsPage() {
             ))}
           </div>
         </div>
+        <div className="lg:hidden">
           {produits.isLoading ? <TableSkeleton rows={5} cols={3} /> : (
             pagination.items.length ? pagination.items.map(p => (
               <div key={p.id} className="px-4 py-3 border-b border-border flex items-center justify-between gap-2">
