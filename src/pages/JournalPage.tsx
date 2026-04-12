@@ -378,6 +378,8 @@ export default function JournalPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <CategoriesManager open={showCatManager} onOpenChange={setShowCatManager} />
     </div>
   );
 }
