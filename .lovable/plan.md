@@ -1,63 +1,45 @@
 
-Plan: Analyse critique de la logique métier G-CRM
 
-## 1. Architecture technique (excellente)
-- Pattern React moderne avec hooks personnalisés bien structurés
-- Separation of concerns: useSupabaseData pour la data layer, useApp pour le contexte métier
-- React Query (TanStack Query) pour la cache intelligente et la synchronisation
-- PWA avec inactivity lock (5min) → bonne prise en compte de la sécurité mobile
+# Plan: Catégories personnalisables + Améliorations globales
 
-## 2. Logique métier (cohérente et africaine)
+## Contexte
+Les catégories de dépenses sont actuellement codées en dur dans `src/types/index.ts` (`JOURNAL_CATEGORIES`). L'utilisateur veut pouvoir les gérer dynamiquement comme les produits/services.
 
-### Points forts:
-- **Journal comptable simplifié** : Recette liée automatiquement à facture (brilliant), Dépense catégorisée
-- **Calcul trésorerie en temps réel** : Caisse (Espèce) + Mobile Money (Wave/OM/Yas) + Banque
-- **Statuts factures dynamiques** : "En retard" calculé automatiquement (date échéance < today)
-- **Numérotation auto** : RPC next_facture_numero/next_devis_numero
-- **Gestion multi-mode paiement** : Adapté à l'Afrique (Wave, Orange Money, Yas Money, Espèce)
+## 1. Catégories personnalisables (priorité principale)
 
-### Faiblesses à corriger:
+### Base de données
+- Créer une table `categories` avec : `id`, `user_id`, `nom`, `type` (Dépense/Recette), `created_at`
+- RLS avec `is_owner(user_id)`
+- Migration pour insérer les catégories par défaut existantes via un trigger `handle_new_user`
 
-**A. Incohérence paiement**
-- Dans InvoicesPage: paiement partiel créé via `journal.add()` + update facture
-- Dans JournalPage: recette créée via `journal.add()` qui update aussi la facture
-- Code dupliqué → risque de désynchronisation
+### Code
+- Ajouter `useCategories()` dans `useSupabaseData.ts` (CRUD standard)
+- Exposer dans `AppContext`
+- Modifier `JournalPage.tsx` : remplacer le select hardcodé par les catégories dynamiques de la DB + bouton "+" pour en ajouter une nouvelle à la volée
+- Conserver les catégories par défaut comme seed pour les nouveaux utilisateurs
 
-**B. Suppression facture payée**
-- Bloquée côté UI mais pas de protection RLS côté DB
-- Journal reste orphelin si facture supprimée
+## 2. Améliorations techniques identifiées
 
-**C. Vue comptable incohérente**
-- Solde Mobile Money calculé: solde initial + entrées - sorties
-- Mais pas de vérification cohérence avec journal
-- Si écart entre journal et solde compte → pas d'alerte
+### A. Produits : ajouter filtre par type (Service/Produit)
+- Ajouter des onglets de filtre dans `ProductsPage.tsx` pour filtrer par type
+- Le champ "Type" n'est pas visible dans le formulaire de création → l'ajouter
 
-**D. Pas de clôture période**
-- Peut modifier transactions passées librement
-- Pas d'archivage comptable (obligatoire légalement au Sénégal)
+### B. Dashboard : top catégories de dépenses
+- Ajouter un graphique pie des dépenses par catégorie dans le Dashboard
 
-## 3. Sécurité & Data (correct mais perfectible)
-- RLS policies sur toutes tables (bien)
-- mais pas de soft delete (hard delete everywhere)
-- Pas d'historisation des modifications
+### C. Robustesse du formulaire Journal
+- Validation Zod sur le formulaire de transaction (montant > 0, libellé requis)
+- Empêcher double-submit avec état `saving`
 
-## 4. UX/UI mobile (très bon)
-- Double vue mobile/desktop (cards vs table)
-- Responsive charts Recharts
-- Share natif mobile avec PDF A4
-- Lock screen après 5min inactivité
+### D. UX : bouton loading state
+- Ajouter un état `saving` avec spinner sur les boutons d'enregistrement dans JournalPage (déjà fait dans InvoicesPage mais pas dans Journal)
 
-## 5. Recommandations prioritaires
+## Fichiers impactés
+- `supabase/migrations/` — nouvelle migration pour table `categories`
+- `src/hooks/useSupabaseData.ts` — ajouter `useCategories()`
+- `src/context/AppContext.tsx` — exposer `categories`
+- `src/pages/JournalPage.tsx` — catégories dynamiques + état saving
+- `src/pages/ProductsPage.tsx` — filtre par type + champ type dans formulaire
+- `src/pages/Dashboard.tsx` — graphique dépenses par catégorie
+- `src/types/index.ts` — garder `JOURNAL_CATEGORIES` comme fallback/seed
 
-**Critique (à faire immédiatement):**
-1. **Singleton workflow paiement** : Centraliser dans un edge function ou hook unique
-2. **Soft delete** : Ajouter `deleted_at` sur toutes tables + filtre automatique
-3. **Clôture mensuelle** : Bloquer modifications sur mois clôturé
-
-**Important:**
-4. **Reconciliation trésorerie** : Alertes si écart journal vs comptes
-5. **Historisation** : Table `audit_logs` pour traçabilité
-
-**Nice-to-have:**
-6. **Pipeline ventes** : Kanban devis → facture
-7. **Rappels automatiques** : Relances factures en retard
