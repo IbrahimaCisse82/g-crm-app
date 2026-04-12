@@ -77,7 +77,16 @@ export default function ProductsPage() {
             <button onClick={openNew} className="gradient-primary text-primary-foreground border-none py-1.5 px-3 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all hidden lg:inline-flex">＋ Nouveau</button>
           </div>
         </div>
-        <div className="lg:hidden">
+        <div className="px-4 py-2 border-b border-border">
+          <div className="flex gap-2">
+            {(['all', 'Service', 'Produit'] as const).map(t => (
+              <button key={t} onClick={() => { setTypeFilter(t); pagination.resetPage(); }}
+                className={`border-[1.5px] rounded-lg px-3 py-1.5 text-[11.5px] font-semibold transition-all ${typeFilter === t ? 'bg-primary/10 text-primary border-primary' : 'bg-background border-border text-muted-foreground hover:bg-card'}`}>
+                {t === 'all' ? 'Tous' : t === 'Service' ? 'Services' : 'Produits'}
+              </button>
+            ))}
+          </div>
+        </div>
           {produits.isLoading ? <TableSkeleton rows={5} cols={3} /> : (
             pagination.items.length ? pagination.items.map(p => (
               <div key={p.id} className="px-4 py-3 border-b border-border flex items-center justify-between gap-2">
@@ -152,7 +161,14 @@ export default function ProductsPage() {
               <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Nom *</label>
               <input className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.nom} onChange={e => setForm({ ...form, nom: e.target.value })} />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Type</label>
+                <select className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.type} onChange={e => setForm({ ...form, type: e.target.value })}>
+                  <option>Service</option>
+                  <option>Produit</option>
+                </select>
+              </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Prix</label>
                 <input type="number" className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.prix} onChange={e => setForm({ ...form, prix: Number(e.target.value) })} />
