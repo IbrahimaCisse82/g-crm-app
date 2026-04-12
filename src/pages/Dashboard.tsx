@@ -70,6 +70,13 @@ export default function Dashboard() {
     const dep = journal.data.filter(j => j.type === 'Dépense' && j.categorie !== 'Transfert' && j.date_operation?.startsWith(m.key)).reduce((s, j) => s + (j.montant || 0), 0);
     return { mois: m.label, Dépenses: Math.round(dep) };
   });
+  // --- Pie: expense categories ---
+  const catMap: Record<string, number> = {};
+  journal.data.filter(j => j.type === 'Dépense' && j.categorie !== 'Transfert').forEach(j => {
+    const cat = j.categorie || 'Non classé';
+    catMap[cat] = (catMap[cat] || 0) + (j.montant || 0);
+  });
+  const catPieData = Object.entries(catMap).map(([name, value]) => ({ name, value: Math.round(value) })).sort((a, b) => b.value - a.value).slice(0, 8);
 
   const last6Txns = journal.data.slice(0, 6);
   const today = new Date().toISOString().slice(0, 10);
