@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useApp } from '@/context/AppContext';
-import { Trash2, Download, Save, BookOpen, ArrowDownCircle, ArrowUpCircle, Scale, Plus, Loader2 } from 'lucide-react';
+import { Trash2, Download, Save, BookOpen, ArrowDownCircle, ArrowUpCircle, Scale, Plus, Loader2, Tags } from 'lucide-react';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { PaginationControls } from '@/components/PaginationControls';
 import { DateFilter } from '@/components/DateFilter';
@@ -14,6 +14,7 @@ import { formatDate } from '@/lib/formatDate';
 import { JOURNAL_CATEGORIES, PAYMENT_MODES } from '@/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { usePayment } from '@/hooks/usePayment';
+import { CategoriesManager } from '@/components/CategoriesManager';
 
 export default function JournalPage() {
   const { journal, factures, comptes, fmt, cliName, createModalTrigger, categories } = useApp();
@@ -23,6 +24,7 @@ export default function JournalPage() {
   const [saving, setSaving] = useState(false);
   const [newCatName, setNewCatName] = useState('');
   const [showNewCat, setShowNewCat] = useState(false);
+  const [showCatManager, setShowCatManager] = useState(false);
   const [form, setForm] = useState({ libelle: '', type: 'Recette', montant: 0, mode_paiement: 'Espèce', categorie: '', compte: '', date_operation: new Date().toISOString().slice(0, 10), facture_id: '' });
 
   // Factures en attente de paiement (non payées ou partielles)
