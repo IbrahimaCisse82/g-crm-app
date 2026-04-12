@@ -233,6 +233,36 @@ export function useComptesTresorerie() {
   return { data: query.data ?? [], isLoading: query.isLoading, add, update, remove };
 }
 
+export function useCategories() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  const key = ['categories', user?.id];
+
+  const query = useQuery({
+    queryKey: key,
+    queryFn: async () => {
+      const { data, error } = await supabase.from('categories').select('*').order('nom', { ascending: true }).limit(QUERY_LIMIT);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const add = async (row: { nom: string; type: string }) => {
+    const { error } = await supabase.from('categories').insert({ ...row, user_id: user!.id });
+    if (error) throw error;
+    qc.invalidateQueries({ queryKey: key });
+  };
+
+  const remove = async (id: string) => {
+    const { error } = await supabase.from('categories').delete().eq('id', id);
+    if (error) throw error;
+    qc.invalidateQueries({ queryKey: key });
+  };
+
+  return { data: query.data ?? [], isLoading: query.isLoading, add, remove };
+}
+
 export function useEntreprise() {
   const { user } = useAuth();
   const qc = useQueryClient();

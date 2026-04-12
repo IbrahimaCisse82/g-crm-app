@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useCallback, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useClients, useFactures, useDevis, useProduits, useJournal, useComptesTresorerie, useEntreprise } from '@/hooks/useSupabaseData';
+import { useClients, useFactures, useDevis, useProduits, useJournal, useComptesTresorerie, useEntreprise, useCategories } from '@/hooks/useSupabaseData';
 import type { Section } from '@/types';
 import { sectionPaths, pathToSection } from '@/types';
 
