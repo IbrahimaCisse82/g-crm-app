@@ -348,16 +348,30 @@ export default function JournalPage() {
             {form.type === 'Dépense' && (
               <div className="flex flex-col gap-1.5">
                 <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Catégorie</label>
-                <select className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.categorie} onChange={e => setForm({ ...form, categorie: e.target.value })}>
-                  <option value="">— Choisir —</option>
-                  {JOURNAL_CATEGORIES.map(c => <option key={c}>{c}</option>)}
-                </select>
+                {showNewCat ? (
+                  <div className="flex gap-2">
+                    <input className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary flex-1" placeholder="Nom de la catégorie" value={newCatName} onChange={e => setNewCatName(e.target.value)} onKeyDown={e => e.key === 'Enter' && addNewCategory()} />
+                    <button onClick={addNewCategory} className="gradient-primary text-primary-foreground border-none py-2 px-3 rounded-lg text-xs font-bold"><Plus className="h-3.5 w-3.5" /></button>
+                    <button onClick={() => setShowNewCat(false)} className="bg-card border-[1.5px] border-border text-muted-foreground py-2 px-3 rounded-lg text-xs font-bold">✕</button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <select className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary flex-1" value={form.categorie} onChange={e => setForm({ ...form, categorie: e.target.value })}>
+                      <option value="">— Choisir —</option>
+                      {(categories.data.length ? categories.data.filter(c => c.type === 'Dépense') : JOURNAL_CATEGORIES.map(c => ({ nom: c }))).map(c => <option key={c.nom} value={c.nom}>{c.nom}</option>)}
+                    </select>
+                    <button onClick={() => setShowNewCat(true)} className="bg-background border-[1.5px] border-border text-primary py-2 px-3 rounded-lg text-xs font-bold hover:border-primary transition-all" title="Nouvelle catégorie"><Plus className="h-3.5 w-3.5" /></button>
+                  </div>
+                )}
               </div>
             )}
           </div>
           <DialogFooter className="flex-col sm:flex-row gap-2">
             <button onClick={() => setShowModal(false)} className="bg-card border-[1.5px] border-border text-muted-foreground py-2 px-4 rounded-lg text-xs font-bold hover:bg-background transition-all w-full sm:w-auto">Annuler</button>
-            <button onClick={save} className="gradient-primary text-primary-foreground border-none py-2 px-4 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all w-full sm:w-auto flex items-center justify-center gap-1.5"><Save className="h-3.5 w-3.5" /> Enregistrer</button>
+            <button onClick={save} disabled={saving} className="gradient-primary text-primary-foreground border-none py-2 px-4 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all w-full sm:w-auto flex items-center justify-center gap-1.5 disabled:opacity-50">
+              {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+              {saving ? 'Enregistrement...' : 'Enregistrer'}
+            </button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
