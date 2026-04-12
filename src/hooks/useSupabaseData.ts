@@ -254,13 +254,19 @@ export function useCategories() {
     qc.invalidateQueries({ queryKey: key });
   };
 
+  const update = async (id: string, updates: { nom?: string; type?: string }) => {
+    const { error } = await supabase.from('categories').update(updates).eq('id', id);
+    if (error) throw error;
+    qc.invalidateQueries({ queryKey: key });
+  };
+
   const remove = async (id: string) => {
     const { error } = await supabase.from('categories').delete().eq('id', id);
     if (error) throw error;
     qc.invalidateQueries({ queryKey: key });
   };
 
-  return { data: query.data ?? [], isLoading: query.isLoading, add, remove };
+  return { data: query.data ?? [], isLoading: query.isLoading, add, update, remove };
 }
 
 export function useEntreprise() {
