@@ -12,10 +12,11 @@ const navItems: { section: Section; icon: string; label: string; badge?: boolean
   { section: 'journal', icon: '📒', label: 'Journal' },
   { section: 'caisse', icon: '🏦', label: 'Caisse & Paiements' },
   { section: 'entreprise', icon: '⚙️', label: 'Infos Entreprise' },
+  { section: 'abonnement', icon: '👑', label: 'Abonnement' },
 ];
 
 export default function AppSidebar() {
-  const { currentSection, sidebarOpen, setSidebarOpen, clients, factures, entreprise, userName, logout } = useApp();
+  const { currentSection, sidebarOpen, setSidebarOpen, clients, factures, entreprise, userName, logout, subscription } = useApp();
   const navigate = useNavigate();
 
   const pendingCount = factures.data.filter(f => f.statut === 'En attente' || f.statut === 'En retard').length;
@@ -92,6 +93,7 @@ export default function AppSidebar() {
 
           <div className="h-px bg-sidebar-border my-1.5 mx-2" />
           <div className="text-[9px] font-bold tracking-[1.8px] uppercase text-muted-foreground px-2 pt-2.5 pb-1">Administration</div>
+          {navItems.slice(7, 8).map(item => (
           {navItems.slice(7).map(item => (
             <button
               key={item.section}
