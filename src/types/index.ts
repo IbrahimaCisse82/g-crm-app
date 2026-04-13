@@ -1,4 +1,4 @@
-export type Section = 'dashboard' | 'clients' | 'factures' | 'devis' | 'produits' | 'journal' | 'caisse' | 'entreprise';
+export type Section = 'dashboard' | 'clients' | 'factures' | 'devis' | 'produits' | 'journal' | 'caisse' | 'entreprise' | 'abonnement';
 
 export const sectionPaths: Record<Section, string> = {
   dashboard: '/',
@@ -9,6 +9,7 @@ export const sectionPaths: Record<Section, string> = {
   journal: '/journal',
   caisse: '/caisse',
   entreprise: '/entreprise',
+  abonnement: '/abonnement',
 };
 
 export const pathToSection: Record<string, Section> = Object.fromEntries(

@@ -2,6 +2,7 @@ import React, { createContext, useContext, useCallback, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useClients, useFactures, useDevis, useProduits, useJournal, useComptesTresorerie, useEntreprise, useCategories } from '@/hooks/useSupabaseData';
+import { useSubscription } from '@/hooks/useSubscription';
 import type { Section } from '@/types';
 import { sectionPaths, pathToSection } from '@/types';
 
@@ -21,6 +22,7 @@ interface AppContextType {
   comptes: ReturnType<typeof useComptesTresorerie>;
   entreprise: ReturnType<typeof useEntreprise>;
   categories: ReturnType<typeof useCategories>;
+  subscription: ReturnType<typeof useSubscription>;
   cliName: (id: string | null) => string;
   fmt: (n: number) => string;
   // Create modal trigger
@@ -51,6 +53,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const comptes = useComptesTresorerie();
   const entreprise = useEntreprise();
   const categories = useCategories();
+  const subscriptionData = useSubscription();
 
   const isLoggedIn = !!user;
   const userName = user?.user_metadata?.full_name || user?.email || '';
@@ -79,7 +82,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     <AppContext.Provider value={{
       currentSection, setCurrentSection, sidebarOpen, setSidebarOpen,
       isLoggedIn, userName, logout,
-      clients, factures, devis, produits, journal, comptes, entreprise, categories,
+      clients, factures, devis, produits, journal, comptes, entreprise, categories, subscription: subscriptionData,
       cliName, fmt,
       createModalTrigger, triggerCreateModal,
     }}>
