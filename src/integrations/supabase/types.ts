@@ -416,6 +416,84 @@ export type Database = {
         }
         Relationships: []
       }
+      subscription_requests: {
+        Row: {
+          admin_notes: string | null
+          amount: number
+          created_at: string
+          id: string
+          payment_mode: string
+          payment_reference: string
+          plan: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          amount?: number
+          created_at?: string
+          id?: string
+          payment_mode: string
+          payment_reference: string
+          plan?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          amount?: number
+          created_at?: string
+          id?: string
+          payment_mode?: string
+          payment_reference?: string
+          plan?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      subscriptions: {
+        Row: {
+          amount: number | null
+          created_at: string
+          expires_at: string | null
+          id: string
+          payment_mode: string | null
+          payment_reference: string | null
+          plan: string
+          starts_at: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          payment_mode?: string | null
+          payment_reference?: string | null
+          plan?: string
+          starts_at?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          payment_mode?: string | null
+          payment_reference?: string | null
+          plan?: string
+          starts_at?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
