@@ -93,7 +93,6 @@ export default function AppSidebar() {
 
           <div className="h-px bg-sidebar-border my-1.5 mx-2" />
           <div className="text-[9px] font-bold tracking-[1.8px] uppercase text-muted-foreground px-2 pt-2.5 pb-1">Administration</div>
-          {navItems.slice(7, 8).map(item => (
           {navItems.slice(7).map(item => (
             <button
               key={item.section}
