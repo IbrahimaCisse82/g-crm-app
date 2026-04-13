@@ -12,10 +12,11 @@ const navItems: { section: Section; icon: string; label: string; badge?: boolean
   { section: 'journal', icon: '📒', label: 'Journal' },
   { section: 'caisse', icon: '🏦', label: 'Caisse & Paiements' },
   { section: 'entreprise', icon: '⚙️', label: 'Infos Entreprise' },
+  { section: 'abonnement', icon: '👑', label: 'Abonnement' },
 ];
 
 export default function AppSidebar() {
-  const { currentSection, sidebarOpen, setSidebarOpen, clients, factures, entreprise, userName, logout } = useApp();
+  const { currentSection, sidebarOpen, setSidebarOpen, clients, factures, entreprise, userName, logout, subscription } = useApp();
   const navigate = useNavigate();
 
   const pendingCount = factures.data.filter(f => f.statut === 'En attente' || f.statut === 'En retard').length;
