@@ -251,6 +251,7 @@ export default function QuotesPage() {
         <PaginationControls {...pagination} />
       </div>
 
+      <UpgradePrompt open={showUpgrade} onClose={() => setShowUpgrade(false)} feature={`Plus de ${subscription.limits.maxQuotesPerMonth} devis/mois`} />
       <ConfirmDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)} title={`Supprimer le devis ${deleteTarget?.numero} ?`} description="Cette action est irréversible." onConfirm={del} confirmLabel="Supprimer" />
 
       <Dialog open={showModal} onOpenChange={setShowModal}>
