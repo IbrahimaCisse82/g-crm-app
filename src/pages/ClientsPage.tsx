@@ -34,6 +34,10 @@ export default function ClientsPage() {
   const pagination = usePagination(sorted);
 
   const openNew = () => {
+    if (clients.data.length >= subscription.limits.maxClients) {
+      setShowUpgrade(true);
+      return;
+    }
     setEditId(null);
     setForm({ prenom: '', nom: '', email: '', telephone: '', entreprise: '', statut: 'Actif', adresse: '', notes: '' });
     setShowModal(true);
