@@ -35,10 +35,10 @@ type SubscriptionRow = {
 };
 
 type ProfileRow = {
-  id: string;
   user_id: string;
   full_name: string | null;
   email: string | null;
+  phone: string | null;
 };
 
 type Tab = 'overview' | 'requests' | 'subscriptions';
@@ -83,9 +83,7 @@ export default function AdminPage() {
   const profilesQuery = useQuery({
     queryKey: ['admin', 'profiles'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, user_id, full_name, email');
+      const { data, error } = await supabase.rpc('admin_list_users');
       if (error) throw error;
       return (data ?? []) as ProfileRow[];
     },
