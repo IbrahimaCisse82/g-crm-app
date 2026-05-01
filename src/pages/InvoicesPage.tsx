@@ -291,6 +291,7 @@ export default function InvoicesPage() {
         <PaginationControls {...pagination} />
       </div>
 
+      <UpgradePrompt open={showUpgrade} onClose={() => setShowUpgrade(false)} feature={`Plus de ${subscription.limits.maxInvoicesPerMonth} factures/mois`} />
       <ConfirmDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)} title={`Supprimer la facture ${deleteTarget?.numero} ?`} description="Cette action est irréversible. Les écritures journal liées seront également supprimées." onConfirm={del} confirmLabel="Supprimer" />
 
       {/* Payment modal */}
