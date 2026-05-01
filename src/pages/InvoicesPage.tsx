@@ -19,6 +19,7 @@ import { PAYMENT_MODES } from '@/types';
 import type { Json } from '@/integrations/supabase/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { usePayment } from '@/hooks/usePayment';
+import { UpgradePrompt } from '@/components/UpgradePrompt';
 
 const defaultForm = {
   client_id: '',
@@ -29,11 +30,12 @@ const defaultForm = {
 };
 
 export default function InvoicesPage() {
-  const { factures, clients, produits, entreprise, journal, cliName, fmt, createModalTrigger } = useApp();
+  const { factures, clients, produits, entreprise, journal, cliName, fmt, createModalTrigger, subscription } = useApp();
   const triggerRef = useRef(createModalTrigger);
   const [search, setSearch] = useState('');
   const [statFilter, setStatFilter] = useState('');
   const [showModal, setShowModal] = useState(false);
+  const [showUpgrade, setShowUpgrade] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(defaultForm);
   const [articles, setArticles] = useState<ArticleLine[]>([{ nom: '', quantite: 1, prix_unitaire: 0 }]);
@@ -68,6 +70,16 @@ export default function InvoicesPage() {
   const totalTTC = totalHT + totalTVA;
 
   const openNew = () => {
+    // Free plan: limit invoices per month
+    const now = new Date();
+    const monthCount = factures.data.filter(f => {
+      const d = new Date(f.date_facture);
+      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    }).length;
+    if (monthCount >= subscription.limits.maxInvoicesPerMonth) {
+      setShowUpgrade(true);
+      return;
+    }
     setEditId(null);
     setForm(defaultForm);
     setArticles([{ nom: '', quantite: 1, prix_unitaire: 0 }]);
@@ -279,6 +291,7 @@ export default function InvoicesPage() {
         <PaginationControls {...pagination} />
       </div>
 
+      <UpgradePrompt open={showUpgrade} onClose={() => setShowUpgrade(false)} feature={`Plus de ${subscription.limits.maxInvoicesPerMonth} factures/mois`} />
       <ConfirmDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)} title={`Supprimer la facture ${deleteTarget?.numero} ?`} description="Cette action est irréversible. Les écritures journal liées seront également supprimées." onConfirm={del} confirmLabel="Supprimer" />
 
       {/* Payment modal */}

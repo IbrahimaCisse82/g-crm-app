@@ -24,6 +24,7 @@ import JournalPage from '@/pages/JournalPage';
 import CashPage from '@/pages/CashPage';
 import CompanyPage from '@/pages/CompanyPage';
 import SubscriptionPage from '@/pages/SubscriptionPage';
+import AdminPage from '@/pages/AdminPage';
 import NotFound from '@/pages/NotFound';
 import { Toaster } from '@/components/ui/sonner';
 
@@ -72,6 +73,7 @@ function AppContent() {
           <Route path="/caisse" element={<CashPage />} />
           <Route path="/entreprise" element={<CompanyPage />} />
           <Route path="/abonnement" element={<SubscriptionPage />} />
+          <Route path="/admin" element={<AdminPage />} />
           <Route path="/login" element={<Navigate to="/" replace />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

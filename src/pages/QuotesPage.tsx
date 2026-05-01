@@ -17,14 +17,16 @@ import { formatDate } from '@/lib/formatDate';
 import type { ArticleLine } from '@/types';
 import type { Json } from '@/integrations/supabase/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { UpgradePrompt } from '@/components/UpgradePrompt';
 
 export default function QuotesPage() {
-  const { devis, factures, clients, produits, entreprise, cliName, fmt, createModalTrigger } = useApp();
+  const { devis, factures, clients, produits, entreprise, cliName, fmt, createModalTrigger, subscription } = useApp();
   const triggerRef = useRef(createModalTrigger);
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [statFilter, setStatFilter] = useState('');
   const [showModal, setShowModal] = useState(false);
+  const [showUpgrade, setShowUpgrade] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({ client_id: '', date_devis: new Date().toISOString().slice(0, 10), validite_jours: 30, notes: '' });
   const [articles, setArticles] = useState<ArticleLine[]>([{ nom: '', quantite: 1, prix_unitaire: 0 }]);
@@ -58,6 +60,15 @@ export default function QuotesPage() {
   const totalTTC = totalHT + totalTVA;
 
   const openNew = () => {
+    const now = new Date();
+    const monthCount = devis.data.filter(d => {
+      const dt = new Date(d.date_devis);
+      return dt.getMonth() === now.getMonth() && dt.getFullYear() === now.getFullYear();
+    }).length;
+    if (monthCount >= subscription.limits.maxQuotesPerMonth) {
+      setShowUpgrade(true);
+      return;
+    }
     setEditId(null);
     setForm({ client_id: '', date_devis: new Date().toISOString().slice(0, 10), validite_jours: 30, notes: '' });
     setArticles([{ nom: '', quantite: 1, prix_unitaire: 0 }]);
@@ -240,6 +251,7 @@ export default function QuotesPage() {
         <PaginationControls {...pagination} />
       </div>
 
+      <UpgradePrompt open={showUpgrade} onClose={() => setShowUpgrade(false)} feature={`Plus de ${subscription.limits.maxQuotesPerMonth} devis/mois`} />
       <ConfirmDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)} title={`Supprimer le devis ${deleteTarget?.numero} ?`} description="Cette action est irréversible." onConfirm={del} confirmLabel="Supprimer" />
 
       <Dialog open={showModal} onOpenChange={setShowModal}>

@@ -5,6 +5,7 @@ import { StatusBadge } from '@/components/StatusBadge';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { PaginationControls } from '@/components/PaginationControls';
 import { TableSkeleton } from '@/components/LoadingSkeleton';
+import { UpgradePrompt } from '@/components/UpgradePrompt';
 import { usePagination } from '@/hooks/usePagination';
 import { useSortableTable } from '@/hooks/useSortableTable';
 import { exportCsv } from '@/utils/exportCsv';
@@ -12,10 +13,11 @@ import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 
 export default function ClientsPage() {
-  const { clients, factures, devis, createModalTrigger } = useApp();
+  const { clients, factures, devis, createModalTrigger, subscription } = useApp();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [showModal, setShowModal] = useState(false);
+  const [showUpgrade, setShowUpgrade] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({ prenom: '', nom: '', email: '', telephone: '', entreprise: '', statut: 'Actif', adresse: '', notes: '' });
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
@@ -32,6 +34,10 @@ export default function ClientsPage() {
   const pagination = usePagination(sorted);
 
   const openNew = () => {
+    if (clients.data.length >= subscription.limits.maxClients) {
+      setShowUpgrade(true);
+      return;
+    }
     setEditId(null);
     setForm({ prenom: '', nom: '', email: '', telephone: '', entreprise: '', statut: 'Actif', adresse: '', notes: '' });
     setShowModal(true);
@@ -176,6 +182,8 @@ export default function ClientsPage() {
         </div>
         <PaginationControls {...pagination} />
       </div>
+
+      <UpgradePrompt open={showUpgrade} onClose={() => setShowUpgrade(false)} feature={`Plus de ${subscription.limits.maxClients} clients`} />
 
       <ConfirmDialog
         open={!!deleteTarget}

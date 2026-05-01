@@ -21,7 +21,6 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Verify caller is admin (check via a simple admin list or role)
     const supabaseUser = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_ANON_KEY")!,
@@ -36,10 +35,22 @@ Deno.serve(async (req) => {
 
     const userId = claims.claims.sub as string;
 
-    const { action, request_id, admin_notes } = await req.json();
+    // Check that caller has admin role
+    const { data: roleRow } = await supabaseAdmin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .eq("role", "admin")
+      .maybeSingle();
+
+    if (!roleRow) {
+      return new Response(JSON.stringify({ error: "Forbidden — admin role required" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    const body = await req.json();
+    const { action, request_id, admin_notes, months } = body;
 
     if (action === "approve" && request_id) {
-      // Get the request
       const { data: request, error: reqError } = await supabaseAdmin
         .from("subscription_requests")
         .select("*")
@@ -47,18 +58,17 @@ Deno.serve(async (req) => {
         .single();
 
       if (reqError || !request) {
-        return new Response(JSON.stringify({ error: "Demande introuvable" }), { status: 404, headers: corsHeaders });
+        return new Response(JSON.stringify({ error: "Demande introuvable" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
 
-      // Update request status
       await supabaseAdmin
         .from("subscription_requests")
         .update({ status: "approved", admin_notes: admin_notes || null })
         .eq("id", request_id);
 
-      // Upsert subscription
+      const monthsNum = Math.max(1, Math.min(24, Number(months) || 1));
       const now = new Date();
-      const expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // +30 days
+      const periodMs = monthsNum * 30 * 24 * 60 * 60 * 1000;
 
       const { data: existing } = await supabaseAdmin
         .from("subscriptions")
@@ -66,12 +76,12 @@ Deno.serve(async (req) => {
         .eq("user_id", request.user_id)
         .maybeSingle();
 
+      let newExpiry = new Date(now.getTime() + periodMs);
+      if (existing && existing.plan === "pro" && existing.expires_at && new Date(existing.expires_at) > now) {
+        newExpiry = new Date(new Date(existing.expires_at).getTime() + periodMs);
+      }
+
       if (existing) {
-        // If already pro and not expired, extend from current expiry
-        let newExpiry = expiresAt;
-        if (existing.plan === "pro" && existing.expires_at && new Date(existing.expires_at) > now) {
-          newExpiry = new Date(new Date(existing.expires_at).getTime() + 30 * 24 * 60 * 60 * 1000);
-        }
         await supabaseAdmin
           .from("subscriptions")
           .update({
@@ -85,21 +95,19 @@ Deno.serve(async (req) => {
           })
           .eq("user_id", request.user_id);
       } else {
-        await supabaseAdmin
-          .from("subscriptions")
-          .insert({
-            user_id: request.user_id,
-            plan: "pro",
-            status: "active",
-            starts_at: now.toISOString(),
-            expires_at: expiresAt.toISOString(),
-            payment_reference: request.payment_reference,
-            payment_mode: request.payment_mode,
-            amount: request.amount,
-          });
+        await supabaseAdmin.from("subscriptions").insert({
+          user_id: request.user_id,
+          plan: "pro",
+          status: "active",
+          starts_at: now.toISOString(),
+          expires_at: newExpiry.toISOString(),
+          payment_reference: request.payment_reference,
+          payment_mode: request.payment_mode,
+          amount: request.amount,
+        });
       }
 
-      return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ success: true, expires_at: newExpiry.toISOString() }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     if (action === "reject" && request_id) {
@@ -107,12 +115,19 @@ Deno.serve(async (req) => {
         .from("subscription_requests")
         .update({ status: "rejected", admin_notes: admin_notes || null })
         .eq("id", request_id);
-
       return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    return new Response(JSON.stringify({ error: "Action invalide" }), { status: 400, headers: corsHeaders });
+    if (action === "revoke" && body.user_id) {
+      await supabaseAdmin
+        .from("subscriptions")
+        .update({ plan: "free", status: "cancelled", expires_at: null })
+        .eq("user_id", body.user_id);
+      return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    return new Response(JSON.stringify({ error: "Action invalide" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (err) {
-    return new Response(JSON.stringify({ error: (err as Error).message }), { status: 500, headers: corsHeaders });
+    return new Response(JSON.stringify({ error: (err as Error).message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });
