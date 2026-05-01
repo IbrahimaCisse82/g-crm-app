@@ -2,6 +2,7 @@ import { useApp } from '@/context/AppContext';
 import { useNavigate } from 'react-router-dom';
 import { DarkModeToggle } from '@/components/DarkModeToggle';
 import { Section, sectionPaths } from '@/types';
+import { useIsAdmin } from '@/hooks/useAdmin';
 
 const navItems: { section: Section; icon: string; label: string; badge?: boolean }[] = [
   { section: 'dashboard', icon: '📊', label: 'Tableau de bord' },
@@ -18,6 +19,7 @@ const navItems: { section: Section; icon: string; label: string; badge?: boolean
 export default function AppSidebar() {
   const { currentSection, sidebarOpen, setSidebarOpen, clients, factures, entreprise, userName, logout, subscription } = useApp();
   const navigate = useNavigate();
+  const { isAdmin } = useIsAdmin();
 
   const pendingCount = factures.data.filter(f => f.statut === 'En attente' || f.statut === 'En retard').length;
   const initials = userName.split(' ').map(w => w[0] || '').join('').slice(0, 2).toUpperCase() || 'U';
@@ -108,6 +110,22 @@ export default function AppSidebar() {
               <span className="flex-1 text-left text-[13px]">{item.label}</span>
             </button>
           ))}
+
+          {isAdmin && (
+            <button
+              onClick={() => goTo('admin')}
+              className={`w-full flex items-center h-[38px] px-2 rounded-lg text-[13px] font-medium mb-px transition-all relative overflow-hidden group
+                ${currentSection === 'admin'
+                  ? 'bg-sidebar-accent text-sidebar-accent-foreground font-semibold'
+                  : 'text-sidebar-foreground hover:bg-sidebar-hover hover:text-foreground'
+                }`}
+            >
+              <div className={`absolute left-0 top-1/2 w-[3px] rounded-r-[3px] bg-accent -translate-y-1/2 transition-all ${currentSection === 'admin' ? 'h-[22px]' : 'h-0 group-hover:h-4'}`} />
+              <span className="w-8 h-8 flex items-center justify-center rounded-[7px] text-[15px] shrink-0">🛡️</span>
+              <span className="flex-1 text-left text-[13px]">Backoffice Admin</span>
+              <span className="text-[9px] font-bold bg-accent/15 text-accent px-1.5 py-0.5 rounded">PRO</span>
+            </button>
+          )}
         </nav>
 
         <div className="p-2.5 px-3 border-t border-sidebar-border shrink-0">
