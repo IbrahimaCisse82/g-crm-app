@@ -183,6 +183,8 @@ export default function ClientsPage() {
         <PaginationControls {...pagination} />
       </div>
 
+      <UpgradePrompt open={showUpgrade} onClose={() => setShowUpgrade(false)} feature={`Plus de ${subscription.limits.maxClients} clients`} />
+
       <ConfirmDialog
         open={!!deleteTarget}
         onOpenChange={() => setDeleteTarget(null)}
