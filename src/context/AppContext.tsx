@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useCallback, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useClients, useFactures, useDevis, useProduits, useJournal, useComptesTresorerie, useEntreprise, useCategories } from '@/hooks/useSupabaseData';
+import { useClients, useFactures, useDevis, useProduits, useJournal, useComptesTresorerie, useEntreprise, useCategories, useRecus, useAvoirs } from '@/hooks/useSupabaseData';
 import { useSubscription } from '@/hooks/useSubscription';
 import type { Section } from '@/types';
 import { sectionPaths, pathToSection } from '@/types';
@@ -22,6 +22,8 @@ interface AppContextType {
   comptes: ReturnType<typeof useComptesTresorerie>;
   entreprise: ReturnType<typeof useEntreprise>;
   categories: ReturnType<typeof useCategories>;
+  recus: ReturnType<typeof useRecus>;
+  avoirs: ReturnType<typeof useAvoirs>;
   subscription: ReturnType<typeof useSubscription>;
   cliName: (id: string | null) => string;
   fmt: (n: number) => string;
@@ -53,6 +55,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const comptes = useComptesTresorerie();
   const entreprise = useEntreprise();
   const categories = useCategories();
+  const recus = useRecus();
+  const avoirs = useAvoirs();
   const subscriptionData = useSubscription();
 
   const isLoggedIn = !!user;
@@ -82,7 +86,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     <AppContext.Provider value={{
       currentSection, setCurrentSection, sidebarOpen, setSidebarOpen,
       isLoggedIn, userName, logout,
-      clients, factures, devis, produits, journal, comptes, entreprise, categories, subscription: subscriptionData,
+      clients, factures, devis, produits, journal, comptes, entreprise, categories, recus, avoirs, subscription: subscriptionData,
       cliName, fmt,
       createModalTrigger, triggerCreateModal,
     }}>
