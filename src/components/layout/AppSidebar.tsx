@@ -9,6 +9,8 @@ const navItems: { section: Section; icon: string; label: string; badge?: boolean
   { section: 'clients', icon: '👥', label: 'Clients', badge: true },
   { section: 'factures', icon: '🧾', label: 'Factures', badge: true },
   { section: 'devis', icon: '📋', label: 'Devis' },
+  { section: 'recus', icon: '🧾', label: 'Reçus' },
+  { section: 'avoirs', icon: '📝', label: 'Avoirs' },
   { section: 'produits', icon: '📦', label: 'Produits & Services' },
   { section: 'journal', icon: '📒', label: 'Journal' },
   { section: 'caisse', icon: '🏦', label: 'Caisse & Paiements' },
