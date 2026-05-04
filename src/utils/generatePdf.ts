@@ -262,7 +262,8 @@ export async function downloadPdf(data: PdfData) {
     const blob = await generatePdfBlob(data);
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    const label = data.type === 'facture' ? 'Facture' : 'Devis';
+    const labelMap = { facture: 'Facture', devis: 'Devis', recu: 'Recu', avoir: 'Avoir' } as const;
+    const label = labelMap[data.type];
     a.href = url;
     a.download = `${label}_${data.numero.replace(/[/\\]/g, '-')}.pdf`;
     document.body.appendChild(a);
