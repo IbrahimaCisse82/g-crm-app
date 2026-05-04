@@ -1,10 +1,12 @@
-export type Section = 'dashboard' | 'clients' | 'factures' | 'devis' | 'produits' | 'journal' | 'caisse' | 'entreprise' | 'abonnement' | 'admin';
+export type Section = 'dashboard' | 'clients' | 'factures' | 'devis' | 'recus' | 'avoirs' | 'produits' | 'journal' | 'caisse' | 'entreprise' | 'abonnement' | 'admin';
 
 export const sectionPaths: Record<Section, string> = {
   dashboard: '/',
   clients: '/clients',
   factures: '/factures',
   devis: '/devis',
+  recus: '/recus',
+  avoirs: '/avoirs',
   produits: '/produits',
   journal: '/journal',
   caisse: '/caisse',
