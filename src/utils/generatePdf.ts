@@ -8,7 +8,7 @@ interface PdfArticle {
 }
 
 interface PdfData {
-  type: 'facture' | 'devis';
+  type: 'facture' | 'devis' | 'recu' | 'avoir';
   numero: string;
   date: string;
   echeance?: string | null;
@@ -21,6 +21,12 @@ interface PdfData {
   tva_pct: number;
   mode_paiement?: string | null;
   notes?: string | null;
+  // Recu-specific
+  reference?: string | null;
+  description?: string | null;
+  facture_ref?: string | null;
+  // Avoir-specific
+  motif?: string | null;
   entreprise?: {
     nom?: string;
     adresse?: string | null;
@@ -50,7 +56,8 @@ export type { PdfData };
 
 export function generatePdfHtml(data: PdfData): string {
   const devise = data.entreprise?.devise || 'FCFA';
-  const title = data.type === 'facture' ? 'FACTURE' : 'DEVIS';
+  const titleMap = { facture: 'FACTURE', devis: 'DEVIS', recu: 'REÇU', avoir: 'AVOIR' } as const;
+  const title = titleMap[data.type];
   const articles = Array.isArray(data.articles) ? data.articles as PdfArticle[] : [];
   const companyName = esc(data.entreprise?.nom) || 'Mon Entreprise';
 
@@ -125,7 +132,9 @@ export function generatePdfHtml(data: PdfData): string {
       <p>Date: ${esc(data.date)}</p>
       ${data.type === 'facture' && data.echeance ? `<p>Échéance: ${esc(data.echeance)}</p>` : ''}
       ${data.type === 'devis' && data.validite_jours ? `<p>Validité: ${data.validite_jours} jours</p>` : ''}
-      ${data.mode_paiement ? `<p>Paiement: ${esc(data.mode_paiement)}</p>` : ''}
+      ${(data.type === 'facture' || data.type === 'recu') && data.mode_paiement ? `<p>Paiement: ${esc(data.mode_paiement)}</p>` : ''}
+      ${data.type === 'recu' && data.reference ? `<p>Réf: ${esc(data.reference)}</p>` : ''}
+      ${data.type === 'avoir' && data.facture_ref ? `<p>Facture: ${esc(data.facture_ref)}</p>` : ''}
     </div>
   </div>
 
