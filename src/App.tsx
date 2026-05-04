@@ -19,6 +19,8 @@ import Dashboard from '@/pages/Dashboard';
 import ClientsPage from '@/pages/ClientsPage';
 import InvoicesPage from '@/pages/InvoicesPage';
 import QuotesPage from '@/pages/QuotesPage';
+import RecusPage from '@/pages/RecusPage';
+import AvoirsPage from '@/pages/AvoirsPage';
 import ProductsPage from '@/pages/ProductsPage';
 import JournalPage from '@/pages/JournalPage';
 import CashPage from '@/pages/CashPage';
@@ -68,6 +70,8 @@ function AppContent() {
           <Route path="/clients" element={<ClientsPage />} />
           <Route path="/factures" element={<InvoicesPage />} />
           <Route path="/devis" element={<QuotesPage />} />
+          <Route path="/recus" element={<RecusPage />} />
+          <Route path="/avoirs" element={<AvoirsPage />} />
           <Route path="/produits" element={<ProductsPage />} />
           <Route path="/journal" element={<JournalPage />} />
           <Route path="/caisse" element={<CashPage />} />
