@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      avoirs: {
+        Row: {
+          articles: Json
+          client_id: string | null
+          created_at: string
+          date_avoir: string
+          facture_id: string | null
+          id: string
+          montant_ht: number
+          montant_ttc: number
+          montant_tva: number
+          motif: string | null
+          notes: string | null
+          numero: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          articles?: Json
+          client_id?: string | null
+          created_at?: string
+          date_avoir?: string
+          facture_id?: string | null
+          id?: string
+          montant_ht?: number
+          montant_ttc?: number
+          montant_tva?: number
+          motif?: string | null
+          notes?: string | null
+          numero: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          articles?: Json
+          client_id?: string | null
+          created_at?: string
+          date_avoir?: string
+          facture_id?: string | null
+          id?: string
+          montant_ht?: number
+          montant_ttc?: number
+          montant_tva?: number
+          motif?: string | null
+          notes?: string | null
+          numero?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           created_at: string
@@ -174,6 +225,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      document_counters: {
+        Row: {
+          doc_type: string
+          last_value: number
+          user_id: string
+          year: number
+        }
+        Insert: {
+          doc_type: string
+          last_value?: number
+          user_id: string
+          year: number
+        }
+        Update: {
+          doc_type?: string
+          last_value?: number
+          user_id?: string
+          year?: number
+        }
+        Relationships: []
       }
       entreprises: {
         Row: {
@@ -388,6 +460,7 @@ export type Database = {
           created_at: string
           full_name: string
           id: string
+          onboarding_completed: boolean
           phone: string | null
           updated_at: string
           user_id: string
@@ -399,6 +472,7 @@ export type Database = {
           created_at?: string
           full_name?: string
           id?: string
+          onboarding_completed?: boolean
           phone?: string | null
           updated_at?: string
           user_id: string
@@ -410,7 +484,56 @@ export type Database = {
           created_at?: string
           full_name?: string
           id?: string
+          onboarding_completed?: boolean
           phone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      recus: {
+        Row: {
+          client_id: string | null
+          created_at: string
+          date_recu: string
+          description: string | null
+          facture_id: string | null
+          id: string
+          mode_paiement: string
+          montant: number
+          notes: string | null
+          numero: string
+          reference: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string
+          date_recu?: string
+          description?: string | null
+          facture_id?: string | null
+          id?: string
+          mode_paiement?: string
+          montant?: number
+          notes?: string | null
+          numero: string
+          reference?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string
+          date_recu?: string
+          description?: string | null
+          facture_id?: string | null
+          id?: string
+          mode_paiement?: string
+          montant?: number
+          notes?: string | null
+          numero?: string
+          reference?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -537,8 +660,14 @@ export type Database = {
         Returns: boolean
       }
       is_owner: { Args: { row_user_id: string }; Returns: boolean }
+      next_avoir_numero: { Args: never; Returns: string }
       next_devis_numero: { Args: never; Returns: string }
+      next_doc_numero: {
+        Args: { _doc_type: string; _prefix: string }
+        Returns: string
+      }
       next_facture_numero: { Args: never; Returns: string }
+      next_recu_numero: { Args: never; Returns: string }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"

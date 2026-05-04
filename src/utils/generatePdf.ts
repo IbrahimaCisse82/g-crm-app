@@ -8,7 +8,7 @@ interface PdfArticle {
 }
 
 interface PdfData {
-  type: 'facture' | 'devis';
+  type: 'facture' | 'devis' | 'recu' | 'avoir';
   numero: string;
   date: string;
   echeance?: string | null;
@@ -21,6 +21,12 @@ interface PdfData {
   tva_pct: number;
   mode_paiement?: string | null;
   notes?: string | null;
+  // Recu-specific
+  reference?: string | null;
+  description?: string | null;
+  facture_ref?: string | null;
+  // Avoir-specific
+  motif?: string | null;
   entreprise?: {
     nom?: string;
     adresse?: string | null;
@@ -50,7 +56,8 @@ export type { PdfData };
 
 export function generatePdfHtml(data: PdfData): string {
   const devise = data.entreprise?.devise || 'FCFA';
-  const title = data.type === 'facture' ? 'FACTURE' : 'DEVIS';
+  const titleMap = { facture: 'FACTURE', devis: 'DEVIS', recu: 'REÇU', avoir: 'AVOIR' } as const;
+  const title = titleMap[data.type];
   const articles = Array.isArray(data.articles) ? data.articles as PdfArticle[] : [];
   const companyName = esc(data.entreprise?.nom) || 'Mon Entreprise';
 
@@ -125,7 +132,9 @@ export function generatePdfHtml(data: PdfData): string {
       <p>Date: ${esc(data.date)}</p>
       ${data.type === 'facture' && data.echeance ? `<p>Échéance: ${esc(data.echeance)}</p>` : ''}
       ${data.type === 'devis' && data.validite_jours ? `<p>Validité: ${data.validite_jours} jours</p>` : ''}
-      ${data.mode_paiement ? `<p>Paiement: ${esc(data.mode_paiement)}</p>` : ''}
+      ${(data.type === 'facture' || data.type === 'recu') && data.mode_paiement ? `<p>Paiement: ${esc(data.mode_paiement)}</p>` : ''}
+      ${data.type === 'recu' && data.reference ? `<p>Réf: ${esc(data.reference)}</p>` : ''}
+      ${data.type === 'avoir' && data.facture_ref ? `<p>Facture: ${esc(data.facture_ref)}</p>` : ''}
     </div>
   </div>
 
@@ -134,6 +143,14 @@ export function generatePdfHtml(data: PdfData): string {
     <div class="name">${esc(data.client)}</div>
   </div>
 
+  ${data.type === 'recu' ? `
+  <div style="background: #ecfdf5; border: 1px solid #10b981; border-radius: 8px; padding: 20px; margin-bottom: 20px; text-align: center;">
+    <div style="font-size: 11px; text-transform: uppercase; color: #059669; font-weight: 700; letter-spacing: 1px; margin-bottom: 6px;">Montant encaissé</div>
+    <div style="font-size: 28px; font-weight: 900; color: #059669;">${fmt(data.montant_ttc, devise)}</div>
+  </div>
+  ${data.description ? `<div class="notes"><strong>Description:</strong> ${esc(data.description)}</div>` : ''}
+  ${data.facture_ref ? `<div class="notes" style="margin-top:8px;"><strong>Facture associée:</strong> ${esc(data.facture_ref)}</div>` : ''}
+  ` : `
   <table>
     <thead>
       <tr>
@@ -159,9 +176,11 @@ export function generatePdfHtml(data: PdfData): string {
     <div class="totals-box">
       <div class="totals-row"><span>Total HT</span><span>${fmt(data.montant_ht, devise)}</span></div>
       <div class="totals-row"><span>TVA (${data.tva_pct}%)</span><span>${fmt(data.montant_tva, devise)}</span></div>
-      <div class="totals-row total"><span>Total TTC</span><span class="val">${fmt(data.montant_ttc, devise)}</span></div>
+      <div class="totals-row total"><span>${data.type === 'avoir' ? 'Total avoir TTC' : 'Total TTC'}</span><span class="val">${fmt(data.montant_ttc, devise)}</span></div>
     </div>
   </div>
+  ${data.type === 'avoir' && data.motif ? `<div class="notes"><strong>Motif:</strong> ${esc(data.motif)}</div>` : ''}
+  `}
 
   ${data.notes ? `<div class="notes"><strong>Notes:</strong> ${esc(data.notes)}</div>` : ''}
   </div>
@@ -253,7 +272,8 @@ export async function downloadPdf(data: PdfData) {
     const blob = await generatePdfBlob(data);
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    const label = data.type === 'facture' ? 'Facture' : 'Devis';
+    const labelMap = { facture: 'Facture', devis: 'Devis', recu: 'Recu', avoir: 'Avoir' } as const;
+    const label = labelMap[data.type];
     a.href = url;
     a.download = `${label}_${data.numero.replace(/[/\\]/g, '-')}.pdf`;
     document.body.appendChild(a);

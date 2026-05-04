@@ -297,3 +297,88 @@ export function useEntreprise() {
 
   return { data: query.data, isLoading: query.isLoading, upsert };
 }
+
+export function useRecus() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  const key = ['recus', user?.id];
+
+  const query = useQuery({
+    queryKey: key,
+    queryFn: async () => {
+      const { data, error } = await supabase.from('recus').select('*').order('date_recu', { ascending: false }).limit(QUERY_LIMIT);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const add = async (row: Omit<TablesInsert<'recus'>, 'user_id'>) => {
+    const { error } = await supabase.from('recus').insert({ ...row, user_id: user!.id });
+    if (error) throw error;
+    qc.invalidateQueries({ queryKey: key });
+  };
+
+  const update = async (id: string, updates: TablesUpdate<'recus'>) => {
+    const { error } = await supabase.from('recus').update(updates).eq('id', id);
+    if (error) throw error;
+    qc.invalidateQueries({ queryKey: key });
+  };
+
+  const remove = async (id: string) => {
+    const { error } = await supabase.from('recus').delete().eq('id', id);
+    if (error) throw error;
+    qc.invalidateQueries({ queryKey: key });
+  };
+
+  const nextNumero = async (): Promise<string> => {
+    const { data, error } = await supabase.rpc('next_recu_numero');
+    if (error) throw error;
+    return data as string;
+  };
+
+  return { data: query.data ?? [], isLoading: query.isLoading, add, update, remove, nextNumero };
+}
+
+export function useAvoirs() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  const key = ['avoirs', user?.id];
+
+  const query = useQuery({
+    queryKey: key,
+    queryFn: async () => {
+      const { data, error } = await supabase.from('avoirs').select('*').order('date_avoir', { ascending: false }).limit(QUERY_LIMIT);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const add = async (row: Omit<TablesInsert<'avoirs'>, 'user_id'>) => {
+    const { error } = await supabase.from('avoirs').insert({ ...row, user_id: user!.id });
+    if (error) throw error;
+    qc.invalidateQueries({ queryKey: key });
+  };
+
+  const update = async (id: string, updates: TablesUpdate<'avoirs'>) => {
+    const { error } = await supabase.from('avoirs').update(updates).eq('id', id);
+    if (error) throw error;
+    qc.invalidateQueries({ queryKey: key });
+  };
+
+  const remove = async (id: string) => {
+    const { error } = await supabase.from('avoirs').delete().eq('id', id);
+    if (error) throw error;
+    qc.invalidateQueries({ queryKey: key });
+  };
+
+  const nextNumero = async (): Promise<string> => {
+    const { data, error } = await supabase.rpc('next_avoir_numero');
+    if (error) throw error;
+    return data as string;
+  };
+
+  return { data: query.data ?? [], isLoading: query.isLoading, add, update, remove, nextNumero };
+}
+
