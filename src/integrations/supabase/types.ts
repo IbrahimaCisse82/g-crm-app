@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      audit_log: {
+        Row: {
+          action: string
+          after: Json | null
+          before: Json | null
+          created_at: string
+          id: string
+          record_id: string | null
+          table_name: string
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          after?: Json | null
+          before?: Json | null
+          created_at?: string
+          id?: string
+          record_id?: string | null
+          table_name: string
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          after?: Json | null
+          before?: Json | null
+          created_at?: string
+          id?: string
+          record_id?: string | null
+          table_name?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       avoirs: {
         Row: {
           articles: Json
@@ -63,11 +96,27 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "avoirs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "avoirs_facture_id_fkey"
+            columns: ["facture_id"]
+            isOneToOne: false
+            referencedRelation: "factures"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       categories: {
         Row: {
           created_at: string
+          deleted_at: string | null
           id: string
           nom: string
           type: string
@@ -75,6 +124,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          deleted_at?: string | null
           id?: string
           nom: string
           type?: string
@@ -82,6 +132,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          deleted_at?: string | null
           id?: string
           nom?: string
           type?: string
@@ -93,6 +144,7 @@ export type Database = {
         Row: {
           adresse: string | null
           created_at: string
+          deleted_at: string | null
           email: string | null
           entreprise: string | null
           id: string
@@ -107,6 +159,7 @@ export type Database = {
         Insert: {
           adresse?: string | null
           created_at?: string
+          deleted_at?: string | null
           email?: string | null
           entreprise?: string | null
           id?: string
@@ -121,6 +174,7 @@ export type Database = {
         Update: {
           adresse?: string | null
           created_at?: string
+          deleted_at?: string | null
           email?: string | null
           entreprise?: string | null
           id?: string
@@ -137,6 +191,7 @@ export type Database = {
       comptes_tresorerie: {
         Row: {
           created_at: string
+          deleted_at: string | null
           id: string
           numero: string
           operateur: string
@@ -147,6 +202,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          deleted_at?: string | null
           id?: string
           numero?: string
           operateur: string
@@ -157,6 +213,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          deleted_at?: string | null
           id?: string
           numero?: string
           operateur?: string
@@ -173,6 +230,7 @@ export type Database = {
           client_id: string | null
           created_at: string
           date_devis: string
+          deleted_at: string | null
           id: string
           montant_ht: number
           montant_ttc: number
@@ -189,6 +247,7 @@ export type Database = {
           client_id?: string | null
           created_at?: string
           date_devis?: string
+          deleted_at?: string | null
           id?: string
           montant_ht?: number
           montant_ttc?: number
@@ -205,6 +264,7 @@ export type Database = {
           client_id?: string | null
           created_at?: string
           date_devis?: string
+          deleted_at?: string | null
           id?: string
           montant_ht?: number
           montant_ttc?: number
@@ -306,6 +366,7 @@ export type Database = {
           created_at: string
           date_echeance: string | null
           date_facture: string
+          deleted_at: string | null
           id: string
           mode_paiement: string | null
           montant_ht: number
@@ -325,6 +386,7 @@ export type Database = {
           created_at?: string
           date_echeance?: string | null
           date_facture?: string
+          deleted_at?: string | null
           id?: string
           mode_paiement?: string | null
           montant_ht?: number
@@ -344,6 +406,7 @@ export type Database = {
           created_at?: string
           date_echeance?: string | null
           date_facture?: string
+          deleted_at?: string | null
           id?: string
           mode_paiement?: string | null
           montant_ht?: number
@@ -372,6 +435,7 @@ export type Database = {
           compte: string | null
           created_at: string
           date_operation: string
+          deleted_at: string | null
           facture_id: string | null
           id: string
           libelle: string
@@ -385,6 +449,7 @@ export type Database = {
           compte?: string | null
           created_at?: string
           date_operation?: string
+          deleted_at?: string | null
           facture_id?: string | null
           id?: string
           libelle: string
@@ -398,6 +463,7 @@ export type Database = {
           compte?: string | null
           created_at?: string
           date_operation?: string
+          deleted_at?: string | null
           facture_id?: string | null
           id?: string
           libelle?: string
@@ -419,6 +485,7 @@ export type Database = {
       produits: {
         Row: {
           created_at: string
+          deleted_at: string | null
           description: string | null
           id: string
           nom: string
@@ -430,6 +497,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          deleted_at?: string | null
           description?: string | null
           id?: string
           nom: string
@@ -441,6 +509,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          deleted_at?: string | null
           description?: string | null
           id?: string
           nom?: string
@@ -537,7 +606,22 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "recus_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recus_facture_id_fkey"
+            columns: ["facture_id"]
+            isOneToOne: false
+            referencedRelation: "factures"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       subscription_requests: {
         Row: {

@@ -33,7 +33,7 @@ export function useClients() {
   };
 
   const remove = async (id: string) => {
-    const { error } = await supabase.from('clients').delete().eq('id', id);
+    const { error } = await supabase.from('clients').update({ deleted_at: new Date().toISOString() } as any).eq('id', id).is('deleted_at', null);
     if (error) throw error;
     qc.invalidateQueries({ queryKey: key });
   };
@@ -69,7 +69,7 @@ export function useFactures() {
   };
 
   const remove = async (id: string) => {
-    const { error } = await supabase.from('factures').delete().eq('id', id);
+    const { error } = await supabase.from('factures').update({ deleted_at: new Date().toISOString() } as any).eq('id', id).is('deleted_at', null);
     if (error) throw error;
     qc.invalidateQueries({ queryKey: key });
   };
@@ -111,7 +111,7 @@ export function useDevis() {
   };
 
   const remove = async (id: string) => {
-    const { error } = await supabase.from('devis').delete().eq('id', id);
+    const { error } = await supabase.from('devis').update({ deleted_at: new Date().toISOString() } as any).eq('id', id).is('deleted_at', null);
     if (error) throw error;
     qc.invalidateQueries({ queryKey: key });
   };
@@ -153,7 +153,7 @@ export function useProduits() {
   };
 
   const remove = async (id: string) => {
-    const { error } = await supabase.from('produits').delete().eq('id', id);
+    const { error } = await supabase.from('produits').update({ deleted_at: new Date().toISOString() } as any).eq('id', id).is('deleted_at', null);
     if (error) throw error;
     qc.invalidateQueries({ queryKey: key });
   };
@@ -183,13 +183,13 @@ export function useJournal() {
   };
 
   const remove = async (id: string) => {
-    const { error } = await supabase.from('journal').delete().eq('id', id);
+    const { error } = await supabase.from('journal').update({ deleted_at: new Date().toISOString() } as any).eq('id', id).is('deleted_at', null);
     if (error) throw error;
     qc.invalidateQueries({ queryKey: key });
   };
 
   const removeByFactureId = async (factureId: string) => {
-    const { error } = await supabase.from('journal').delete().eq('facture_id', factureId);
+    const { error } = await supabase.from('journal').update({ deleted_at: new Date().toISOString() } as any).eq('facture_id', factureId).is('deleted_at', null);
     if (error) throw error;
     qc.invalidateQueries({ queryKey: key });
   };
@@ -225,7 +225,7 @@ export function useComptesTresorerie() {
   };
 
   const remove = async (id: string) => {
-    const { error } = await supabase.from('comptes_tresorerie').delete().eq('id', id);
+    const { error } = await supabase.from('comptes_tresorerie').update({ deleted_at: new Date().toISOString() } as any).eq('id', id).is('deleted_at', null);
     if (error) throw error;
     qc.invalidateQueries({ queryKey: key });
   };
@@ -261,7 +261,7 @@ export function useCategories() {
   };
 
   const remove = async (id: string) => {
-    const { error } = await supabase.from('categories').delete().eq('id', id);
+    const { error } = await supabase.from('categories').update({ deleted_at: new Date().toISOString() } as any).eq('id', id).is('deleted_at', null);
     if (error) throw error;
     qc.invalidateQueries({ queryKey: key });
   };
