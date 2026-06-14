@@ -13,7 +13,7 @@ async function invoke<T = any>(fn: string, body: any): Promise<T> {
 
 export async function registerBiometric(deviceLabel?: string): Promise<void> {
   const { options } = await invoke<{ options: any }>('webauthn-register-begin', { rpId });
-  const attResp = await startRegistration({ optionsJSON: options });
+  const attResp = await startRegistration(options);
   await invoke('webauthn-register-finish', {
     response: attResp,
     rpId,
@@ -24,7 +24,7 @@ export async function registerBiometric(deviceLabel?: string): Promise<void> {
 
 export async function verifyBiometric(): Promise<boolean> {
   const begin = await invoke<{ options: any }>('webauthn-auth-begin', { rpId });
-  const assertion = await startAuthentication({ optionsJSON: begin.options });
+  const assertion = await startAuthentication(begin.options);
   await invoke('webauthn-auth-finish', { response: assertion, rpId, origin });
   return true;
 }
