@@ -1,9 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { Lock, Fingerprint, Eye, EyeOff } from 'lucide-react';
+import { Lock, Fingerprint, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
+import {
+  verifyBiometric,
+  registerBiometric,
+  hasRegisteredBiometric,
+  isPlatformAuthenticatorAvailable,
+} from '@/lib/webauthn';
 
 interface LockScreenProps {
   onUnlock: () => void;
@@ -14,26 +20,21 @@ export default function LockScreen({ onUnlock }: LockScreenProps) {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [biometricAvailable, setBiometricAvailable] = useState(false);
-  const [biometricChecked, setBiometricChecked] = useState(false);
+  const [platformAvailable, setPlatformAvailable] = useState(false);
+  const [hasCredential, setHasCredential] = useState(false);
+  const [checked, setChecked] = useState(false);
+  const [registering, setRegistering] = useState(false);
 
-  // Check if WebAuthn / biometric is available
-  React.useEffect(() => {
-    async function checkBiometric() {
-      try {
-        if (
-          window.PublicKeyCredential &&
-          typeof window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable === 'function'
-        ) {
-          const available = await window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
-          setBiometricAvailable(available);
-        }
-      } catch {
-        setBiometricAvailable(false);
+  useEffect(() => {
+    (async () => {
+      const available = await isPlatformAuthenticatorAvailable();
+      setPlatformAvailable(available);
+      if (available) {
+        const has = await hasRegisteredBiometric();
+        setHasCredential(has);
       }
-      setBiometricChecked(true);
-    }
-    checkBiometric();
+      setChecked(true);
+    })();
   }, []);
 
   const handlePasswordUnlock = async (e: React.FormEvent) => {
@@ -61,29 +62,27 @@ export default function LockScreen({ onUnlock }: LockScreenProps) {
 
   const handleBiometricUnlock = async () => {
     try {
-      // Use WebAuthn to verify the user's identity via biometric
-      const credential = await navigator.credentials.get({
-        publicKey: {
-          challenge: crypto.getRandomValues(new Uint8Array(32)),
-          timeout: 60000,
-          userVerification: 'required',
-          rpId: window.location.hostname,
-          allowCredentials: [],
-        },
-      });
-      // If we get here, biometric verification succeeded
-      if (credential) {
-        onUnlock();
-      }
+      await verifyBiometric();
+      onUnlock();
     } catch (err: any) {
-      // NotAllowedError = user cancelled, other errors = not set up
       if (err?.name === 'NotAllowedError') {
         toast.error('Authentification annulée');
       } else {
-        // Fallback: on many devices without pre-registered credentials,
-        // we can still try the simpler approach
-        toast.error('Empreinte non disponible, utilisez votre mot de passe');
+        toast.error(err?.message || 'Authentification biométrique échouée');
       }
+    }
+  };
+
+  const handleRegister = async () => {
+    setRegistering(true);
+    try {
+      await registerBiometric();
+      setHasCredential(true);
+      toast.success('Empreinte enregistrée — vous pouvez désormais déverrouiller sans mot de passe');
+    } catch (err: any) {
+      toast.error(err?.message || "Impossible d'enregistrer l'empreinte");
+    } finally {
+      setRegistering(false);
     }
   };
 
@@ -98,12 +97,10 @@ export default function LockScreen({ onUnlock }: LockScreenProps) {
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-background/95 backdrop-blur-md">
       <div className="w-full max-w-sm mx-4 flex flex-col items-center gap-6 animate-in fade-in duration-300">
-        {/* Avatar */}
         <div className="w-20 h-20 rounded-full bg-primary/10 border-2 border-primary flex items-center justify-center">
           <span className="text-2xl font-bold text-primary">{initials || '?'}</span>
         </div>
 
-        {/* Name */}
         <div className="text-center">
           <p className="text-lg font-semibold text-foreground">{displayName}</p>
           <p className="text-sm text-muted-foreground flex items-center gap-1.5 justify-center mt-1">
@@ -112,7 +109,6 @@ export default function LockScreen({ onUnlock }: LockScreenProps) {
           </p>
         </div>
 
-        {/* Password form */}
         <form onSubmit={handlePasswordUnlock} className="w-full space-y-3">
           <div className="relative">
             <Input
@@ -136,8 +132,7 @@ export default function LockScreen({ onUnlock }: LockScreenProps) {
           </Button>
         </form>
 
-        {/* Biometric button */}
-        {biometricChecked && biometricAvailable && (
+        {checked && platformAvailable && hasCredential && (
           <button
             onClick={handleBiometricUnlock}
             className="flex flex-col items-center gap-2 text-muted-foreground hover:text-primary transition-colors"
@@ -149,7 +144,19 @@ export default function LockScreen({ onUnlock }: LockScreenProps) {
           </button>
         )}
 
-        {/* Info text */}
+        {checked && platformAvailable && !hasCredential && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRegister}
+            disabled={registering}
+            className="gap-2"
+          >
+            <ShieldCheck className="w-4 h-4" />
+            {registering ? 'Configuration…' : 'Activer la biométrie'}
+          </Button>
+        )}
+
         <p className="text-xs text-muted-foreground text-center">
           Déconnexion automatique après 5 min d'inactivité
         </p>
