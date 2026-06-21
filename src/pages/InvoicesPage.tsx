@@ -26,7 +26,11 @@ const defaultForm = {
   mode_paiement: 'Espèce',
   date_facture: new Date().toISOString().slice(0, 10),
   date_echeance: '',
+  date_livraison: '',
   notes: '',
+  retenue_source_pct: 0,
+  conditions_paiement: '',
+  penalites_retard: '',
 };
 
 export default function InvoicesPage() {
