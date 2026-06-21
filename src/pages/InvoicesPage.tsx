@@ -94,7 +94,11 @@ export default function InvoicesPage() {
       return;
     }
     setEditId(null);
-    setForm(defaultForm);
+    setForm({
+      ...defaultForm,
+      conditions_paiement: entreprise.data?.conditions_paiement_defaut || '',
+      penalites_retard: entreprise.data?.penalites_retard_defaut || '',
+    });
     setArticles([{ nom: '', quantite: 1, prix_unitaire: 0 }]);
     setShowModal(true);
   };
@@ -102,14 +106,19 @@ export default function InvoicesPage() {
   const openEdit = (f: typeof factures.data[0]) => {
     setEditId(f.id);
     const arts = Array.isArray(f.articles) ? (f.articles as unknown as ArticleLine[]).map(a => ({
-      nom: a.nom || '', quantite: a.quantite || 1, prix_unitaire: a.prix_unitaire || 0
+      nom: a.nom || '', quantite: a.quantite || 1, prix_unitaire: a.prix_unitaire || 0,
+      tva_pct: typeof a.tva_pct === 'number' ? a.tva_pct : undefined,
     })) : [{ nom: '', quantite: 1, prix_unitaire: 0 }];
     setForm({
       client_id: f.client_id || '',
       mode_paiement: f.mode_paiement || 'Espèce',
       date_facture: f.date_facture,
       date_echeance: f.date_echeance || '',
+      date_livraison: f.date_livraison || '',
       notes: f.notes || '',
+      retenue_source_pct: Number(f.retenue_source_pct) || 0,
+      conditions_paiement: f.conditions_paiement || entreprise.data?.conditions_paiement_defaut || '',
+      penalites_retard: f.penalites_retard || entreprise.data?.penalites_retard_defaut || '',
     });
     setArticles(arts);
     setShowModal(true);
@@ -122,7 +131,7 @@ export default function InvoicesPage() {
 
   const addArticleLine = () => setArticles([...articles, { nom: '', quantite: 1, prix_unitaire: 0 }]);
   const removeArticleLine = (i: number) => setArticles(articles.filter((_, idx) => idx !== i));
-  const updateArticle = (i: number, field: keyof ArticleLine, value: string | number) => {
+  const updateArticle = (i: number, field: keyof ArticleLine, value: string | number | undefined) => {
     setArticles(articles.map((a, idx) => idx === i ? { ...a, [field]: value } : a));
   };
   const selectProduct = (i: number, produitId: string) => {
