@@ -148,6 +148,7 @@ export type Database = {
           email: string | null
           entreprise: string | null
           id: string
+          ninea: string | null
           nom: string
           notes: string | null
           prenom: string
@@ -163,6 +164,7 @@ export type Database = {
           email?: string | null
           entreprise?: string | null
           id?: string
+          ninea?: string | null
           nom?: string
           notes?: string | null
           prenom?: string
@@ -178,6 +180,7 @@ export type Database = {
           email?: string | null
           entreprise?: string | null
           id?: string
+          ninea?: string | null
           nom?: string
           notes?: string | null
           prenom?: string
@@ -310,6 +313,7 @@ export type Database = {
       entreprises: {
         Row: {
           adresse: string | null
+          conditions_paiement_defaut: string | null
           created_at: string
           devise: string
           email: string | null
@@ -317,7 +321,9 @@ export type Database = {
           logo_url: string | null
           ninea: string | null
           nom: string
+          penalites_retard_defaut: string | null
           rccm: string | null
+          regime_fiscal: string | null
           slogan: string | null
           telephone: string | null
           tva: number
@@ -326,6 +332,7 @@ export type Database = {
         }
         Insert: {
           adresse?: string | null
+          conditions_paiement_defaut?: string | null
           created_at?: string
           devise?: string
           email?: string | null
@@ -333,7 +340,9 @@ export type Database = {
           logo_url?: string | null
           ninea?: string | null
           nom?: string
+          penalites_retard_defaut?: string | null
           rccm?: string | null
+          regime_fiscal?: string | null
           slogan?: string | null
           telephone?: string | null
           tva?: number
@@ -342,6 +351,7 @@ export type Database = {
         }
         Update: {
           adresse?: string | null
+          conditions_paiement_defaut?: string | null
           created_at?: string
           devise?: string
           email?: string | null
@@ -349,7 +359,9 @@ export type Database = {
           logo_url?: string | null
           ninea?: string | null
           nom?: string
+          penalites_retard_defaut?: string | null
           rccm?: string | null
+          regime_fiscal?: string | null
           slogan?: string | null
           telephone?: string | null
           tva?: number
@@ -363,18 +375,24 @@ export type Database = {
           articles: Json
           client_id: string | null
           compte_mm: string | null
+          conditions_paiement: string | null
           created_at: string
           date_echeance: string | null
           date_facture: string
+          date_livraison: string | null
           deleted_at: string | null
           id: string
           mode_paiement: string | null
           montant_ht: number
           montant_regle: number
+          montant_retenue: number
           montant_ttc: number
           montant_tva: number
+          net_a_payer: number | null
           notes: string | null
           numero: string
+          penalites_retard: string | null
+          retenue_source_pct: number
           statut: string
           updated_at: string
           user_id: string
@@ -383,18 +401,24 @@ export type Database = {
           articles?: Json
           client_id?: string | null
           compte_mm?: string | null
+          conditions_paiement?: string | null
           created_at?: string
           date_echeance?: string | null
           date_facture?: string
+          date_livraison?: string | null
           deleted_at?: string | null
           id?: string
           mode_paiement?: string | null
           montant_ht?: number
           montant_regle?: number
+          montant_retenue?: number
           montant_ttc?: number
           montant_tva?: number
+          net_a_payer?: number | null
           notes?: string | null
           numero: string
+          penalites_retard?: string | null
+          retenue_source_pct?: number
           statut?: string
           updated_at?: string
           user_id: string
@@ -403,18 +427,24 @@ export type Database = {
           articles?: Json
           client_id?: string | null
           compte_mm?: string | null
+          conditions_paiement?: string | null
           created_at?: string
           date_echeance?: string | null
           date_facture?: string
+          date_livraison?: string | null
           deleted_at?: string | null
           id?: string
           mode_paiement?: string | null
           montant_ht?: number
           montant_regle?: number
+          montant_retenue?: number
           montant_ttc?: number
           montant_tva?: number
+          net_a_payer?: number | null
           notes?: string | null
           numero?: string
+          penalites_retard?: string | null
+          retenue_source_pct?: number
           statut?: string
           updated_at?: string
           user_id?: string
