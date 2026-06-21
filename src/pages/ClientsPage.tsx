@@ -213,6 +213,7 @@ export default function ClientsPage() {
                 <option>Inactif</option>
               </select>
             </div>
+            <FormField label="NINEA" value={form.ninea} onChange={v => setForm({ ...form, ninea: v })} />
             <div className="lg:col-span-2">
               <FormField label="Adresse" value={form.adresse} onChange={v => setForm({ ...form, adresse: v })} />
             </div>
