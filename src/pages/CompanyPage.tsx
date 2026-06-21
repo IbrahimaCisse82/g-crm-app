@@ -25,6 +25,9 @@ export default function CompanyPage() {
     tva: co?.tva ?? 18,
     devise: co?.devise || 'FCFA',
     logo_url: co?.logo_url || '',
+    regime_fiscal: co?.regime_fiscal || 'Réel',
+    conditions_paiement_defaut: co?.conditions_paiement_defaut || '',
+    penalites_retard_defaut: co?.penalites_retard_defaut || '',
   });
 
   useEffect(() => {
@@ -41,6 +44,9 @@ export default function CompanyPage() {
         tva: co.tva ?? 18,
         devise: co.devise || 'FCFA',
         logo_url: co.logo_url || '',
+        regime_fiscal: co.regime_fiscal || 'Réel',
+        conditions_paiement_defaut: co.conditions_paiement_defaut || '',
+        penalites_retard_defaut: co.penalites_retard_defaut || '',
       });
     }
   }, [co, prevId]);
