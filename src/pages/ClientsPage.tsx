@@ -39,7 +39,7 @@ export default function ClientsPage() {
       return;
     }
     setEditId(null);
-    setForm({ prenom: '', nom: '', email: '', telephone: '', entreprise: '', statut: 'Actif', adresse: '', notes: '' });
+    setForm({ prenom: '', nom: '', email: '', telephone: '', entreprise: '', statut: 'Actif', adresse: '', notes: '', ninea: '' });
     setShowModal(true);
   };
 
