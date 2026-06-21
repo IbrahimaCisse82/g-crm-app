@@ -176,6 +176,39 @@ export default function InvoicesPage() {
     setSaving(false);
   };
 
+  // Helper pour construire les données PDF avec toutes les mentions DGI
+  const pdfDataFor = (f: typeof factures.data[0]) => {
+    const c = clients.data.find(x => x.id === f.client_id);
+    return {
+      type: 'facture' as const,
+      numero: f.numero,
+      date: f.date_facture,
+      echeance: f.date_echeance,
+      date_livraison: f.date_livraison,
+      client: cliName(f.client_id),
+      clientDetails: c ? {
+        nom: `${c.prenom || ''} ${c.nom || ''}`.trim() || c.entreprise || '',
+        ninea: c.ninea,
+        adresse: c.adresse,
+        telephone: c.telephone,
+        email: c.email,
+      } : null,
+      articles: (f.articles as unknown as ArticleLine[]) || [],
+      montant_ht: f.montant_ht,
+      montant_tva: f.montant_tva,
+      montant_ttc: f.montant_ttc,
+      tva_pct: entreprise.data?.tva ?? 18,
+      retenue_source_pct: Number(f.retenue_source_pct) || 0,
+      montant_retenue: Number(f.montant_retenue) || 0,
+      net_a_payer: f.net_a_payer ?? f.montant_ttc,
+      mode_paiement: f.mode_paiement,
+      notes: f.notes,
+      conditions_paiement: f.conditions_paiement,
+      penalites_retard: f.penalites_retard,
+      entreprise: entreprise.data,
+    };
+  };
+
   const del = async () => {
     if (!deleteTarget) return;
     const fac = factures.data.find(f => f.id === deleteTarget.id);
