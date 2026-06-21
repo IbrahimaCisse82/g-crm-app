@@ -25,6 +25,9 @@ export default function CompanyPage() {
     tva: co?.tva ?? 18,
     devise: co?.devise || 'FCFA',
     logo_url: co?.logo_url || '',
+    regime_fiscal: co?.regime_fiscal || 'Réel',
+    conditions_paiement_defaut: co?.conditions_paiement_defaut || '',
+    penalites_retard_defaut: co?.penalites_retard_defaut || '',
   });
 
   useEffect(() => {
@@ -41,6 +44,9 @@ export default function CompanyPage() {
         tva: co.tva ?? 18,
         devise: co.devise || 'FCFA',
         logo_url: co.logo_url || '',
+        regime_fiscal: co.regime_fiscal || 'Réel',
+        conditions_paiement_defaut: co.conditions_paiement_defaut || '',
+        penalites_retard_defaut: co.penalites_retard_defaut || '',
       });
     }
   }, [co, prevId]);
@@ -176,6 +182,36 @@ export default function CompanyPage() {
                   <option>GNF</option>
                 </select>
               </div>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Régime fiscal (DGI)</label>
+              <select
+                className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary focus:ring-[3px] focus:ring-primary/10 w-full"
+                value={form.regime_fiscal}
+                onChange={e => setForm({ ...form, regime_fiscal: e.target.value })}
+              >
+                <option value="Réel">Réel</option>
+                <option value="Forfait">Forfait</option>
+                <option value="CGU">Contribution Globale Unique (CGU)</option>
+                <option value="Exonéré">Exonéré de TVA</option>
+              </select>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Conditions de paiement (par défaut sur factures)</label>
+              <textarea
+                className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans resize-y min-h-[60px] focus:border-primary w-full"
+                value={form.conditions_paiement_defaut}
+                onChange={e => setForm({ ...form, conditions_paiement_defaut: e.target.value })}
+                placeholder="Ex: Paiement à 30 jours fin de mois. Virement bancaire ou Wave."
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Pénalités de retard (par défaut)</label>
+              <textarea
+                className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans resize-y min-h-[60px] focus:border-primary w-full"
+                value={form.penalites_retard_defaut}
+                onChange={e => setForm({ ...form, penalites_retard_defaut: e.target.value })}
+              />
             </div>
           </div>
           <div className="mt-3.5 flex items-center justify-between gap-3">

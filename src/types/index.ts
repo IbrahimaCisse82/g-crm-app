@@ -24,7 +24,12 @@ export interface ArticleLine {
   nom: string;
   quantite: number;
   prix_unitaire: number;
+  /** Taux TVA spécifique à la ligne (en %). Si non défini, on utilise le taux global de l'entreprise. */
+  tva_pct?: number;
 }
+
+export const REGIMES_FISCAUX = ['Réel', 'Forfait', 'CGU', 'Exonéré'] as const;
+export type RegimeFiscal = typeof REGIMES_FISCAUX[number];
 
 // Journal categories for consistency
 export const JOURNAL_CATEGORIES = [

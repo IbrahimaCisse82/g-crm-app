@@ -19,7 +19,7 @@ export default function ClientsPage() {
   const [showModal, setShowModal] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
-  const [form, setForm] = useState({ prenom: '', nom: '', email: '', telephone: '', entreprise: '', statut: 'Actif', adresse: '', notes: '' });
+  const [form, setForm] = useState({ prenom: '', nom: '', email: '', telephone: '', entreprise: '', statut: 'Actif', adresse: '', notes: '', ninea: '' });
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
   const triggerRef = useRef(createModalTrigger);
 
@@ -39,7 +39,7 @@ export default function ClientsPage() {
       return;
     }
     setEditId(null);
-    setForm({ prenom: '', nom: '', email: '', telephone: '', entreprise: '', statut: 'Actif', adresse: '', notes: '' });
+    setForm({ prenom: '', nom: '', email: '', telephone: '', entreprise: '', statut: 'Actif', adresse: '', notes: '', ninea: '' });
     setShowModal(true);
   };
 
@@ -50,7 +50,7 @@ export default function ClientsPage() {
 
   const openEdit = (c: typeof clients.data[0]) => {
     setEditId(c.id);
-    setForm({ prenom: c.prenom, nom: c.nom, email: c.email || '', telephone: c.telephone || '', entreprise: c.entreprise || '', statut: c.statut, adresse: c.adresse || '', notes: c.notes || '' });
+    setForm({ prenom: c.prenom, nom: c.nom, email: c.email || '', telephone: c.telephone || '', entreprise: c.entreprise || '', statut: c.statut, adresse: c.adresse || '', notes: c.notes || '', ninea: c.ninea || '' });
     setShowModal(true);
   };
 
@@ -213,6 +213,7 @@ export default function ClientsPage() {
                 <option>Inactif</option>
               </select>
             </div>
+            <FormField label="NINEA" value={form.ninea} onChange={v => setForm({ ...form, ninea: v })} />
             <div className="lg:col-span-2">
               <FormField label="Adresse" value={form.adresse} onChange={v => setForm({ ...form, adresse: v })} />
             </div>

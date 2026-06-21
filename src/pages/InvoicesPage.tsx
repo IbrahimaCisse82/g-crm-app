@@ -26,7 +26,11 @@ const defaultForm = {
   mode_paiement: 'Espèce',
   date_facture: new Date().toISOString().slice(0, 10),
   date_echeance: '',
+  date_livraison: '',
   notes: '',
+  retenue_source_pct: 0,
+  conditions_paiement: '',
+  penalites_retard: '',
 };
 
 export default function InvoicesPage() {
@@ -65,9 +69,18 @@ export default function InvoicesPage() {
   const pagination = usePagination(sorted);
 
   const tva = entreprise.data?.tva ?? 18;
-  const totalHT = articles.reduce((s, a) => s + a.quantite * a.prix_unitaire, 0);
-  const totalTVA = Math.round(totalHT * tva / 100);
+  // Calcul TVA par ligne (respecte le taux spécifique défini sur chaque article)
+  const lineCalc = articles.map(a => {
+    const baseHT = (a.quantite || 0) * (a.prix_unitaire || 0);
+    const rate = a.tva_pct ?? tva;
+    return { baseHT, rate, tva: baseHT * rate / 100 };
+  });
+  const totalHT = lineCalc.reduce((s, l) => s + l.baseHT, 0);
+  const totalTVA = Math.round(lineCalc.reduce((s, l) => s + l.tva, 0));
   const totalTTC = totalHT + totalTVA;
+  const retenuePct = Number(form.retenue_source_pct) || 0;
+  const montantRetenue = Math.round(totalHT * retenuePct / 100);
+  const netAPayer = totalTTC - montantRetenue;
 
   const openNew = () => {
     // Free plan: limit invoices per month
@@ -81,7 +94,11 @@ export default function InvoicesPage() {
       return;
     }
     setEditId(null);
-    setForm(defaultForm);
+    setForm({
+      ...defaultForm,
+      conditions_paiement: entreprise.data?.conditions_paiement_defaut || '',
+      penalites_retard: entreprise.data?.penalites_retard_defaut || '',
+    });
     setArticles([{ nom: '', quantite: 1, prix_unitaire: 0 }]);
     setShowModal(true);
   };
@@ -89,14 +106,19 @@ export default function InvoicesPage() {
   const openEdit = (f: typeof factures.data[0]) => {
     setEditId(f.id);
     const arts = Array.isArray(f.articles) ? (f.articles as unknown as ArticleLine[]).map(a => ({
-      nom: a.nom || '', quantite: a.quantite || 1, prix_unitaire: a.prix_unitaire || 0
+      nom: a.nom || '', quantite: a.quantite || 1, prix_unitaire: a.prix_unitaire || 0,
+      tva_pct: typeof a.tva_pct === 'number' ? a.tva_pct : undefined,
     })) : [{ nom: '', quantite: 1, prix_unitaire: 0 }];
     setForm({
       client_id: f.client_id || '',
       mode_paiement: f.mode_paiement || 'Espèce',
       date_facture: f.date_facture,
       date_echeance: f.date_echeance || '',
+      date_livraison: f.date_livraison || '',
       notes: f.notes || '',
+      retenue_source_pct: Number(f.retenue_source_pct) || 0,
+      conditions_paiement: f.conditions_paiement || entreprise.data?.conditions_paiement_defaut || '',
+      penalites_retard: f.penalites_retard || entreprise.data?.penalites_retard_defaut || '',
     });
     setArticles(arts);
     setShowModal(true);
@@ -109,7 +131,7 @@ export default function InvoicesPage() {
 
   const addArticleLine = () => setArticles([...articles, { nom: '', quantite: 1, prix_unitaire: 0 }]);
   const removeArticleLine = (i: number) => setArticles(articles.filter((_, idx) => idx !== i));
-  const updateArticle = (i: number, field: keyof ArticleLine, value: string | number) => {
+  const updateArticle = (i: number, field: keyof ArticleLine, value: string | number | undefined) => {
     setArticles(articles.map((a, idx) => idx === i ? { ...a, [field]: value } : a));
   };
   const selectProduct = (i: number, produitId: string) => {
@@ -122,22 +144,69 @@ export default function InvoicesPage() {
     if (form.date_echeance && form.date_echeance < form.date_facture) { toast.error("La date d'échéance doit être après la date de facture"); return; }
     const validArticles = articles.filter(a => a.nom);
     if (validArticles.some(a => a.quantite <= 0 || a.prix_unitaire < 0)) { toast.error('Vérifiez les quantités et prix des articles'); return; }
+    // Calcul TVA par ligne
     const ht = validArticles.reduce((s, a) => s + a.quantite * a.prix_unitaire, 0);
-    const tvaMontant = Math.round(ht * tva / 100);
+    const tvaMontant = Math.round(validArticles.reduce((s, a) => {
+      const rate = a.tva_pct ?? tva;
+      return s + (a.quantite * a.prix_unitaire * rate / 100);
+    }, 0));
     const ttc = ht + tvaMontant;
+    const retenue = Math.round(ht * retenuePct / 100);
+    const net = ttc - retenue;
+    const extra = {
+      retenue_source_pct: retenuePct,
+      montant_retenue: retenue,
+      net_a_payer: net,
+      date_livraison: form.date_livraison || null,
+      conditions_paiement: form.conditions_paiement || null,
+      penalites_retard: form.penalites_retard || null,
+    };
     setSaving(true);
     try {
       if (editId) {
-        await factures.update(editId, { client_id: form.client_id, articles: validArticles as unknown as Json, montant_ht: ht, montant_tva: tvaMontant, montant_ttc: ttc, mode_paiement: form.mode_paiement, date_facture: form.date_facture, date_echeance: form.date_echeance || null, notes: form.notes || null });
+        await factures.update(editId, { client_id: form.client_id, articles: validArticles as unknown as Json, montant_ht: ht, montant_tva: tvaMontant, montant_ttc: ttc, mode_paiement: form.mode_paiement, date_facture: form.date_facture, date_echeance: form.date_echeance || null, notes: form.notes || null, ...extra });
         toast.success('Facture modifiée');
       } else {
         const numero = await factures.nextNumero();
-        await factures.add({ numero, client_id: form.client_id, articles: validArticles as unknown as Json, montant_ht: ht, montant_tva: tvaMontant, montant_ttc: ttc, montant_regle: 0, mode_paiement: form.mode_paiement, date_facture: form.date_facture, date_echeance: form.date_echeance || null, notes: form.notes || null, statut: 'En attente' });
+        await factures.add({ numero, client_id: form.client_id, articles: validArticles as unknown as Json, montant_ht: ht, montant_tva: tvaMontant, montant_ttc: ttc, montant_regle: 0, mode_paiement: form.mode_paiement, date_facture: form.date_facture, date_echeance: form.date_echeance || null, notes: form.notes || null, statut: 'En attente', ...extra });
         toast.success('Facture créée');
       }
       setShowModal(false);
     } catch (e: unknown) { toast.error(e instanceof Error ? e.message : 'Erreur'); }
     setSaving(false);
+  };
+
+  // Helper pour construire les données PDF avec toutes les mentions DGI
+  const pdfDataFor = (f: typeof factures.data[0]) => {
+    const c = clients.data.find(x => x.id === f.client_id);
+    return {
+      type: 'facture' as const,
+      numero: f.numero,
+      date: f.date_facture,
+      echeance: f.date_echeance,
+      date_livraison: f.date_livraison,
+      client: cliName(f.client_id),
+      clientDetails: c ? {
+        nom: `${c.prenom || ''} ${c.nom || ''}`.trim() || c.entreprise || '',
+        ninea: c.ninea,
+        adresse: c.adresse,
+        telephone: c.telephone,
+        email: c.email,
+      } : null,
+      articles: (f.articles as unknown as ArticleLine[]) || [],
+      montant_ht: f.montant_ht,
+      montant_tva: f.montant_tva,
+      montant_ttc: f.montant_ttc,
+      tva_pct: entreprise.data?.tva ?? 18,
+      retenue_source_pct: Number(f.retenue_source_pct) || 0,
+      montant_retenue: Number(f.montant_retenue) || 0,
+      net_a_payer: f.net_a_payer ?? f.montant_ttc,
+      mode_paiement: f.mode_paiement,
+      notes: f.notes,
+      conditions_paiement: f.conditions_paiement,
+      penalites_retard: f.penalites_retard,
+      entreprise: entreprise.data,
+    };
   };
 
   const del = async () => {
@@ -222,8 +291,8 @@ export default function InvoicesPage() {
                   </div>
                 </div>
                 <div className="flex gap-1 mt-2">
-                  <button onClick={() => downloadPdf({ type: 'facture', numero: f.numero, date: f.date_facture, echeance: f.date_echeance, client: cliName(f.client_id), articles: (f.articles as unknown as ArticleLine[]) || [], montant_ht: f.montant_ht, montant_tva: f.montant_tva, montant_ttc: f.montant_ttc, tva_pct: entreprise.data?.tva ?? 18, mode_paiement: f.mode_paiement, notes: f.notes, entreprise: entreprise.data })} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs"><FileText className="h-3.5 w-3.5" /></button>
-                  <button onClick={() => shareDocument({ type: 'facture', numero: f.numero, client: cliName(f.client_id), montant_ttc: f.montant_ttc, devise: entreprise.data?.devise, date: f.date_facture, pdfData: { type: 'facture', numero: f.numero, date: f.date_facture, echeance: f.date_echeance, client: cliName(f.client_id), articles: (f.articles as unknown as ArticleLine[]) || [], montant_ht: f.montant_ht, montant_tva: f.montant_tva, montant_ttc: f.montant_ttc, tva_pct: entreprise.data?.tva ?? 18, mode_paiement: f.mode_paiement, notes: f.notes, entreprise: entreprise.data } })} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs"><Share2 className="h-3.5 w-3.5" /></button>
+                  <button onClick={() => downloadPdf(pdfDataFor(f))} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs"><FileText className="h-3.5 w-3.5" /></button>
+                  <button onClick={() => shareDocument({ type: 'facture', numero: f.numero, client: cliName(f.client_id), montant_ttc: f.montant_ttc, devise: entreprise.data?.devise, date: f.date_facture, pdfData: pdfDataFor(f) })} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs"><Share2 className="h-3.5 w-3.5" /></button>
                   {f.statut !== 'Payée' && <button onClick={() => openEdit(f)} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs"><Pencil className="h-3.5 w-3.5" /></button>}
                   {(f.statut === 'En attente' || f.statut === 'En retard' || f.statut === 'Partielle') && <button onClick={() => openPayModal(f)} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs"><CreditCard className="h-3.5 w-3.5" /></button>}
                   {f.statut !== 'Payée' && <button onClick={() => setDeleteTarget({ id: f.id, numero: f.numero })} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs"><Trash2 className="h-3.5 w-3.5" /></button>}
@@ -270,8 +339,8 @@ export default function InvoicesPage() {
                     <td className="px-3.5 py-3 text-sm border-b border-border"><StatusBadge status={f.statut} /></td>
                     <td className="px-3.5 py-3 text-sm border-b border-border">
                       <div className="flex gap-1">
-                        <button onClick={() => downloadPdf({ type: 'facture', numero: f.numero, date: f.date_facture, echeance: f.date_echeance, client: cliName(f.client_id), articles: (f.articles as unknown as ArticleLine[]) || [], montant_ht: f.montant_ht, montant_tva: f.montant_tva, montant_ttc: f.montant_ttc, tva_pct: entreprise.data?.tva ?? 18, mode_paiement: f.mode_paiement, notes: f.notes, entreprise: entreprise.data })} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-primary hover:text-primary transition-all" title="PDF"><FileText className="h-3.5 w-3.5" /></button>
-                        <button onClick={() => shareDocument({ type: 'facture', numero: f.numero, client: cliName(f.client_id), montant_ttc: f.montant_ttc, devise: entreprise.data?.devise, date: f.date_facture, pdfData: { type: 'facture', numero: f.numero, date: f.date_facture, echeance: f.date_echeance, client: cliName(f.client_id), articles: (f.articles as unknown as ArticleLine[]) || [], montant_ht: f.montant_ht, montant_tva: f.montant_tva, montant_ttc: f.montant_ttc, tva_pct: entreprise.data?.tva ?? 18, mode_paiement: f.mode_paiement, notes: f.notes, entreprise: entreprise.data } })} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-primary hover:text-primary transition-all" title="Partager"><Share2 className="h-3.5 w-3.5" /></button>
+                        <button onClick={() => downloadPdf(pdfDataFor(f))} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-primary hover:text-primary transition-all" title="PDF"><FileText className="h-3.5 w-3.5" /></button>
+                        <button onClick={() => shareDocument({ type: 'facture', numero: f.numero, client: cliName(f.client_id), montant_ttc: f.montant_ttc, devise: entreprise.data?.devise, date: f.date_facture, pdfData: pdfDataFor(f) })} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-primary hover:text-primary transition-all" title="Partager"><Share2 className="h-3.5 w-3.5" /></button>
                         {f.statut !== 'Payée' && <button onClick={() => openEdit(f)} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-primary hover:text-primary transition-all" title="Modifier"><Pencil className="h-3.5 w-3.5" /></button>}
                         {(f.statut === 'En attente' || f.statut === 'En retard' || f.statut === 'Partielle') && <button onClick={() => openPayModal(f)} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-success hover:text-success transition-all" title="Paiement"><CreditCard className="h-3.5 w-3.5" /></button>}
                         {f.statut !== 'Payée' && <button onClick={() => setDeleteTarget({ id: f.id, numero: f.numero })} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-destructive hover:text-destructive transition-all" title="Supprimer"><Trash2 className="h-3.5 w-3.5" /></button>}
@@ -357,13 +426,19 @@ export default function InvoicesPage() {
                 <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Date échéance</label>
                 <input type="date" className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.date_echeance} onChange={e => setForm({ ...form, date_echeance: e.target.value })} />
               </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Date de livraison</label>
+                <input type="date" className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.date_livraison} onChange={e => setForm({ ...form, date_livraison: e.target.value })} />
+              </div>
             </div>
             <div className="mb-4">
               <div className="flex items-center justify-between mb-2">
-                <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Articles</label>
+                <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Articles (TVA modifiable par ligne)</label>
                 <button onClick={addArticleLine} className="text-xs text-primary font-bold hover:underline">＋ Ajouter</button>
               </div>
-              {articles.map((a, i) => (
+              {articles.map((a, i) => {
+                const lineRate = a.tva_pct ?? tva;
+                return (
                 <div key={i} className="flex gap-2 items-end mb-2 flex-wrap">
                   <div className="flex-1 min-w-[140px]">
                     <select className="bg-background border-[1.5px] border-border rounded-lg py-2 px-2.5 text-xs text-foreground outline-none font-sans focus:border-primary w-full mb-1" value="" onChange={e => selectProduct(i, e.target.value)}>
@@ -372,17 +447,57 @@ export default function InvoicesPage() {
                     </select>
                     <input className="bg-background border-[1.5px] border-border rounded-lg py-2 px-2.5 text-xs text-foreground outline-none font-sans focus:border-primary w-full" placeholder="Désignation" value={a.nom} onChange={e => updateArticle(i, 'nom', e.target.value)} />
                   </div>
-                  <input type="number" min="1" className="bg-background border-[1.5px] border-border rounded-lg py-2 px-2.5 text-xs text-foreground outline-none font-sans focus:border-primary w-16" placeholder="Qté" value={a.quantite} onChange={e => updateArticle(i, 'quantite', Number(e.target.value))} />
-                  <input type="number" min="0" className="bg-background border-[1.5px] border-border rounded-lg py-2 px-2.5 text-xs text-foreground outline-none font-sans focus:border-primary w-24" placeholder="Prix" value={a.prix_unitaire} onChange={e => updateArticle(i, 'prix_unitaire', Number(e.target.value))} />
-                  <span className="text-xs font-bold text-foreground w-24 text-right">{fmt(a.quantite * a.prix_unitaire)}</span>
+                  <input type="number" min="1" className="bg-background border-[1.5px] border-border rounded-lg py-2 px-2.5 text-xs text-foreground outline-none font-sans focus:border-primary w-14" placeholder="Qté" value={a.quantite} onChange={e => updateArticle(i, 'quantite', Number(e.target.value))} />
+                  <input type="number" min="0" className="bg-background border-[1.5px] border-border rounded-lg py-2 px-2.5 text-xs text-foreground outline-none font-sans focus:border-primary w-24" placeholder="Prix HT" value={a.prix_unitaire} onChange={e => updateArticle(i, 'prix_unitaire', Number(e.target.value))} />
+                  <select
+                    className="bg-background border-[1.5px] border-border rounded-lg py-2 px-1.5 text-xs text-foreground outline-none font-sans focus:border-primary w-20"
+                    title="TVA de la ligne"
+                    value={a.tva_pct ?? ''}
+                    onChange={e => updateArticle(i, 'tva_pct', e.target.value === '' ? undefined : Number(e.target.value))}
+                  >
+                    <option value="">{tva}% (déf.)</option>
+                    <option value="0">0%</option>
+                    <option value="10">10%</option>
+                    <option value="18">18%</option>
+                  </select>
+                  <span className="text-xs font-bold text-foreground w-24 text-right">{fmt(a.quantite * a.prix_unitaire * (1 + lineRate / 100))}</span>
                   {articles.length > 1 && <button onClick={() => removeArticleLine(i)} className="text-destructive text-xs px-1">✕</button>}
                 </div>
-              ))}
+                );
+              })}
             </div>
             <div className="bg-background border border-border rounded-lg p-3 mb-3.5">
               <div className="flex justify-between text-xs mb-1"><span>Total HT</span><span className="font-bold">{fmt(totalHT)}</span></div>
-              <div className="flex justify-between text-xs mb-1"><span>TVA ({tva}%)</span><span className="font-bold">{fmt(totalTVA)}</span></div>
+              <div className="flex justify-between text-xs mb-1"><span>Total TVA</span><span className="font-bold">{fmt(totalTVA)}</span></div>
               <div className="flex justify-between text-sm font-black border-t border-border pt-1.5 mt-1.5"><span>Total TTC</span><span className="text-primary">{fmt(totalTTC)}</span></div>
+              {retenuePct > 0 && (
+                <>
+                  <div className="flex justify-between text-xs mt-1.5 text-amber-700 dark:text-amber-400"><span>Retenue à la source ({retenuePct}%)</span><span className="font-bold">− {fmt(montantRetenue)}</span></div>
+                  <div className="flex justify-between text-sm font-black border-t border-success pt-1.5 mt-1.5 text-success"><span>Net à payer</span><span>{fmt(netAPayer)}</span></div>
+                </>
+              )}
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5 mb-3.5">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Retenue à la source (BRS, %)</label>
+                <select
+                  className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full"
+                  value={form.retenue_source_pct}
+                  onChange={e => setForm({ ...form, retenue_source_pct: Number(e.target.value) })}
+                >
+                  <option value="0">Aucune</option>
+                  <option value="5">5% (BRS — prestations)</option>
+                  <option value="10">10%</option>
+                </select>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Conditions de paiement</label>
+                <input className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.conditions_paiement} onChange={e => setForm({ ...form, conditions_paiement: e.target.value })} placeholder="Ex: 30 jours fin de mois" />
+              </div>
+              <div className="lg:col-span-2 flex flex-col gap-1.5">
+                <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Pénalités de retard</label>
+                <textarea className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans resize-y min-h-[50px] focus:border-primary w-full" value={form.penalites_retard} onChange={e => setForm({ ...form, penalites_retard: e.target.value })} maxLength={400} />
+              </div>
             </div>
             <div className="flex flex-col gap-1.5">
               <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Notes</label>
