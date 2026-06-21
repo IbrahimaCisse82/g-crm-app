@@ -19,7 +19,7 @@ export default function ClientsPage() {
   const [showModal, setShowModal] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
-  const [form, setForm] = useState({ prenom: '', nom: '', email: '', telephone: '', entreprise: '', statut: 'Actif', adresse: '', notes: '' });
+  const [form, setForm] = useState({ prenom: '', nom: '', email: '', telephone: '', entreprise: '', statut: 'Actif', adresse: '', notes: '', ninea: '' });
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
   const triggerRef = useRef(createModalTrigger);
 
