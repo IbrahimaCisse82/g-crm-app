@@ -69,9 +69,18 @@ export default function InvoicesPage() {
   const pagination = usePagination(sorted);
 
   const tva = entreprise.data?.tva ?? 18;
-  const totalHT = articles.reduce((s, a) => s + a.quantite * a.prix_unitaire, 0);
-  const totalTVA = Math.round(totalHT * tva / 100);
+  // Calcul TVA par ligne (respecte le taux spécifique défini sur chaque article)
+  const lineCalc = articles.map(a => {
+    const baseHT = (a.quantite || 0) * (a.prix_unitaire || 0);
+    const rate = a.tva_pct ?? tva;
+    return { baseHT, rate, tva: baseHT * rate / 100 };
+  });
+  const totalHT = lineCalc.reduce((s, l) => s + l.baseHT, 0);
+  const totalTVA = Math.round(lineCalc.reduce((s, l) => s + l.tva, 0));
   const totalTTC = totalHT + totalTVA;
+  const retenuePct = Number(form.retenue_source_pct) || 0;
+  const montantRetenue = Math.round(totalHT * retenuePct / 100);
+  const netAPayer = totalTTC - montantRetenue;
 
   const openNew = () => {
     // Free plan: limit invoices per month
