@@ -426,13 +426,19 @@ export default function InvoicesPage() {
                 <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Date échéance</label>
                 <input type="date" className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.date_echeance} onChange={e => setForm({ ...form, date_echeance: e.target.value })} />
               </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Date de livraison</label>
+                <input type="date" className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.date_livraison} onChange={e => setForm({ ...form, date_livraison: e.target.value })} />
+              </div>
             </div>
             <div className="mb-4">
               <div className="flex items-center justify-between mb-2">
-                <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Articles</label>
+                <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Articles (TVA modifiable par ligne)</label>
                 <button onClick={addArticleLine} className="text-xs text-primary font-bold hover:underline">＋ Ajouter</button>
               </div>
-              {articles.map((a, i) => (
+              {articles.map((a, i) => {
+                const lineRate = a.tva_pct ?? tva;
+                return (
                 <div key={i} className="flex gap-2 items-end mb-2 flex-wrap">
                   <div className="flex-1 min-w-[140px]">
                     <select className="bg-background border-[1.5px] border-border rounded-lg py-2 px-2.5 text-xs text-foreground outline-none font-sans focus:border-primary w-full mb-1" value="" onChange={e => selectProduct(i, e.target.value)}>
@@ -441,17 +447,57 @@ export default function InvoicesPage() {
                     </select>
                     <input className="bg-background border-[1.5px] border-border rounded-lg py-2 px-2.5 text-xs text-foreground outline-none font-sans focus:border-primary w-full" placeholder="Désignation" value={a.nom} onChange={e => updateArticle(i, 'nom', e.target.value)} />
                   </div>
-                  <input type="number" min="1" className="bg-background border-[1.5px] border-border rounded-lg py-2 px-2.5 text-xs text-foreground outline-none font-sans focus:border-primary w-16" placeholder="Qté" value={a.quantite} onChange={e => updateArticle(i, 'quantite', Number(e.target.value))} />
-                  <input type="number" min="0" className="bg-background border-[1.5px] border-border rounded-lg py-2 px-2.5 text-xs text-foreground outline-none font-sans focus:border-primary w-24" placeholder="Prix" value={a.prix_unitaire} onChange={e => updateArticle(i, 'prix_unitaire', Number(e.target.value))} />
-                  <span className="text-xs font-bold text-foreground w-24 text-right">{fmt(a.quantite * a.prix_unitaire)}</span>
+                  <input type="number" min="1" className="bg-background border-[1.5px] border-border rounded-lg py-2 px-2.5 text-xs text-foreground outline-none font-sans focus:border-primary w-14" placeholder="Qté" value={a.quantite} onChange={e => updateArticle(i, 'quantite', Number(e.target.value))} />
+                  <input type="number" min="0" className="bg-background border-[1.5px] border-border rounded-lg py-2 px-2.5 text-xs text-foreground outline-none font-sans focus:border-primary w-24" placeholder="Prix HT" value={a.prix_unitaire} onChange={e => updateArticle(i, 'prix_unitaire', Number(e.target.value))} />
+                  <select
+                    className="bg-background border-[1.5px] border-border rounded-lg py-2 px-1.5 text-xs text-foreground outline-none font-sans focus:border-primary w-20"
+                    title="TVA de la ligne"
+                    value={a.tva_pct ?? ''}
+                    onChange={e => updateArticle(i, 'tva_pct', e.target.value === '' ? undefined : Number(e.target.value))}
+                  >
+                    <option value="">{tva}% (déf.)</option>
+                    <option value="0">0%</option>
+                    <option value="10">10%</option>
+                    <option value="18">18%</option>
+                  </select>
+                  <span className="text-xs font-bold text-foreground w-24 text-right">{fmt(a.quantite * a.prix_unitaire * (1 + lineRate / 100))}</span>
                   {articles.length > 1 && <button onClick={() => removeArticleLine(i)} className="text-destructive text-xs px-1">✕</button>}
                 </div>
-              ))}
+                );
+              })}
             </div>
             <div className="bg-background border border-border rounded-lg p-3 mb-3.5">
               <div className="flex justify-between text-xs mb-1"><span>Total HT</span><span className="font-bold">{fmt(totalHT)}</span></div>
-              <div className="flex justify-between text-xs mb-1"><span>TVA ({tva}%)</span><span className="font-bold">{fmt(totalTVA)}</span></div>
+              <div className="flex justify-between text-xs mb-1"><span>Total TVA</span><span className="font-bold">{fmt(totalTVA)}</span></div>
               <div className="flex justify-between text-sm font-black border-t border-border pt-1.5 mt-1.5"><span>Total TTC</span><span className="text-primary">{fmt(totalTTC)}</span></div>
+              {retenuePct > 0 && (
+                <>
+                  <div className="flex justify-between text-xs mt-1.5 text-amber-700 dark:text-amber-400"><span>Retenue à la source ({retenuePct}%)</span><span className="font-bold">− {fmt(montantRetenue)}</span></div>
+                  <div className="flex justify-between text-sm font-black border-t border-success pt-1.5 mt-1.5 text-success"><span>Net à payer</span><span>{fmt(netAPayer)}</span></div>
+                </>
+              )}
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5 mb-3.5">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Retenue à la source (BRS, %)</label>
+                <select
+                  className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full"
+                  value={form.retenue_source_pct}
+                  onChange={e => setForm({ ...form, retenue_source_pct: Number(e.target.value) })}
+                >
+                  <option value="0">Aucune</option>
+                  <option value="5">5% (BRS — prestations)</option>
+                  <option value="10">10%</option>
+                </select>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Conditions de paiement</label>
+                <input className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans focus:border-primary w-full" value={form.conditions_paiement} onChange={e => setForm({ ...form, conditions_paiement: e.target.value })} placeholder="Ex: 30 jours fin de mois" />
+              </div>
+              <div className="lg:col-span-2 flex flex-col gap-1.5">
+                <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Pénalités de retard</label>
+                <textarea className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans resize-y min-h-[50px] focus:border-primary w-full" value={form.penalites_retard} onChange={e => setForm({ ...form, penalites_retard: e.target.value })} maxLength={400} />
+              </div>
             </div>
             <div className="flex flex-col gap-1.5">
               <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Notes</label>
