@@ -50,7 +50,7 @@ export default function ClientsPage() {
 
   const openEdit = (c: typeof clients.data[0]) => {
     setEditId(c.id);
-    setForm({ prenom: c.prenom, nom: c.nom, email: c.email || '', telephone: c.telephone || '', entreprise: c.entreprise || '', statut: c.statut, adresse: c.adresse || '', notes: c.notes || '' });
+    setForm({ prenom: c.prenom, nom: c.nom, email: c.email || '', telephone: c.telephone || '', entreprise: c.entreprise || '', statut: c.statut, adresse: c.adresse || '', notes: c.notes || '', ninea: c.ninea || '' });
     setShowModal(true);
   };
 
