@@ -144,17 +144,31 @@ export default function InvoicesPage() {
     if (form.date_echeance && form.date_echeance < form.date_facture) { toast.error("La date d'échéance doit être après la date de facture"); return; }
     const validArticles = articles.filter(a => a.nom);
     if (validArticles.some(a => a.quantite <= 0 || a.prix_unitaire < 0)) { toast.error('Vérifiez les quantités et prix des articles'); return; }
+    // Calcul TVA par ligne
     const ht = validArticles.reduce((s, a) => s + a.quantite * a.prix_unitaire, 0);
-    const tvaMontant = Math.round(ht * tva / 100);
+    const tvaMontant = Math.round(validArticles.reduce((s, a) => {
+      const rate = a.tva_pct ?? tva;
+      return s + (a.quantite * a.prix_unitaire * rate / 100);
+    }, 0));
     const ttc = ht + tvaMontant;
+    const retenue = Math.round(ht * retenuePct / 100);
+    const net = ttc - retenue;
+    const extra = {
+      retenue_source_pct: retenuePct,
+      montant_retenue: retenue,
+      net_a_payer: net,
+      date_livraison: form.date_livraison || null,
+      conditions_paiement: form.conditions_paiement || null,
+      penalites_retard: form.penalites_retard || null,
+    };
     setSaving(true);
     try {
       if (editId) {
-        await factures.update(editId, { client_id: form.client_id, articles: validArticles as unknown as Json, montant_ht: ht, montant_tva: tvaMontant, montant_ttc: ttc, mode_paiement: form.mode_paiement, date_facture: form.date_facture, date_echeance: form.date_echeance || null, notes: form.notes || null });
+        await factures.update(editId, { client_id: form.client_id, articles: validArticles as unknown as Json, montant_ht: ht, montant_tva: tvaMontant, montant_ttc: ttc, mode_paiement: form.mode_paiement, date_facture: form.date_facture, date_echeance: form.date_echeance || null, notes: form.notes || null, ...extra });
         toast.success('Facture modifiée');
       } else {
         const numero = await factures.nextNumero();
-        await factures.add({ numero, client_id: form.client_id, articles: validArticles as unknown as Json, montant_ht: ht, montant_tva: tvaMontant, montant_ttc: ttc, montant_regle: 0, mode_paiement: form.mode_paiement, date_facture: form.date_facture, date_echeance: form.date_echeance || null, notes: form.notes || null, statut: 'En attente' });
+        await factures.add({ numero, client_id: form.client_id, articles: validArticles as unknown as Json, montant_ht: ht, montant_tva: tvaMontant, montant_ttc: ttc, montant_regle: 0, mode_paiement: form.mode_paiement, date_facture: form.date_facture, date_echeance: form.date_echeance || null, notes: form.notes || null, statut: 'En attente', ...extra });
         toast.success('Facture créée');
       }
       setShowModal(false);
