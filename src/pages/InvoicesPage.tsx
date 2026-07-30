@@ -437,11 +437,22 @@ export default function InvoicesPage() {
 
       {/* Create/Edit modal */}
       <Dialog open={showModal} onOpenChange={setShowModal}>
-        <DialogContent className="max-w-[640px] max-h-[90vh] overflow-y-auto">
+        <DialogContent className={`${showPreview ? 'max-w-[1120px]' : 'max-w-[640px]'} max-h-[90vh] overflow-y-auto`}>
           <DialogHeader>
-            <DialogTitle>{editId ? 'Modifier Facture' : 'Nouvelle Facture'}</DialogTitle>
+            <DialogTitle className="flex items-center justify-between gap-3 pr-6">
+              <span>{editId ? 'Modifier Facture' : 'Nouvelle Facture'}</span>
+              <button
+                type="button"
+                onClick={() => setShowPreview(v => !v)}
+                className="bg-card border-[1.5px] border-border text-muted-foreground py-1.5 px-3 rounded-lg text-[11px] font-bold hover:border-primary hover:text-primary transition-all flex items-center gap-1.5"
+              >
+                {showPreview ? <><EyeOff className="h-3.5 w-3.5" /> Masquer l'aperçu</> : <><Eye className="h-3.5 w-3.5" /> Aperçu PDF</>}
+              </button>
+            </DialogTitle>
           </DialogHeader>
-          <div>
+          <div className="flex flex-col lg:flex-row gap-5 items-start">
+            <div className="flex-1 min-w-0 w-full">
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5 mb-4">
               <div className="flex flex-col gap-1.5">
                 <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Client *</label>
