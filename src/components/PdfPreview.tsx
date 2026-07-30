@@ -136,7 +136,7 @@ export function PdfPreview({ data, className }: PdfPreviewProps) {
         <PdfFrame html={html} scale={scale} />
       </div>
 
-      <Dialog open={fullscreen} onOpenChange={setFullscreen}>
+      <Dialog open={fullscreen} onOpenChange={(o) => { setFullscreen(o); setZoom(o ? 1 : null); }}>
         <DialogContent className="max-w-[96vw] w-[96vw] h-[94vh] p-4 overflow-hidden flex flex-col">
           <div className="flex items-center justify-between gap-2 mb-1">
             <span className="text-sm font-bold">Aperçu plein écran — {data.numero}</span>
