@@ -541,7 +541,19 @@ export default function InvoicesPage() {
               <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Notes</label>
               <textarea className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans resize-y min-h-[60px] focus:border-primary w-full" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} maxLength={500} />
             </div>
+            </div>
+
+            {showPreview && (
+              <div className="lg:w-[46%] lg:shrink-0">
+                <div className="lg:sticky lg:top-0">
+                  <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2">Aperçu PDF (temps réel)</div>
+                  <PdfPreview data={livePdfData} />
+                  <p className="text-[10px] text-muted-foreground mt-2">Mentions DGI (BRS, régime fiscal, livraison, conditions) mises à jour automatiquement.</p>
+                </div>
+              </div>
+            )}
           </div>
+
           <DialogFooter>
             <button onClick={() => setShowModal(false)} className="bg-card border-[1.5px] border-border text-muted-foreground py-2 px-4 rounded-lg text-xs font-bold hover:bg-background transition-all">Annuler</button>
             <button onClick={save} disabled={saving} className="gradient-primary text-primary-foreground border-none py-2 px-4 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all disabled:opacity-60 flex items-center gap-1.5">
