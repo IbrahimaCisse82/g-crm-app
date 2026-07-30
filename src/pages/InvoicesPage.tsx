@@ -11,7 +11,9 @@ import { useDateFilter } from '@/hooks/useDateFilter';
 import { useSortableTable } from '@/hooks/useSortableTable';
 import { exportCsv } from '@/utils/exportCsv';
 import { toast } from 'sonner';
-import { downloadPdf } from '@/utils/generatePdf';
+import { downloadPdf, type PdfData } from '@/utils/generatePdf';
+import { PdfPreview } from '@/components/PdfPreview';
+
 import { shareDocument } from '@/utils/shareDocument';
 import { formatDate } from '@/lib/formatDate';
 import type { ArticleLine } from '@/types';
