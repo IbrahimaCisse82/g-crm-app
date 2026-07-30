@@ -209,6 +209,42 @@ export default function InvoicesPage() {
     };
   };
 
+  // Données PDF en direct depuis le formulaire (prévisualisation temps réel)
+  const livePdfData: PdfData = (() => {
+    const c = clients.data.find(x => x.id === form.client_id);
+    const editing = editId ? factures.data.find(f => f.id === editId) : null;
+    return {
+      type: 'facture',
+      numero: editing?.numero || 'APERÇU',
+      date: form.date_facture,
+      echeance: form.date_echeance || null,
+      date_livraison: form.date_livraison || null,
+      client: c ? `${c.prenom || ''} ${c.nom || ''}`.trim() : '— Client —',
+      clientDetails: c ? {
+        nom: `${c.prenom || ''} ${c.nom || ''}`.trim() || c.entreprise || '',
+        ninea: c.ninea,
+        adresse: c.adresse,
+        telephone: c.telephone,
+        email: c.email,
+      } : null,
+      articles: articles.filter(a => a.nom),
+      montant_ht: totalHT,
+      montant_tva: totalTVA,
+      montant_ttc: totalTTC,
+      tva_pct: tva,
+      retenue_source_pct: retenuePct,
+      montant_retenue: montantRetenue,
+      net_a_payer: netAPayer,
+      mode_paiement: form.mode_paiement,
+      notes: form.notes || null,
+      conditions_paiement: form.conditions_paiement || null,
+      penalites_retard: form.penalites_retard || null,
+      entreprise: entreprise.data,
+    };
+  })();
+
+
+
   const del = async () => {
     if (!deleteTarget) return;
     const fac = factures.data.find(f => f.id === deleteTarget.id);
