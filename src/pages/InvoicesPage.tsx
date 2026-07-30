@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { FileText, Share2, Pencil, CreditCard, Trash2, Download, Save } from 'lucide-react';
+import { FileText, Share2, Pencil, CreditCard, Trash2, Download, Save, Eye, EyeOff } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { StatusBadge, PayBadge } from '@/components/StatusBadge';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
@@ -11,7 +11,9 @@ import { useDateFilter } from '@/hooks/useDateFilter';
 import { useSortableTable } from '@/hooks/useSortableTable';
 import { exportCsv } from '@/utils/exportCsv';
 import { toast } from 'sonner';
-import { downloadPdf } from '@/utils/generatePdf';
+import { downloadPdf, type PdfData } from '@/utils/generatePdf';
+import { PdfPreview } from '@/components/PdfPreview';
+
 import { shareDocument } from '@/utils/shareDocument';
 import { formatDate } from '@/lib/formatDate';
 import type { ArticleLine } from '@/types';
@@ -40,6 +42,8 @@ export default function InvoicesPage() {
   const [statFilter, setStatFilter] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
+  const [showPreview, setShowPreview] = useState(true);
+
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(defaultForm);
   const [articles, setArticles] = useState<ArticleLine[]>([{ nom: '', quantite: 1, prix_unitaire: 0 }]);
@@ -208,6 +212,42 @@ export default function InvoicesPage() {
       entreprise: entreprise.data,
     };
   };
+
+  // Données PDF en direct depuis le formulaire (prévisualisation temps réel)
+  const livePdfData: PdfData = (() => {
+    const c = clients.data.find(x => x.id === form.client_id);
+    const editing = editId ? factures.data.find(f => f.id === editId) : null;
+    return {
+      type: 'facture',
+      numero: editing?.numero || 'APERÇU',
+      date: form.date_facture,
+      echeance: form.date_echeance || null,
+      date_livraison: form.date_livraison || null,
+      client: c ? `${c.prenom || ''} ${c.nom || ''}`.trim() : '— Client —',
+      clientDetails: c ? {
+        nom: `${c.prenom || ''} ${c.nom || ''}`.trim() || c.entreprise || '',
+        ninea: c.ninea,
+        adresse: c.adresse,
+        telephone: c.telephone,
+        email: c.email,
+      } : null,
+      articles: articles.filter(a => a.nom),
+      montant_ht: totalHT,
+      montant_tva: totalTVA,
+      montant_ttc: totalTTC,
+      tva_pct: tva,
+      retenue_source_pct: retenuePct,
+      montant_retenue: montantRetenue,
+      net_a_payer: netAPayer,
+      mode_paiement: form.mode_paiement,
+      notes: form.notes || null,
+      conditions_paiement: form.conditions_paiement || null,
+      penalites_retard: form.penalites_retard || null,
+      entreprise: entreprise.data,
+    };
+  })();
+
+
 
   const del = async () => {
     if (!deleteTarget) return;
@@ -399,11 +439,22 @@ export default function InvoicesPage() {
 
       {/* Create/Edit modal */}
       <Dialog open={showModal} onOpenChange={setShowModal}>
-        <DialogContent className="max-w-[640px] max-h-[90vh] overflow-y-auto">
+        <DialogContent className={`${showPreview ? 'max-w-[1120px]' : 'max-w-[640px]'} max-h-[90vh] overflow-y-auto`}>
           <DialogHeader>
-            <DialogTitle>{editId ? 'Modifier Facture' : 'Nouvelle Facture'}</DialogTitle>
+            <DialogTitle className="flex items-center justify-between gap-3 pr-6">
+              <span>{editId ? 'Modifier Facture' : 'Nouvelle Facture'}</span>
+              <button
+                type="button"
+                onClick={() => setShowPreview(v => !v)}
+                className="bg-card border-[1.5px] border-border text-muted-foreground py-1.5 px-3 rounded-lg text-[11px] font-bold hover:border-primary hover:text-primary transition-all flex items-center gap-1.5"
+              >
+                {showPreview ? <><EyeOff className="h-3.5 w-3.5" /> Masquer l'aperçu</> : <><Eye className="h-3.5 w-3.5" /> Aperçu PDF</>}
+              </button>
+            </DialogTitle>
           </DialogHeader>
-          <div>
+          <div className="flex flex-col lg:flex-row gap-5 items-start">
+            <div className="flex-1 min-w-0 w-full">
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5 mb-4">
               <div className="flex flex-col gap-1.5">
                 <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Client *</label>
@@ -503,7 +554,19 @@ export default function InvoicesPage() {
               <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Notes</label>
               <textarea className="bg-background border-[1.5px] border-border rounded-lg py-2.5 px-3 text-sm text-foreground outline-none font-sans resize-y min-h-[60px] focus:border-primary w-full" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} maxLength={500} />
             </div>
+            </div>
+
+            {showPreview && (
+              <div className="lg:w-[46%] lg:shrink-0">
+                <div className="lg:sticky lg:top-0">
+                  <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2">Aperçu PDF (temps réel)</div>
+                  <PdfPreview data={livePdfData} />
+                  <p className="text-[10px] text-muted-foreground mt-2">Mentions DGI (BRS, régime fiscal, livraison, conditions) mises à jour automatiquement.</p>
+                </div>
+              </div>
+            )}
           </div>
+
           <DialogFooter>
             <button onClick={() => setShowModal(false)} className="bg-card border-[1.5px] border-border text-muted-foreground py-2 px-4 rounded-lg text-xs font-bold hover:bg-background transition-all">Annuler</button>
             <button onClick={save} disabled={saving} className="gradient-primary text-primary-foreground border-none py-2 px-4 rounded-lg text-xs font-bold shadow-primary hover:-translate-y-px transition-all disabled:opacity-60 flex items-center gap-1.5">
