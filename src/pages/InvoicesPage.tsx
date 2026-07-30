@@ -42,6 +42,8 @@ export default function InvoicesPage() {
   const [statFilter, setStatFilter] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
+  const [showPreview, setShowPreview] = useState(true);
+
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(defaultForm);
   const [articles, setArticles] = useState<ArticleLine[]>([{ nom: '', quantite: 1, prix_unitaire: 0 }]);
