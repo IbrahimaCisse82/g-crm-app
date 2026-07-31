@@ -28,6 +28,7 @@ const defaultForm = {
 
 export default function RecusPage() {
   const { recus, clients, factures, entreprise, cliName, fmt } = useApp();
+  const { limits, requirePro, proGate } = useProGate();
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState(defaultForm);
@@ -247,6 +248,8 @@ export default function RecusPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {proGate}
+
     </div>
   );
 }
