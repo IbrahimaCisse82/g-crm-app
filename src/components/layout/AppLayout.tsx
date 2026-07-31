@@ -16,6 +16,7 @@ const sectionTitles: Record<string, string> = {
   caisse: 'Caisse & Trésorerie',
   entreprise: 'Infos Entreprise',
   abonnement: 'Abonnement',
+  archives: 'Archives & Données',
 };
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {

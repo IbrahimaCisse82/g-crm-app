@@ -1,4 +1,4 @@
-export type Section = 'dashboard' | 'clients' | 'factures' | 'devis' | 'recus' | 'avoirs' | 'produits' | 'journal' | 'caisse' | 'entreprise' | 'abonnement' | 'admin';
+export type Section = 'dashboard' | 'clients' | 'factures' | 'devis' | 'recus' | 'avoirs' | 'produits' | 'journal' | 'caisse' | 'entreprise' | 'abonnement' | 'archives' | 'admin';
 
 export const sectionPaths: Record<Section, string> = {
   dashboard: '/',
@@ -12,6 +12,7 @@ export const sectionPaths: Record<Section, string> = {
   caisse: '/caisse',
   entreprise: '/entreprise',
   abonnement: '/abonnement',
+  archives: '/archives',
   admin: '/admin',
 };
 
