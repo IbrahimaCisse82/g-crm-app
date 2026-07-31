@@ -10,6 +10,7 @@ import { useDateFilter } from '@/hooks/useDateFilter';
 import { exportCsv } from '@/utils/exportCsv';
 import { toast } from 'sonner';
 import { downloadPdf } from '@/utils/generatePdf';
+import { useProGate } from '@/hooks/useProGate';
 import { formatDate } from '@/lib/formatDate';
 import type { ArticleLine } from '@/types';
 import type { Json } from '@/integrations/supabase/types';
@@ -154,7 +155,7 @@ export default function AvoirsPage() {
                 </div>
                 <div className="text-[10.5px] text-muted-foreground truncate">{cliName(a.client_id)} · {formatDate(a.date_avoir)} · Fact. {factureRef(a.facture_id) || '—'}</div>
                 <div className="flex gap-1 mt-2">
-                  <button onClick={() => generateAvoirPdf(a)} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs"><FileText className="h-3.5 w-3.5" /></button>
+                  <button onClick={() => requirePro(limits.canExportPdf, 'Export PDF', () => generateAvoirPdf(a))} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs"><FileText className="h-3.5 w-3.5" /></button>
                   <button onClick={() => setDeleteTarget({ id: a.id, numero: a.numero })} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs"><Trash2 className="h-3.5 w-3.5" /></button>
                 </div>
               </div>
@@ -193,7 +194,7 @@ export default function AvoirsPage() {
                     <td className="px-3.5 py-3 text-sm text-muted-foreground border-b border-border truncate max-w-[200px]">{a.motif || '—'}</td>
                     <td className="px-3.5 py-3 text-sm border-b border-border">
                       <div className="flex gap-1">
-                        <button onClick={() => generateAvoirPdf(a)} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-primary hover:text-primary transition-all" title="PDF"><FileText className="h-3.5 w-3.5" /></button>
+                        <button onClick={() => requirePro(limits.canExportPdf, 'Export PDF', () => generateAvoirPdf(a))} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-primary hover:text-primary transition-all" title="PDF"><FileText className="h-3.5 w-3.5" /></button>
                         <button onClick={() => setDeleteTarget({ id: a.id, numero: a.numero })} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-destructive hover:text-destructive transition-all" title="Supprimer"><Trash2 className="h-3.5 w-3.5" /></button>
                       </div>
                     </td>
