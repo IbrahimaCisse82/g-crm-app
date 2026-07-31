@@ -382,3 +382,71 @@ export function useAvoirs() {
   return { data: query.data ?? [], isLoading: query.isLoading, add, update, remove, nextNumero };
 }
 
+export function useProfile() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  const key = ['profile', user?.id];
+
+  const query = useQuery({
+    queryKey: key,
+    queryFn: async () => {
+      const { data, error } = await supabase.from('profiles').select('*').eq('user_id', user!.id).maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const update = async (values: TablesUpdate<'profiles'>) => {
+    const { error } = await supabase.from('profiles').update(values).eq('user_id', user!.id);
+    if (error) throw error;
+    qc.invalidateQueries({ queryKey: key });
+  };
+
+  return { data: query.data, isLoading: query.isLoading, update };
+}
+
+export type ArchivedRow = {
+  table_name: string;
+  id: string;
+  label: string | null;
+  sublabel: string | null;
+  deleted_at: string;
+};
+
+export function useArchives() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  const key = ['archives', user?.id];
+
+  const query = useQuery({
+    queryKey: key,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('list_archived');
+      if (error) throw error;
+      return (data ?? []) as ArchivedRow[];
+    },
+    enabled: !!user,
+  });
+
+  const invalidateAll = () => {
+    ['archives', 'clients', 'produits', 'devis', 'factures', 'journal', 'categories', 'comptes_tresorerie']
+      .forEach(k => qc.invalidateQueries({ queryKey: [k, user?.id] }));
+  };
+
+  const restore = async (table: string, id: string) => {
+    const { error } = await supabase.rpc('restore_archived', { _table: table, _id: id });
+    if (error) throw error;
+    invalidateAll();
+  };
+
+  const purge = async (table: string, id: string) => {
+    const { error } = await supabase.rpc('purge_archived', { _table: table, _id: id });
+    if (error) throw error;
+    invalidateAll();
+  };
+
+  return { data: query.data ?? [], isLoading: query.isLoading, restore, purge, refetch: () => qc.invalidateQueries({ queryKey: key }) };
+}
+
+
