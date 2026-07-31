@@ -18,9 +18,11 @@ import type { ArticleLine } from '@/types';
 import type { Json } from '@/integrations/supabase/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { UpgradePrompt } from '@/components/UpgradePrompt';
+import { useProGate } from '@/hooks/useProGate';
 
 export default function QuotesPage() {
   const { devis, factures, clients, produits, entreprise, cliName, fmt, createModalTrigger, subscription } = useApp();
+  const { limits: proLimits, requirePro, proGate } = useProGate();
   const triggerRef = useRef(createModalTrigger);
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
@@ -180,8 +182,8 @@ export default function QuotesPage() {
                   <span className="font-bold text-sm text-foreground">{fmt(d.montant_ttc)}</span>
                 </div>
                 <div className="flex gap-1 mt-2">
-                  <button onClick={() => downloadPdf({ type: 'devis', numero: d.numero, date: d.date_devis, validite_jours: d.validite_jours, client: cliName(d.client_id), articles: (d.articles as unknown as ArticleLine[]) || [], montant_ht: d.montant_ht, montant_tva: d.montant_tva, montant_ttc: d.montant_ttc, tva_pct: entreprise.data?.tva ?? 18, notes: d.notes, entreprise: entreprise.data })} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs"><FileText className="h-3.5 w-3.5" /></button>
-                  <button onClick={() => shareDocument({ type: 'devis', numero: d.numero, client: cliName(d.client_id), montant_ttc: d.montant_ttc, devise: entreprise.data?.devise, date: d.date_devis, pdfData: { type: 'devis', numero: d.numero, date: d.date_devis, validite_jours: d.validite_jours, client: cliName(d.client_id), articles: (d.articles as unknown as ArticleLine[]) || [], montant_ht: d.montant_ht, montant_tva: d.montant_tva, montant_ttc: d.montant_ttc, tva_pct: entreprise.data?.tva ?? 18, notes: d.notes, entreprise: entreprise.data } })} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs"><Share2 className="h-3.5 w-3.5" /></button>
+                  <button onClick={() => requirePro(proLimits.canExportPdf, 'Export PDF', () => downloadPdf({ type: 'devis', numero: d.numero, date: d.date_devis, validite_jours: d.validite_jours, client: cliName(d.client_id), articles: (d.articles as unknown as ArticleLine[]) || [], montant_ht: d.montant_ht, montant_tva: d.montant_tva, montant_ttc: d.montant_ttc, tva_pct: entreprise.data?.tva ?? 18, notes: d.notes, entreprise: entreprise.data }))} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs"><FileText className="h-3.5 w-3.5" /></button>
+                  <button onClick={() => requirePro(proLimits.canExportPdf, 'Partage PDF', () => shareDocument({ type: 'devis', numero: d.numero, client: cliName(d.client_id), montant_ttc: d.montant_ttc, devise: entreprise.data?.devise, date: d.date_devis, pdfData: { type: 'devis', numero: d.numero, date: d.date_devis, validite_jours: d.validite_jours, client: cliName(d.client_id), articles: (d.articles as unknown as ArticleLine[]) || [], montant_ht: d.montant_ht, montant_tva: d.montant_tva, montant_ttc: d.montant_ttc, tva_pct: entreprise.data?.tva ?? 18, notes: d.notes, entreprise: entreprise.data } }))} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs"><Share2 className="h-3.5 w-3.5" /></button>
                   <button onClick={() => openEdit(d)} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs"><Pencil className="h-3.5 w-3.5" /></button>
                   {d.statut === 'En attente' && <>
                     <button onClick={() => updateStatus(d.id, 'Accepté')} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs"><Check className="h-3.5 w-3.5" /></button>
@@ -226,8 +228,8 @@ export default function QuotesPage() {
                     <td className="px-3.5 py-3 text-sm border-b border-border"><StatusBadge status={d.statut} /></td>
                     <td className="px-3.5 py-3 text-sm border-b border-border">
                       <div className="flex gap-1">
-                        <button onClick={() => downloadPdf({ type: 'devis', numero: d.numero, date: d.date_devis, validite_jours: d.validite_jours, client: cliName(d.client_id), articles: (d.articles as unknown as ArticleLine[]) || [], montant_ht: d.montant_ht, montant_tva: d.montant_tva, montant_ttc: d.montant_ttc, tva_pct: entreprise.data?.tva ?? 18, notes: d.notes, entreprise: entreprise.data })} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-primary hover:text-primary transition-all" title="PDF"><FileText className="h-3.5 w-3.5" /></button>
-                        <button onClick={() => shareDocument({ type: 'devis', numero: d.numero, client: cliName(d.client_id), montant_ttc: d.montant_ttc, devise: entreprise.data?.devise, date: d.date_devis, pdfData: { type: 'devis', numero: d.numero, date: d.date_devis, validite_jours: d.validite_jours, client: cliName(d.client_id), articles: (d.articles as unknown as ArticleLine[]) || [], montant_ht: d.montant_ht, montant_tva: d.montant_tva, montant_ttc: d.montant_ttc, tva_pct: entreprise.data?.tva ?? 18, notes: d.notes, entreprise: entreprise.data } })} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-primary hover:text-primary transition-all" title="Partager"><Share2 className="h-3.5 w-3.5" /></button>
+                        <button onClick={() => requirePro(proLimits.canExportPdf, 'Export PDF', () => downloadPdf({ type: 'devis', numero: d.numero, date: d.date_devis, validite_jours: d.validite_jours, client: cliName(d.client_id), articles: (d.articles as unknown as ArticleLine[]) || [], montant_ht: d.montant_ht, montant_tva: d.montant_tva, montant_ttc: d.montant_ttc, tva_pct: entreprise.data?.tva ?? 18, notes: d.notes, entreprise: entreprise.data }))} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-primary hover:text-primary transition-all" title="PDF"><FileText className="h-3.5 w-3.5" /></button>
+                        <button onClick={() => requirePro(proLimits.canExportPdf, 'Partage PDF', () => shareDocument({ type: 'devis', numero: d.numero, client: cliName(d.client_id), montant_ttc: d.montant_ttc, devise: entreprise.data?.devise, date: d.date_devis, pdfData: { type: 'devis', numero: d.numero, date: d.date_devis, validite_jours: d.validite_jours, client: cliName(d.client_id), articles: (d.articles as unknown as ArticleLine[]) || [], montant_ht: d.montant_ht, montant_tva: d.montant_tva, montant_ttc: d.montant_ttc, tva_pct: entreprise.data?.tva ?? 18, notes: d.notes, entreprise: entreprise.data } }))} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-primary hover:text-primary transition-all" title="Partager"><Share2 className="h-3.5 w-3.5" /></button>
                         <button onClick={() => openEdit(d)} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-primary hover:text-primary transition-all" title="Modifier"><Pencil className="h-3.5 w-3.5" /></button>
                         {d.statut === 'En attente' && <>
                           <button onClick={() => updateStatus(d.id, 'Accepté')} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-success hover:text-success transition-all" title="Accepter"><Check className="h-3.5 w-3.5" /></button>
@@ -316,6 +318,8 @@ export default function QuotesPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {proGate}
+
     </div>
   );
 }
