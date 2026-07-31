@@ -4,6 +4,7 @@ import { Plus, Trash2, Pencil, Check, X, Tags } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { toast } from 'sonner';
+import { useProGate } from '@/hooks/useProGate';
 
 interface Props {
   open: boolean;
@@ -12,6 +13,7 @@ interface Props {
 
 export function CategoriesManager({ open, onOpenChange }: Props) {
   const { categories } = useApp();
+  const { limits, showUpgrade, proGate } = useProGate();
   const [tab, setTab] = useState<'Dépense' | 'Recette'>('Dépense');
   const [newName, setNewName] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -23,6 +25,10 @@ export function CategoriesManager({ open, onOpenChange }: Props) {
   const handleAdd = async () => {
     const name = newName.trim();
     if (!name) return;
+    if (categories.data.length >= limits.maxCategories) {
+      showUpgrade('Catégories illimitées');
+      return;
+    }
     if (categories.data.some(c => c.nom.toLowerCase() === name.toLowerCase() && c.type === tab)) {
       toast.error('Cette catégorie existe déjà');
       return;
@@ -121,6 +127,8 @@ export function CategoriesManager({ open, onOpenChange }: Props) {
           </p>
         </DialogContent>
       </Dialog>
+
+      {proGate}
 
       <ConfirmDialog
         open={!!deleteTarget}

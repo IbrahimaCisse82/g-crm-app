@@ -22,6 +22,7 @@ import type { Json } from '@/integrations/supabase/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { usePayment } from '@/hooks/usePayment';
 import { UpgradePrompt } from '@/components/UpgradePrompt';
+import { useProGate } from '@/hooks/useProGate';
 
 const defaultForm = {
   client_id: '',
@@ -37,6 +38,7 @@ const defaultForm = {
 
 export default function InvoicesPage() {
   const { factures, clients, produits, entreprise, journal, cliName, fmt, createModalTrigger, subscription } = useApp();
+  const { limits: proLimits, requirePro, proGate } = useProGate();
   const triggerRef = useRef(createModalTrigger);
   const [search, setSearch] = useState('');
   const [statFilter, setStatFilter] = useState('');
@@ -331,8 +333,8 @@ export default function InvoicesPage() {
                   </div>
                 </div>
                 <div className="flex gap-1 mt-2">
-                  <button onClick={() => downloadPdf(pdfDataFor(f))} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs"><FileText className="h-3.5 w-3.5" /></button>
-                  <button onClick={() => shareDocument({ type: 'facture', numero: f.numero, client: cliName(f.client_id), montant_ttc: f.montant_ttc, devise: entreprise.data?.devise, date: f.date_facture, pdfData: pdfDataFor(f) })} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs"><Share2 className="h-3.5 w-3.5" /></button>
+                  <button onClick={() => requirePro(proLimits.canExportPdf, 'Export PDF', () => downloadPdf(pdfDataFor(f)))} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs"><FileText className="h-3.5 w-3.5" /></button>
+                  <button onClick={() => requirePro(proLimits.canExportPdf, 'Partage PDF', () => shareDocument({ type: 'facture', numero: f.numero, client: cliName(f.client_id), montant_ttc: f.montant_ttc, devise: entreprise.data?.devise, date: f.date_facture, pdfData: pdfDataFor(f) }))} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs"><Share2 className="h-3.5 w-3.5" /></button>
                   {f.statut !== 'Payée' && <button onClick={() => openEdit(f)} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs"><Pencil className="h-3.5 w-3.5" /></button>}
                   {(f.statut === 'En attente' || f.statut === 'En retard' || f.statut === 'Partielle') && <button onClick={() => openPayModal(f)} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs"><CreditCard className="h-3.5 w-3.5" /></button>}
                   {f.statut !== 'Payée' && <button onClick={() => setDeleteTarget({ id: f.id, numero: f.numero })} className="bg-background border border-border text-muted-foreground px-2 py-1 rounded-md text-xs"><Trash2 className="h-3.5 w-3.5" /></button>}
@@ -379,8 +381,8 @@ export default function InvoicesPage() {
                     <td className="px-3.5 py-3 text-sm border-b border-border"><StatusBadge status={f.statut} /></td>
                     <td className="px-3.5 py-3 text-sm border-b border-border">
                       <div className="flex gap-1">
-                        <button onClick={() => downloadPdf(pdfDataFor(f))} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-primary hover:text-primary transition-all" title="PDF"><FileText className="h-3.5 w-3.5" /></button>
-                        <button onClick={() => shareDocument({ type: 'facture', numero: f.numero, client: cliName(f.client_id), montant_ttc: f.montant_ttc, devise: entreprise.data?.devise, date: f.date_facture, pdfData: pdfDataFor(f) })} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-primary hover:text-primary transition-all" title="Partager"><Share2 className="h-3.5 w-3.5" /></button>
+                        <button onClick={() => requirePro(proLimits.canExportPdf, 'Export PDF', () => downloadPdf(pdfDataFor(f)))} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-primary hover:text-primary transition-all" title="PDF"><FileText className="h-3.5 w-3.5" /></button>
+                        <button onClick={() => requirePro(proLimits.canExportPdf, 'Partage PDF', () => shareDocument({ type: 'facture', numero: f.numero, client: cliName(f.client_id), montant_ttc: f.montant_ttc, devise: entreprise.data?.devise, date: f.date_facture, pdfData: pdfDataFor(f) }))} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-primary hover:text-primary transition-all" title="Partager"><Share2 className="h-3.5 w-3.5" /></button>
                         {f.statut !== 'Payée' && <button onClick={() => openEdit(f)} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-primary hover:text-primary transition-all" title="Modifier"><Pencil className="h-3.5 w-3.5" /></button>}
                         {(f.statut === 'En attente' || f.statut === 'En retard' || f.statut === 'Partielle') && <button onClick={() => openPayModal(f)} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-success hover:text-success transition-all" title="Paiement"><CreditCard className="h-3.5 w-3.5" /></button>}
                         {f.statut !== 'Payée' && <button onClick={() => setDeleteTarget({ id: f.id, numero: f.numero })} className="bg-background border-[1.5px] border-border text-muted-foreground px-2 py-1 rounded-md text-xs hover:border-destructive hover:text-destructive transition-all" title="Supprimer"><Trash2 className="h-3.5 w-3.5" /></button>}
@@ -575,6 +577,8 @@ export default function InvoicesPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {proGate}
+
     </div>
   );
 }

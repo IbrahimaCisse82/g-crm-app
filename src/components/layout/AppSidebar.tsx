@@ -16,6 +16,7 @@ const navItems: { section: Section; icon: string; label: string; badge?: boolean
   { section: 'caisse', icon: '🏦', label: 'Caisse & Paiements' },
   { section: 'entreprise', icon: '⚙️', label: 'Infos Entreprise' },
   { section: 'abonnement', icon: '👑', label: 'Abonnement' },
+  { section: 'archives', icon: '🗂️', label: 'Archives & Données' },
 ];
 
 export default function AppSidebar() {

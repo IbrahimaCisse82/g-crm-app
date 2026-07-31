@@ -26,8 +26,10 @@ import JournalPage from '@/pages/JournalPage';
 import CashPage from '@/pages/CashPage';
 import CompanyPage from '@/pages/CompanyPage';
 import SubscriptionPage from '@/pages/SubscriptionPage';
+import ArchivesPage from '@/pages/ArchivesPage';
 import AdminPage from '@/pages/AdminPage';
 import NotFound from '@/pages/NotFound';
+import OnboardingWizard from '@/components/OnboardingWizard';
 import { Toaster } from '@/components/ui/sonner';
 
 const queryClient = new QueryClient();
@@ -64,6 +66,7 @@ function AppContent() {
   return (
     <AppProvider>
       {isLocked && <LockScreen onUnlock={unlock} />}
+      <OnboardingWizard />
       <AppLayout>
         <Routes>
           <Route path="/" element={<Dashboard />} />
@@ -77,6 +80,7 @@ function AppContent() {
           <Route path="/caisse" element={<CashPage />} />
           <Route path="/entreprise" element={<CompanyPage />} />
           <Route path="/abonnement" element={<SubscriptionPage />} />
+          <Route path="/archives" element={<ArchivesPage />} />
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/login" element={<Navigate to="/" replace />} />
           <Route path="*" element={<NotFound />} />

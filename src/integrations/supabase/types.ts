@@ -823,8 +823,11 @@ export type Database = {
       admin_list_users: {
         Args: never
         Returns: {
+          banned_until: string
+          created_at: string
           email: string
           full_name: string
+          is_admin: boolean
           phone: string
           user_id: string
         }[]
@@ -838,6 +841,16 @@ export type Database = {
         Returns: boolean
       }
       is_owner: { Args: { row_user_id: string }; Returns: boolean }
+      list_archived: {
+        Args: never
+        Returns: {
+          deleted_at: string
+          id: string
+          label: string
+          sublabel: string
+          table_name: string
+        }[]
+      }
       next_avoir_numero: { Args: never; Returns: string }
       next_devis_numero: { Args: never; Returns: string }
       next_doc_numero: {
@@ -846,6 +859,14 @@ export type Database = {
       }
       next_facture_numero: { Args: never; Returns: string }
       next_recu_numero: { Args: never; Returns: string }
+      purge_archived: {
+        Args: { _id: string; _table: string }
+        Returns: undefined
+      }
+      restore_archived: {
+        Args: { _id: string; _table: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
