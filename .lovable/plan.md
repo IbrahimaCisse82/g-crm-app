@@ -1,111 +1,50 @@
+# Plan Lot 1 — Finalisation P0/P1 de G-CRM
 
+## Objectif
+Corriger les défauts critiques et bloquants identifiés dans l'audit du cahier des charges v2.0, en commençant par la cohérence SaaS, la conformité fiscale et la sécurité des données.
 
-# Plan : SaaS avec abonnements Mobile Money (Gratuit + Pro)
+## Périmètre
 
-## Principe
-Gestion manuelle des abonnements : l'admin (vous) valide les paiements Mobile Money reçus et active/prolonge les abonnements. Côté utilisateur, le plan Gratuit est limité, le plan Pro débloque toutes les fonctionnalités.
+### 1. Avoirs conformes et liés à une facture source (P1 — §3.8)
+- Rendre `avoirs.facture_id` NOT NULL.
+- Ajouter un trigger `BEFORE INSERT` qui vérifie que la facture source appartient bien à l'utilisateur et n'est pas déjà payée (sinon erreur explicite).
+- Ajouter un trigger `AFTER INSERT` qui met à jour `factures.montant_regle`, `factures.statut` et crée une entrée de journal de type Dépense correspondant au montant de l'avoir.
 
-## 1. Base de données
+### 2. Alignement des quotas Free à 10 (P1 — §4 / §13)
+- Mettre à jour les limites côté frontend (`useSubscription.ts`) : 10 clients, 10 factures/mois, 10 devis/mois.
+- Mettre à jour les triggers SQL correspondants (`trg_limit_clients`, `trg_limit_factures`, `trg_limit_devis`) pour appliquer 10 au lieu de 5.
 
-### Table `subscriptions`
-| Colonne | Type | Description |
-|---------|------|-------------|
-| id | uuid PK | |
-| user_id | uuid (unique) | Lien vers l'utilisateur |
-| plan | text | `free` ou `pro` |
-| status | text | `active`, `expired`, `cancelled` |
-| starts_at | timestamptz | Début de l'abonnement |
-| expires_at | timestamptz | Fin (null = gratuit permanent) |
-| payment_reference | text | Référence du paiement MM |
-| payment_mode | text | Wave/OM/Yas |
-| amount | numeric | Montant payé |
-| created_at / updated_at | timestamptz | |
+### 3. Processus d'abonnement Mobile Money professionnalisé (P1 — §4.3)
+- Ajouter `admin_deadline` (timestamp) à `subscription_requests`, calculé à `created_at + 24 heures`.
+- Rendre `admin_notes` obligatoire lors du rejet dans l'Edge Function `manage-subscription`.
+- Afficher les demandes en retard (> 24h) en rouge dans `AdminPage`.
+- Préparer les hooks d'envoi d'e-mail (déclenchés quand un domaine d'envoi sera configuré).
 
-- RLS : `is_owner(user_id)` pour SELECT, admin gère les mutations via edge function
-- Trigger `handle_new_user` modifié pour créer un abonnement `free` par défaut
+### 4. Journal d'audit admin (P1 — §5)
+- Étendre la fonction `audit_trigger` ou créer une fonction `audit_admin_action` pour enregistrer les actions `approve`, `reject`, `revoke` de `manage-subscription` dans `audit_log`.
 
-### Table `subscription_requests`
-| Colonne | Type | Description |
-|---------|------|-------------|
-| id | uuid PK | |
-| user_id | uuid | |
-| plan | text | Plan demandé |
-| payment_mode | text | Wave/OM/Yas |
-| payment_reference | text | Référence transaction |
-| amount | numeric | |
-| status | text | `pending`, `approved`, `rejected` |
-| created_at | timestamptz | |
+### 5. Tarifs Pro éditables depuis le backoffice (P1 — §16)
+- Créer une table `plan_pricing` (plan, billing_period, price_fcfa, updated_at).
+- Lire ces tarifs dynamiquement dans `SubscriptionPage.tsx` au lieu de la constante `PRICE_PRO`.
+- Ajouter une section "Tarifs" dans `AdminPage` pour les modifier.
 
-- L'utilisateur soumet une demande d'abonnement avec sa preuve de paiement
-- L'admin valide/rejette (via edge function sécurisée)
+### 6. Fallback PDF serveur (P0 — §3.10)
+- Créer l'Edge Function `generate-pdf-server` utilisant Puppeteer (ou un rendu HTML→PDF Deno) pour générer le PDF côté serveur.
+- Modifier `PdfPreview.tsx` / `generatePdf.ts` pour détecter l'échec ou le timeout > 8s et proposer le bouton "Générer côté serveur".
 
-## 2. Limites du plan Gratuit
+### 7. Colonne `created_by` sur les tables métier (P1 — règle V1)
+- Ajouter `created_by uuid` (nullable pour rétro-compatibilité, rempli automatiquement par `auth.uid()` via trigger) sur `factures`, `devis`, `journal`, `recus`, `avoirs`, `clients`, `produits`, `categories`.
 
-| Fonctionnalité | Gratuit | Pro |
-|----------------|---------|-----|
-| Clients | 10 max | Illimité |
-| Factures/mois | 5 max | Illimité |
-| Devis/mois | 5 max | Illimité |
-| Export PDF | ❌ | ✅ |
-| Dashboard analytics | Basique | Complet |
-| Catégories personnalisées | 5 max | Illimité |
+### 8. Première vague de tests (P0 — §7.3)
+- Créer des tests Vitest pour :
+  - `usePayment` (encaissement total/partiel, mise à jour journal/facture).
+  - Calculs facture (HT, TVA, BRS, net à payer).
+  - RLS cross-user (simulation de deux sessions distinctes sur `clients` et `factures`).
 
-## 3. Code
+## Non inclus dans ce lot
+- Relances automatiques (cron), import CSV/XLSX, partage WhatsApp, suppression de compte, pagination keyset, React.lazy, notifications e-mail transactionnelles (en attente de domaine).
 
-### Hook `useSubscription`
-- Récupère l'abonnement actif de l'utilisateur
-- Expose `plan`, `isExpired`, `canAccess(feature)`, `daysRemaining`
-- Vérifie les limites en temps réel
-
-### Composant `SubscriptionPage` (nouvelle page `/abonnement`)
-- Affiche le plan actuel et la date d'expiration
-- Comparatif Gratuit vs Pro avec prix
-- Formulaire de demande d'upgrade : choix du mode de paiement, référence transaction
-- Numéro de compte Mobile Money à payer affiché clairement
-- Historique des paiements
-
-### Composant `UpgradePrompt`
-- Banner/modal affiché quand l'utilisateur atteint une limite
-- "Passez à Pro pour débloquer cette fonctionnalité"
-
-### Edge function `manage-subscription`
-- Endpoint sécurisé pour valider/rejeter les demandes (protégé par rôle admin)
-- Met à jour `subscriptions` quand une demande est approuvée
-
-### Modifications existantes
-- `AppContext` : exposer `subscription` et `canAccess`
-- `AppLayout` : badge du plan dans la sidebar
-- Pages (Clients, Factures, Devis, Journal) : vérifier les limites avant création
-- `AppSidebar` : lien vers la page Abonnement
-
-## 4. Flux utilisateur
-
-```text
-Inscription → Plan Gratuit auto
-     ↓
-Utilise l'app (limites appliquées)
-     ↓
-Atteint une limite → "Passez à Pro"
-     ↓
-Va sur /abonnement → Voit le prix + numéro MM
-     ↓
-Paie via Wave/OM → Note la référence
-     ↓
-Soumet la demande avec référence
-     ↓
-Admin valide → Plan Pro activé (30j)
-     ↓
-Expiration → Retour limites Gratuit
-```
-
-## 5. Fichiers impactés
-- `supabase/migrations/` — tables `subscriptions` + `subscription_requests`
-- `src/hooks/useSubscription.ts` — nouveau hook
-- `src/pages/SubscriptionPage.tsx` — nouvelle page
-- `src/components/UpgradePrompt.tsx` — nouveau composant
-- `supabase/functions/manage-subscription/index.ts` — edge function admin
-- `src/context/AppContext.tsx` — exposer subscription
-- `src/App.tsx` — route `/abonnement`
-- `src/components/layout/AppSidebar.tsx` — lien abonnement
-- Pages existantes — guards de limites
-
+## Validation
+- Build TypeScript sans erreur.
+- Suite de tests Vitest passante.
+- Test d'isolation RLS entre deux comptes.
