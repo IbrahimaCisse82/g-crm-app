@@ -52,8 +52,9 @@ export type Database = {
           articles: Json
           client_id: string | null
           created_at: string
+          created_by: string | null
           date_avoir: string
-          facture_id: string | null
+          facture_id: string
           id: string
           montant_ht: number
           montant_ttc: number
@@ -68,8 +69,9 @@ export type Database = {
           articles?: Json
           client_id?: string | null
           created_at?: string
+          created_by?: string | null
           date_avoir?: string
-          facture_id?: string | null
+          facture_id: string
           id?: string
           montant_ht?: number
           montant_ttc?: number
@@ -84,8 +86,9 @@ export type Database = {
           articles?: Json
           client_id?: string | null
           created_at?: string
+          created_by?: string | null
           date_avoir?: string
-          facture_id?: string | null
+          facture_id?: string
           id?: string
           montant_ht?: number
           montant_ttc?: number
@@ -116,6 +119,7 @@ export type Database = {
       categories: {
         Row: {
           created_at: string
+          created_by: string | null
           deleted_at: string | null
           id: string
           nom: string
@@ -124,6 +128,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          created_by?: string | null
           deleted_at?: string | null
           id?: string
           nom: string
@@ -132,6 +137,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          created_by?: string | null
           deleted_at?: string | null
           id?: string
           nom?: string
@@ -144,6 +150,7 @@ export type Database = {
         Row: {
           adresse: string | null
           created_at: string
+          created_by: string | null
           deleted_at: string | null
           email: string | null
           entreprise: string | null
@@ -160,6 +167,7 @@ export type Database = {
         Insert: {
           adresse?: string | null
           created_at?: string
+          created_by?: string | null
           deleted_at?: string | null
           email?: string | null
           entreprise?: string | null
@@ -176,6 +184,7 @@ export type Database = {
         Update: {
           adresse?: string | null
           created_at?: string
+          created_by?: string | null
           deleted_at?: string | null
           email?: string | null
           entreprise?: string | null
@@ -232,6 +241,7 @@ export type Database = {
           articles: Json
           client_id: string | null
           created_at: string
+          created_by: string | null
           date_devis: string
           deleted_at: string | null
           id: string
@@ -249,6 +259,7 @@ export type Database = {
           articles?: Json
           client_id?: string | null
           created_at?: string
+          created_by?: string | null
           date_devis?: string
           deleted_at?: string | null
           id?: string
@@ -266,6 +277,7 @@ export type Database = {
           articles?: Json
           client_id?: string | null
           created_at?: string
+          created_by?: string | null
           date_devis?: string
           deleted_at?: string | null
           id?: string
@@ -377,6 +389,7 @@ export type Database = {
           compte_mm: string | null
           conditions_paiement: string | null
           created_at: string
+          created_by: string | null
           date_echeance: string | null
           date_facture: string
           date_livraison: string | null
@@ -403,6 +416,7 @@ export type Database = {
           compte_mm?: string | null
           conditions_paiement?: string | null
           created_at?: string
+          created_by?: string | null
           date_echeance?: string | null
           date_facture?: string
           date_livraison?: string | null
@@ -429,6 +443,7 @@ export type Database = {
           compte_mm?: string | null
           conditions_paiement?: string | null
           created_at?: string
+          created_by?: string | null
           date_echeance?: string | null
           date_facture?: string
           date_livraison?: string | null
@@ -464,6 +479,7 @@ export type Database = {
           categorie: string | null
           compte: string | null
           created_at: string
+          created_by: string | null
           date_operation: string
           deleted_at: string | null
           facture_id: string | null
@@ -478,6 +494,7 @@ export type Database = {
           categorie?: string | null
           compte?: string | null
           created_at?: string
+          created_by?: string | null
           date_operation?: string
           deleted_at?: string | null
           facture_id?: string | null
@@ -492,6 +509,7 @@ export type Database = {
           categorie?: string | null
           compte?: string | null
           created_at?: string
+          created_by?: string | null
           date_operation?: string
           deleted_at?: string | null
           facture_id?: string | null
@@ -512,9 +530,37 @@ export type Database = {
           },
         ]
       }
+      plan_pricing: {
+        Row: {
+          billing_period: string
+          created_at: string
+          id: string
+          plan: string
+          price_fcfa: number
+          updated_at: string
+        }
+        Insert: {
+          billing_period?: string
+          created_at?: string
+          id?: string
+          plan: string
+          price_fcfa?: number
+          updated_at?: string
+        }
+        Update: {
+          billing_period?: string
+          created_at?: string
+          id?: string
+          plan?: string
+          price_fcfa?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       produits: {
         Row: {
           created_at: string
+          created_by: string | null
           deleted_at: string | null
           description: string | null
           id: string
@@ -527,6 +573,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          created_by?: string | null
           deleted_at?: string | null
           description?: string | null
           id?: string
@@ -539,6 +586,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          created_by?: string | null
           deleted_at?: string | null
           description?: string | null
           id?: string
@@ -594,6 +642,7 @@ export type Database = {
         Row: {
           client_id: string | null
           created_at: string
+          created_by: string | null
           date_recu: string
           description: string | null
           facture_id: string | null
@@ -609,6 +658,7 @@ export type Database = {
         Insert: {
           client_id?: string | null
           created_at?: string
+          created_by?: string | null
           date_recu?: string
           description?: string | null
           facture_id?: string | null
@@ -624,6 +674,7 @@ export type Database = {
         Update: {
           client_id?: string | null
           created_at?: string
+          created_by?: string | null
           date_recu?: string
           description?: string | null
           facture_id?: string | null
@@ -655,6 +706,7 @@ export type Database = {
       }
       subscription_requests: {
         Row: {
+          admin_deadline: string | null
           admin_notes: string | null
           amount: number
           created_at: string
@@ -666,6 +718,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          admin_deadline?: string | null
           admin_notes?: string | null
           amount?: number
           created_at?: string
@@ -677,6 +730,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          admin_deadline?: string | null
           admin_notes?: string | null
           amount?: number
           created_at?: string
@@ -885,12 +939,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -914,11 +968,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -939,11 +993,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -964,11 +1018,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -981,11 +1035,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
