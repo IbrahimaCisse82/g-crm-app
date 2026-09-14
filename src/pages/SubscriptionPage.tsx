@@ -100,8 +100,8 @@ export default function SubscriptionPage() {
           </div>
           <ul className="space-y-2 text-sm">
             <li className="flex items-center gap-2"><Check className="w-4 h-4 text-primary" /> 10 clients max</li>
-            <li className="flex items-center gap-2"><Check className="w-4 h-4 text-primary" /> 5 factures/mois</li>
-            <li className="flex items-center gap-2"><Check className="w-4 h-4 text-primary" /> 5 devis/mois</li>
+            <li className="flex items-center gap-2"><Check className="w-4 h-4 text-primary" /> 10 factures/mois</li>
+            <li className="flex items-center gap-2"><Check className="w-4 h-4 text-primary" /> 10 devis/mois</li>
             <li className="flex items-center gap-2"><Check className="w-4 h-4 text-primary" /> 5 catégories</li>
             <li className="flex items-center gap-2 text-muted-foreground"><AlertCircle className="w-4 h-4" /> Pas d'export PDF</li>
             <li className="flex items-center gap-2 text-muted-foreground"><AlertCircle className="w-4 h-4" /> Dashboard basique</li>
