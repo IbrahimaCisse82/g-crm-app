@@ -23,7 +23,20 @@ type RequestRow = {
   status: string;
   admin_notes: string | null;
   created_at: string;
+  admin_deadline?: string | null;
 };
+
+type PricingRow = {
+  id: string;
+  plan: string;
+  billing_period: string;
+  price_fcfa: number;
+};
+
+const isOverdue = (r: RequestRow) =>
+  r.status === 'pending' &&
+  !!r.admin_deadline &&
+  new Date(r.admin_deadline).getTime() < Date.now();
 
 type SubscriptionRow = {
   id: string;
