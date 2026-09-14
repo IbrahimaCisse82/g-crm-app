@@ -56,7 +56,7 @@ type ProfileRow = {
   phone: string | null;
 };
 
-type Section = 'dashboard' | 'requests' | 'subscriptions' | 'users';
+type Section = 'dashboard' | 'requests' | 'subscriptions' | 'users' | 'pricing';
 const PAGE_SIZE = 20;
 
 const fmtAmount = (n: number) =>
@@ -193,6 +193,7 @@ export default function AdminPage() {
         </NavTab>
         <NavTab active={section === 'subscriptions'} onClick={() => setSection('subscriptions')} icon={<Crown className="w-3.5 h-3.5" />}>Abonnements</NavTab>
         <NavTab active={section === 'users'} onClick={() => setSection('users')} icon={<Users className="w-3.5 h-3.5" />}>Utilisateurs</NavTab>
+        <NavTab active={section === 'pricing'} onClick={() => setSection('pricing')} icon={<CreditCard className="w-3.5 h-3.5" />}>Tarifs</NavTab>
       </div>
 
       {section === 'dashboard' && (
