@@ -94,7 +94,29 @@ export function useSubscription() {
     return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
   }, [query.data, plan]);
 
-  const limits: SubscriptionLimits = plan === 'pro' ? PRO_LIMITS : FREE_LIMITS;
+  // Offre de lancement : accès complet pour tout le monde jusqu'au 31/12/2026
+  const promo = isPromoActive();
+  const limits: SubscriptionLimits = promo || plan === 'pro' ? PRO_LIMITS : FREE_LIMITS;
+
+  const pricingQuery = useQuery({
+    queryKey: ['plan_pricing'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('plan_pricing')
+        .select('*')
+        .order('plan');
+      if (error) throw error;
+      return data ?? [];
+    },
+    staleTime: 10 * 60 * 1000,
+  });
+
+  const proMonthlyPrice = useMemo(() => {
+    const row = (pricingQuery.data ?? []).find(
+      (p: { plan: string; billing_period: string }) => p.plan === 'pro' && p.billing_period === 'monthly'
+    ) as { price_fcfa: number } | undefined;
+    return row?.price_fcfa ?? 5000;
+  }, [pricingQuery.data]);
 
   const submitRequest = useCallback(async (data: {
     payment_mode: string;
