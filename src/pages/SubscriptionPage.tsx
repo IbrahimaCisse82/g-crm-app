@@ -131,7 +131,11 @@ export default function SubscriptionPage() {
             <li className="flex items-center gap-2"><Check className="w-4 h-4 text-primary" /> Export PDF</li>
             <li className="flex items-center gap-2"><Check className="w-4 h-4 text-primary" /> Dashboard complet</li>
           </ul>
-          {plan === 'pro' && !isExpired ? (
+          {isPromo ? (
+            <div className="pt-2 rounded-xl bg-primary/10 p-3 text-xs font-semibold text-primary">
+              Offert à tous jusqu'au {formatDate(promoEnd.toISOString())} — rien à payer pour l'instant.
+            </div>
+          ) : plan === 'pro' && !isExpired ? (
             <div className="pt-2">
               <span className="text-xs font-semibold text-primary">Plan actuel</span>
             </div>
