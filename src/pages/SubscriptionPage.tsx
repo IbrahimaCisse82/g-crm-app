@@ -48,6 +48,22 @@ export default function SubscriptionPage() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
+      {isPromo && (
+        <div className="rounded-2xl border border-primary/30 bg-primary/5 p-5 flex items-start gap-3">
+          <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center shrink-0">
+            <Crown className="w-5 h-5 text-primary-foreground" />
+          </div>
+          <div>
+            <h2 className="font-bold text-foreground">Offre de lancement : tout est gratuit</h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              Toutes les fonctionnalités Pro (documents illimités, export PDF, tableau de bord complet)
+              sont offertes à tous les comptes jusqu'au <strong className="text-foreground">{formatDate(promoEnd.toISOString())}</strong>.
+              Aucun paiement n'est requis pendant cette période.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Current plan banner */}
       <div className="rounded-2xl border border-border bg-card p-5 flex items-center gap-4">
         <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${plan === 'pro' ? 'gradient-primary' : 'bg-muted'}`}>
