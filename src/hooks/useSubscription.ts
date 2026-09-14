@@ -14,10 +14,18 @@ export interface SubscriptionLimits {
   fullDashboard: boolean;
 }
 
+/**
+ * Offre de lancement : toutes les fonctionnalités Pro sont offertes
+ * gratuitement à tous les comptes jusqu'au 31 décembre 2026 inclus.
+ * (Doit rester aligné avec public.get_user_plan côté base de données.)
+ */
+export const PROMO_END = new Date('2026-12-31T23:59:59Z');
+export const isPromoActive = () => Date.now() <= PROMO_END.getTime();
+
 const FREE_LIMITS: SubscriptionLimits = {
   maxClients: 10,
-  maxInvoicesPerMonth: 5,
-  maxQuotesPerMonth: 5,
+  maxInvoicesPerMonth: 10,
+  maxQuotesPerMonth: 10,
   maxCategories: 5,
   canExportPdf: false,
   fullDashboard: false,
