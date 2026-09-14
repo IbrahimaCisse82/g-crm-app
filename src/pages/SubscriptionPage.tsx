@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import { formatDate } from '@/lib/formatDate';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 
-const PRICE_PRO = 5000; // FCFA/mois
+
 
 const PAYMENT_ACCOUNTS = [
   { mode: 'Wave', number: '77 000 00 00' },
@@ -15,7 +15,8 @@ const PAYMENT_ACCOUNTS = [
 
 export default function SubscriptionPage() {
   const { subscription, fmt } = useApp();
-  const { plan, limits, daysRemaining, isExpired, requests, submitRequest, requestsLoading } = subscription;
+  const { plan, limits, daysRemaining, isExpired, requests, submitRequest, requestsLoading, isPromo, promoEnd, proMonthlyPrice } = subscription;
+  const PRICE_PRO = proMonthlyPrice;
 
   const [showPayment, setShowPayment] = useState(false);
   const [payForm, setPayForm] = useState({ payment_mode: 'Wave', payment_reference: '' });
@@ -47,6 +48,22 @@ export default function SubscriptionPage() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
+      {isPromo && (
+        <div className="rounded-2xl border border-primary/30 bg-primary/5 p-5 flex items-start gap-3">
+          <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center shrink-0">
+            <Crown className="w-5 h-5 text-primary-foreground" />
+          </div>
+          <div>
+            <h2 className="font-bold text-foreground">Offre de lancement : tout est gratuit</h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              Toutes les fonctionnalités Pro (documents illimités, export PDF, tableau de bord complet)
+              sont offertes à tous les comptes jusqu'au <strong className="text-foreground">{formatDate(promoEnd.toISOString())}</strong>.
+              Aucun paiement n'est requis pendant cette période.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Current plan banner */}
       <div className="rounded-2xl border border-border bg-card p-5 flex items-center gap-4">
         <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${plan === 'pro' ? 'gradient-primary' : 'bg-muted'}`}>
@@ -66,7 +83,9 @@ export default function SubscriptionPage() {
             <p className="text-xs text-muted-foreground mt-0.5">{daysRemaining} jours restants</p>
           )}
           {plan === 'free' && (
-            <p className="text-xs text-muted-foreground mt-0.5">Fonctionnalités limitées</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {isPromo ? 'Accès complet offert pendant l\'offre de lancement' : 'Fonctionnalités limitées'}
+            </p>
           )}
         </div>
       </div>
@@ -81,8 +100,8 @@ export default function SubscriptionPage() {
           </div>
           <ul className="space-y-2 text-sm">
             <li className="flex items-center gap-2"><Check className="w-4 h-4 text-primary" /> 10 clients max</li>
-            <li className="flex items-center gap-2"><Check className="w-4 h-4 text-primary" /> 5 factures/mois</li>
-            <li className="flex items-center gap-2"><Check className="w-4 h-4 text-primary" /> 5 devis/mois</li>
+            <li className="flex items-center gap-2"><Check className="w-4 h-4 text-primary" /> 10 factures/mois</li>
+            <li className="flex items-center gap-2"><Check className="w-4 h-4 text-primary" /> 10 devis/mois</li>
             <li className="flex items-center gap-2"><Check className="w-4 h-4 text-primary" /> 5 catégories</li>
             <li className="flex items-center gap-2 text-muted-foreground"><AlertCircle className="w-4 h-4" /> Pas d'export PDF</li>
             <li className="flex items-center gap-2 text-muted-foreground"><AlertCircle className="w-4 h-4" /> Dashboard basique</li>
@@ -112,7 +131,11 @@ export default function SubscriptionPage() {
             <li className="flex items-center gap-2"><Check className="w-4 h-4 text-primary" /> Export PDF</li>
             <li className="flex items-center gap-2"><Check className="w-4 h-4 text-primary" /> Dashboard complet</li>
           </ul>
-          {plan === 'pro' && !isExpired ? (
+          {isPromo ? (
+            <div className="pt-2 rounded-xl bg-primary/10 p-3 text-xs font-semibold text-primary">
+              Offert à tous jusqu'au {formatDate(promoEnd.toISOString())} — rien à payer pour l'instant.
+            </div>
+          ) : plan === 'pro' && !isExpired ? (
             <div className="pt-2">
               <span className="text-xs font-semibold text-primary">Plan actuel</span>
             </div>
@@ -136,25 +159,27 @@ export default function SubscriptionPage() {
       </div>
 
       {/* Payment instructions */}
-      <div className="rounded-2xl border border-border bg-card p-5 space-y-3">
-        <h3 className="font-bold text-foreground flex items-center gap-2">
-          <Send className="w-4 h-4 text-primary" /> Comment payer
-        </h3>
-        <ol className="text-sm text-muted-foreground space-y-2 list-decimal list-inside">
-          <li>Envoyez <strong>{new Intl.NumberFormat('fr-FR').format(PRICE_PRO)} FCFA</strong> via Mobile Money à l'un des numéros ci-dessous</li>
-          <li>Notez la <strong>référence de transaction</strong> reçue par SMS</li>
-          <li>Cliquez sur « Passer à Pro » et entrez votre référence</li>
-          <li>Votre abonnement sera activé sous <strong>24h</strong> après vérification</li>
-        </ol>
-        <div className="grid sm:grid-cols-3 gap-3 pt-2">
-          {PAYMENT_ACCOUNTS.map(acc => (
-            <div key={acc.mode} className="rounded-xl bg-muted/50 p-3 text-center">
-              <div className="text-xs font-bold text-foreground">{acc.mode}</div>
-              <div className="text-sm font-mono text-primary mt-1">{acc.number}</div>
-            </div>
-          ))}
+      {!isPromo && (
+        <div className="rounded-2xl border border-border bg-card p-5 space-y-3">
+          <h3 className="font-bold text-foreground flex items-center gap-2">
+            <Send className="w-4 h-4 text-primary" /> Comment payer
+          </h3>
+          <ol className="text-sm text-muted-foreground space-y-2 list-decimal list-inside">
+            <li>Envoyez <strong>{new Intl.NumberFormat('fr-FR').format(PRICE_PRO)} FCFA</strong> via Mobile Money à l'un des numéros ci-dessous</li>
+            <li>Notez la <strong>référence de transaction</strong> reçue par SMS</li>
+            <li>Cliquez sur « Passer à Pro » et entrez votre référence</li>
+            <li>Votre abonnement sera activé sous <strong>24h</strong> après vérification</li>
+          </ol>
+          <div className="grid sm:grid-cols-3 gap-3 pt-2">
+            {PAYMENT_ACCOUNTS.map(acc => (
+              <div key={acc.mode} className="rounded-xl bg-muted/50 p-3 text-center">
+                <div className="text-xs font-bold text-foreground">{acc.mode}</div>
+                <div className="text-sm font-mono text-primary mt-1">{acc.number}</div>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Request history */}
       {requests.length > 0 && (

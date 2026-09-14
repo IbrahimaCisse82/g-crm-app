@@ -23,7 +23,20 @@ type RequestRow = {
   status: string;
   admin_notes: string | null;
   created_at: string;
+  admin_deadline?: string | null;
 };
+
+type PricingRow = {
+  id: string;
+  plan: string;
+  billing_period: string;
+  price_fcfa: number;
+};
+
+const isOverdue = (r: RequestRow) =>
+  r.status === 'pending' &&
+  !!r.admin_deadline &&
+  new Date(r.admin_deadline).getTime() < Date.now();
 
 type SubscriptionRow = {
   id: string;
@@ -43,7 +56,7 @@ type ProfileRow = {
   phone: string | null;
 };
 
-type Section = 'dashboard' | 'requests' | 'subscriptions' | 'users';
+type Section = 'dashboard' | 'requests' | 'subscriptions' | 'users' | 'pricing';
 const PAGE_SIZE = 20;
 
 const fmtAmount = (n: number) =>
@@ -180,6 +193,7 @@ export default function AdminPage() {
         </NavTab>
         <NavTab active={section === 'subscriptions'} onClick={() => setSection('subscriptions')} icon={<Crown className="w-3.5 h-3.5" />}>Abonnements</NavTab>
         <NavTab active={section === 'users'} onClick={() => setSection('users')} icon={<Users className="w-3.5 h-3.5" />}>Utilisateurs</NavTab>
+        <NavTab active={section === 'pricing'} onClick={() => setSection('pricing')} icon={<CreditCard className="w-3.5 h-3.5" />}>Tarifs</NavTab>
       </div>
 
       {section === 'dashboard' && (
@@ -218,9 +232,96 @@ export default function AdminPage() {
           subMap={subMap}
         />
       )}
+
+      {section === 'pricing' && <PricingSection />}
     </div>
   );
 }
+
+/* ------------------------- Pricing ------------------------- */
+
+function PricingSection() {
+  const qc = useQueryClient();
+  const [edits, setEdits] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState<string | null>(null);
+
+  const pricingQuery = useQuery({
+    queryKey: ['admin', 'pricing'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('plan_pricing')
+        .select('*')
+        .order('plan')
+        .order('billing_period');
+      if (error) throw error;
+      return (data ?? []) as PricingRow[];
+    },
+  });
+
+  const save = async (row: PricingRow) => {
+    const raw = edits[row.id];
+    const value = Math.max(0, Math.round(Number(raw)));
+    if (raw === undefined || Number.isNaN(value)) {
+      toast.error('Montant invalide');
+      return;
+    }
+    setSaving(row.id);
+    try {
+      const { error } = await supabase
+        .from('plan_pricing')
+        .update({ price_fcfa: value })
+        .eq('id', row.id);
+      if (error) throw error;
+      toast.success('Tarif mis à jour');
+      setEdits(e => { const n = { ...e }; delete n[row.id]; return n; });
+      qc.invalidateQueries({ queryKey: ['admin', 'pricing'] });
+      qc.invalidateQueries({ queryKey: ['plan_pricing'] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Erreur');
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  const labelOf = (r: PricingRow) =>
+    `${r.plan === 'pro' ? 'Pro' : 'Gratuit'} — ${r.billing_period === 'yearly' ? 'annuel' : 'mensuel'}`;
+
+  return (
+    <div className="space-y-3">
+      <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 text-sm text-muted-foreground">
+        <strong className="text-foreground">Offre de lancement active :</strong> toutes les fonctionnalités Pro
+        sont offertes à tous les comptes jusqu'au 31 décembre 2026. Les tarifs ci-dessous s'appliqueront
+        automatiquement à partir du 1er janvier 2027.
+      </div>
+
+      <div className="bg-card border border-border rounded-xl overflow-hidden shadow-card divide-y divide-border">
+        {pricingQuery.isLoading ? (
+          <div className="p-6 text-center text-sm text-muted-foreground">Chargement…</div>
+        ) : (pricingQuery.data ?? []).map(row => (
+          <div key={row.id} className="flex items-center gap-3 p-3.5 flex-wrap">
+            <div className="font-bold text-sm text-foreground min-w-[160px]">{labelOf(row)}</div>
+            <input
+              type="number"
+              min={0}
+              value={edits[row.id] ?? String(row.price_fcfa)}
+              onChange={e => setEdits(v => ({ ...v, [row.id]: e.target.value }))}
+              className="w-36 bg-background border-[1.5px] border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-primary"
+            />
+            <span className="text-xs text-muted-foreground">FCFA</span>
+            <button
+              onClick={() => save(row)}
+              disabled={saving === row.id || edits[row.id] === undefined}
+              className="ml-auto bg-primary text-primary-foreground px-3 py-1.5 rounded-lg text-xs font-bold disabled:opacity-40"
+            >
+              {saving === row.id ? 'Enregistrement…' : 'Enregistrer'}
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 
 /* ------------------------- Shared UI ------------------------- */
 

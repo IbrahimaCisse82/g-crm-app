@@ -14,10 +14,18 @@ export interface SubscriptionLimits {
   fullDashboard: boolean;
 }
 
+/**
+ * Offre de lancement : toutes les fonctionnalités Pro sont offertes
+ * gratuitement à tous les comptes jusqu'au 31 décembre 2026 inclus.
+ * (Doit rester aligné avec public.get_user_plan côté base de données.)
+ */
+export const PROMO_END = new Date('2026-12-31T23:59:59Z');
+export const isPromoActive = () => Date.now() <= PROMO_END.getTime();
+
 const FREE_LIMITS: SubscriptionLimits = {
   maxClients: 10,
-  maxInvoicesPerMonth: 5,
-  maxQuotesPerMonth: 5,
+  maxInvoicesPerMonth: 10,
+  maxQuotesPerMonth: 10,
   maxCategories: 5,
   canExportPdf: false,
   fullDashboard: false,
@@ -86,7 +94,29 @@ export function useSubscription() {
     return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
   }, [query.data, plan]);
 
-  const limits: SubscriptionLimits = plan === 'pro' ? PRO_LIMITS : FREE_LIMITS;
+  // Offre de lancement : accès complet pour tout le monde jusqu'au 31/12/2026
+  const promo = isPromoActive();
+  const limits: SubscriptionLimits = promo || plan === 'pro' ? PRO_LIMITS : FREE_LIMITS;
+
+  const pricingQuery = useQuery({
+    queryKey: ['plan_pricing'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('plan_pricing')
+        .select('*')
+        .order('plan');
+      if (error) throw error;
+      return data ?? [];
+    },
+    staleTime: 10 * 60 * 1000,
+  });
+
+  const proMonthlyPrice = useMemo(() => {
+    const row = (pricingQuery.data ?? []).find(
+      (p: { plan: string; billing_period: string }) => p.plan === 'pro' && p.billing_period === 'monthly'
+    ) as { price_fcfa: number } | undefined;
+    return row?.price_fcfa ?? 5000;
+  }, [pricingQuery.data]);
 
   const submitRequest = useCallback(async (data: {
     payment_mode: string;
@@ -110,6 +140,10 @@ export function useSubscription() {
     isLoading: query.isLoading,
     plan,
     limits,
+    isPromo: promo,
+    promoEnd: PROMO_END,
+    proMonthlyPrice,
+    pricing: pricingQuery.data ?? [],
     isExpired,
     daysRemaining,
     requests: requestsQuery.data ?? [],
