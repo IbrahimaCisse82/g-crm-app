@@ -15,7 +15,8 @@ const PAYMENT_ACCOUNTS = [
 
 export default function SubscriptionPage() {
   const { subscription, fmt } = useApp();
-  const { plan, limits, daysRemaining, isExpired, requests, submitRequest, requestsLoading } = subscription;
+  const { plan, limits, daysRemaining, isExpired, requests, submitRequest, requestsLoading, isPromo, promoEnd, proMonthlyPrice } = subscription;
+  const PRICE_PRO = proMonthlyPrice;
 
   const [showPayment, setShowPayment] = useState(false);
   const [payForm, setPayForm] = useState({ payment_mode: 'Wave', payment_reference: '' });
