@@ -83,7 +83,9 @@ export default function SubscriptionPage() {
             <p className="text-xs text-muted-foreground mt-0.5">{daysRemaining} jours restants</p>
           )}
           {plan === 'free' && (
-            <p className="text-xs text-muted-foreground mt-0.5">Fonctionnalités limitées</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {isPromo ? 'Accès complet offert pendant l\'offre de lancement' : 'Fonctionnalités limitées'}
+            </p>
           )}
         </div>
       </div>
