@@ -159,25 +159,27 @@ export default function SubscriptionPage() {
       </div>
 
       {/* Payment instructions */}
-      <div className="rounded-2xl border border-border bg-card p-5 space-y-3">
-        <h3 className="font-bold text-foreground flex items-center gap-2">
-          <Send className="w-4 h-4 text-primary" /> Comment payer
-        </h3>
-        <ol className="text-sm text-muted-foreground space-y-2 list-decimal list-inside">
-          <li>Envoyez <strong>{new Intl.NumberFormat('fr-FR').format(PRICE_PRO)} FCFA</strong> via Mobile Money à l'un des numéros ci-dessous</li>
-          <li>Notez la <strong>référence de transaction</strong> reçue par SMS</li>
-          <li>Cliquez sur « Passer à Pro » et entrez votre référence</li>
-          <li>Votre abonnement sera activé sous <strong>24h</strong> après vérification</li>
-        </ol>
-        <div className="grid sm:grid-cols-3 gap-3 pt-2">
-          {PAYMENT_ACCOUNTS.map(acc => (
-            <div key={acc.mode} className="rounded-xl bg-muted/50 p-3 text-center">
-              <div className="text-xs font-bold text-foreground">{acc.mode}</div>
-              <div className="text-sm font-mono text-primary mt-1">{acc.number}</div>
-            </div>
-          ))}
+      {!isPromo && (
+        <div className="rounded-2xl border border-border bg-card p-5 space-y-3">
+          <h3 className="font-bold text-foreground flex items-center gap-2">
+            <Send className="w-4 h-4 text-primary" /> Comment payer
+          </h3>
+          <ol className="text-sm text-muted-foreground space-y-2 list-decimal list-inside">
+            <li>Envoyez <strong>{new Intl.NumberFormat('fr-FR').format(PRICE_PRO)} FCFA</strong> via Mobile Money à l'un des numéros ci-dessous</li>
+            <li>Notez la <strong>référence de transaction</strong> reçue par SMS</li>
+            <li>Cliquez sur « Passer à Pro » et entrez votre référence</li>
+            <li>Votre abonnement sera activé sous <strong>24h</strong> après vérification</li>
+          </ol>
+          <div className="grid sm:grid-cols-3 gap-3 pt-2">
+            {PAYMENT_ACCOUNTS.map(acc => (
+              <div key={acc.mode} className="rounded-xl bg-muted/50 p-3 text-center">
+                <div className="text-xs font-bold text-foreground">{acc.mode}</div>
+                <div className="text-sm font-mono text-primary mt-1">{acc.number}</div>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Request history */}
       {requests.length > 0 && (
