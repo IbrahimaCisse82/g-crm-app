@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import { formatDate } from '@/lib/formatDate';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 
-const PRICE_PRO = 5000; // FCFA/mois
+
 
 const PAYMENT_ACCOUNTS = [
   { mode: 'Wave', number: '77 000 00 00' },
