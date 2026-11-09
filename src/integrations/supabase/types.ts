@@ -886,6 +886,15 @@ export type Database = {
           user_id: string
         }[]
       }
+      approve_subscription_request: {
+        Args: {
+          _admin_id: string
+          _admin_notes?: string
+          _months?: number
+          _request_id: string
+        }
+        Returns: Json
+      }
       get_user_plan: { Args: { _user: string }; Returns: string }
       has_role: {
         Args: {

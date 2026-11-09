@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { FileText, Share2, Pencil, CreditCard, Trash2, Download, Save, Eye, EyeOff } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { StatusBadge, PayBadge } from '@/components/StatusBadge';
@@ -88,7 +88,7 @@ export default function InvoicesPage() {
   const montantRetenue = Math.round(totalHT * retenuePct / 100);
   const netAPayer = totalTTC - montantRetenue;
 
-  const openNew = () => {
+  const openNew = useCallback(() => {
     // Free plan: limit invoices per month
     const now = new Date();
     const monthCount = factures.data.filter(f => {
@@ -107,7 +107,7 @@ export default function InvoicesPage() {
     });
     setArticles([{ nom: '', quantite: 1, prix_unitaire: 0 }]);
     setShowModal(true);
-  };
+  }, [factures.data, subscription.limits.maxInvoicesPerMonth, entreprise.data]);
 
   const openEdit = (f: typeof factures.data[0]) => {
     setEditId(f.id);
@@ -133,7 +133,7 @@ export default function InvoicesPage() {
   useEffect(() => {
     if (createModalTrigger > triggerRef.current) openNew();
     triggerRef.current = createModalTrigger;
-  }, [createModalTrigger]);
+  }, [createModalTrigger, openNew]);
 
   const addArticleLine = () => setArticles([...articles, { nom: '', quantite: 1, prix_unitaire: 0 }]);
   const removeArticleLine = (i: number) => setArticles(articles.filter((_, idx) => idx !== i));

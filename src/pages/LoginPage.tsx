@@ -16,22 +16,49 @@ export default function LoginPage() {
   const [suPw, setSuPw] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Traduit les erreurs techniques Supabase/réseau en messages clairs en français
+  const translateAuthError = (raw: string): string => {
+    const msg = raw.toLowerCase();
+    if (msg.includes('failed to fetch') || msg.includes('network') || msg.includes('fetch')) {
+      return 'Connexion impossible, vérifiez votre réseau';
+    }
+    if (msg.includes('invalid login credentials')) {
+      return 'Email ou mot de passe incorrect';
+    }
+    if (msg.includes('email not confirmed')) {
+      return 'Veuillez confirmer votre email avant de vous connecter';
+    }
+    if (msg.includes('user already registered')) {
+      return 'Un compte existe déjà avec cet email';
+    }
+    if (msg.includes('password') && (msg.includes('at least') || msg.includes('should be'))) {
+      return 'Le mot de passe doit contenir au moins 8 caractères';
+    }
+    if (msg.includes('invalid email') || msg.includes('unable to validate email')) {
+      return 'Adresse email invalide';
+    }
+    if (msg.includes('rate limit') || msg.includes('too many requests')) {
+      return 'Trop de tentatives, réessayez dans quelques minutes';
+    }
+    return 'Une erreur est survenue, veuillez réessayer';
+  };
+
   const handleLogin = async () => {
     if (!email || !pw) return toast.error('Veuillez remplir tous les champs');
     setLoading(true);
     const { error } = await signIn(email, pw);
     setLoading(false);
-    if (error) toast.error(error);
+    if (error) toast.error(translateAuthError(error));
   };
 
   const handleSignup = async () => {
     if (!suEmail || !suPw || !name) return toast.error('Veuillez remplir les champs obligatoires');
     if (!acceptedTerms) return toast.error('Veuillez accepter les conditions d\'utilisation');
-    if (suPw.length < 6) return toast.error('Le mot de passe doit contenir au moins 6 caractères');
+    if (suPw.length < 8) return toast.error('Le mot de passe doit contenir au moins 8 caractères');
     setLoading(true);
     const { error } = await signUp(suEmail, suPw, name, company);
     setLoading(false);
-    if (error) toast.error(error);
+    if (error) toast.error(translateAuthError(error));
     else toast.success('Compte créé ! Vérifiez votre email pour confirmer.');
   };
 
@@ -72,6 +99,8 @@ export default function LoginPage() {
               <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Adresse email</label>
               <input
                 type="email"
+                required
+                autoComplete="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 placeholder="votre@email.com"
@@ -84,6 +113,8 @@ export default function LoginPage() {
               <div className="relative">
                 <input
                   type={showPw ? 'text' : 'password'}
+                  required
+                  autoComplete="current-password"
                   value={pw}
                   onChange={e => setPw(e.target.value)}
                   placeholder="••••••••"
@@ -120,6 +151,8 @@ export default function LoginPage() {
               <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Nom complet *</label>
               <input
                 type="text"
+                required
+                autoComplete="name"
                 value={name}
                 onChange={e => setName(e.target.value)}
                 placeholder="Votre nom"
@@ -130,6 +163,7 @@ export default function LoginPage() {
               <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Entreprise</label>
               <input
                 type="text"
+                autoComplete="organization"
                 value={company}
                 onChange={e => setCompany(e.target.value)}
                 placeholder="Votre entreprise"
@@ -140,6 +174,8 @@ export default function LoginPage() {
               <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Email *</label>
               <input
                 type="email"
+                required
+                autoComplete="email"
                 value={suEmail}
                 onChange={e => setSuEmail(e.target.value)}
                 placeholder="votre@email.com"
@@ -150,9 +186,12 @@ export default function LoginPage() {
               <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Mot de passe *</label>
               <input
                 type="password"
+                required
+                minLength={8}
+                autoComplete="new-password"
                 value={suPw}
                 onChange={e => setSuPw(e.target.value)}
-                placeholder="Min. 6 caractères"
+                placeholder="Min. 8 caractères"
                 className="w-full h-[46px] border-[1.5px] border-border rounded-xl px-3.5 text-sm text-foreground bg-muted outline-none transition-all focus:border-primary focus:ring-[3px] focus:ring-primary/10 focus:bg-card"
                 onKeyDown={e => e.key === 'Enter' && handleSignup()}
               />

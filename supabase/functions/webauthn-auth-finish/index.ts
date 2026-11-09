@@ -8,6 +8,23 @@ const corsHeaders = {
 const json = (b: unknown, s = 200) =>
   new Response(JSON.stringify(b), { status: s, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
+// L'origine fournie par le client n'est jamais fiable : elle doit figurer dans la
+// liste blanche WEBAUTHN_ALLOWED_ORIGINS (séparateur : virgule). Le rpId est déduit
+// de l'origine validée, jamais lu tel quel depuis le corps de la requête.
+function resolveRpId(origin: unknown): { rpId?: string; origin?: string; error?: string } {
+  if (typeof origin !== "string" || !origin) return { error: "Missing fields" };
+  const allowed = (Deno.env.get("WEBAUTHN_ALLOWED_ORIGINS") ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (!allowed.includes(origin)) return { error: "Origine non autorisée" };
+  try {
+    return { rpId: new URL(origin).hostname, origin };
+  } catch {
+    return { error: "Origine invalide" };
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
@@ -25,8 +42,11 @@ Deno.serve(async (req) => {
     if (claimsErr || !claims?.claims) return json({ error: "Unauthorized" }, 401);
     const userId = claims.claims.sub as string;
 
-    const { response, rpId, origin } = await req.json();
-    if (!response || !rpId || !origin) return json({ error: "Missing fields" }, 400);
+    const body = await req.json();
+    const { response } = body;
+    const resolved = resolveRpId(body.origin);
+    if (!response || resolved.error) return json({ error: resolved.error ?? "Missing fields" }, 400);
+    const { rpId, origin } = resolved as { rpId: string; origin: string };
 
     const { data: chal } = await admin
       .from("webauthn_challenges")

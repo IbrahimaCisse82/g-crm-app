@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useApp } from '@/context/AppContext';
 import { Pencil, Trash2, Download, Search, Save, Users } from 'lucide-react';
 import { StatusBadge } from '@/components/StatusBadge';
@@ -33,7 +33,7 @@ export default function ClientsPage() {
   const { sorted, toggleSort, sortIndicator } = useSortableTable(filtered);
   const pagination = usePagination(sorted);
 
-  const openNew = () => {
+  const openNew = useCallback(() => {
     if (clients.data.length >= subscription.limits.maxClients) {
       setShowUpgrade(true);
       return;
@@ -41,12 +41,12 @@ export default function ClientsPage() {
     setEditId(null);
     setForm({ prenom: '', nom: '', email: '', telephone: '', entreprise: '', statut: 'Actif', adresse: '', notes: '', ninea: '' });
     setShowModal(true);
-  };
+  }, [clients.data.length, subscription.limits.maxClients]);
 
   useEffect(() => {
     if (createModalTrigger > triggerRef.current) openNew();
     triggerRef.current = createModalTrigger;
-  }, [createModalTrigger]);
+  }, [createModalTrigger, openNew]);
 
   const openEdit = (c: typeof clients.data[0]) => {
     setEditId(c.id);

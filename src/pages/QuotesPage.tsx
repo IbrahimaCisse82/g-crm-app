@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { FileText, Share2, Pencil, Trash2, Check, X, ArrowRightLeft, Save, ClipboardList } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { useNavigate } from 'react-router-dom';
@@ -61,7 +61,7 @@ export default function QuotesPage() {
   const totalTVA = Math.round(totalHT * tva / 100);
   const totalTTC = totalHT + totalTVA;
 
-  const openNew = () => {
+  const openNew = useCallback(() => {
     const now = new Date();
     const monthCount = devis.data.filter(d => {
       const dt = new Date(d.date_devis);
@@ -75,7 +75,7 @@ export default function QuotesPage() {
     setForm({ client_id: '', date_devis: new Date().toISOString().slice(0, 10), validite_jours: 30, notes: '' });
     setArticles([{ nom: '', quantite: 1, prix_unitaire: 0 }]);
     setShowModal(true);
-  };
+  }, [devis.data, subscription.limits.maxQuotesPerMonth]);
 
   const openEdit = (d: typeof devis.data[0]) => {
     setEditId(d.id);
@@ -88,7 +88,7 @@ export default function QuotesPage() {
   useEffect(() => {
     if (createModalTrigger > triggerRef.current) openNew();
     triggerRef.current = createModalTrigger;
-  }, [createModalTrigger]);
+  }, [createModalTrigger, openNew]);
 
   const addLine = () => setArticles([...articles, { nom: '', quantite: 1, prix_unitaire: 0 }]);
   const removeLine = (i: number) => setArticles(articles.filter((_, idx) => idx !== i));
