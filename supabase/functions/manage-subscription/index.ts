@@ -52,6 +52,12 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const { action, request_id, admin_notes, months } = body;
 
+    const audit = async (act: string, table: string, recordId: string | null, after: unknown) => {
+      await supabaseAdmin.from("audit_log").insert({
+        user_id: userId, action: act, table_name: table, record_id: recordId, after,
+      });
+    };
+
     if (action === "approve" && request_id) {
       const monthsNum = Math.max(1, Math.min(24, Number(months) || 1));
 
@@ -78,14 +84,19 @@ Deno.serve(async (req) => {
         return json({ error: `Échec de l'approbation : ${msg}` }, 500);
       }
 
+      await audit("admin_approve", "subscription_requests", request_id, { months: monthsNum, admin_notes: admin_notes || null });
       return json(data);
     }
 
     if (action === "reject" && request_id) {
+      const reason = typeof admin_notes === "string" ? admin_notes.trim() : "";
+      if (reason.length < 3) {
+        return json({ error: "Le motif du refus est obligatoire" }, 400);
+      }
       // Ne rejeter que les demandes encore en attente (évite le rejeu)
       const { data: updated, error: rejError } = await supabaseAdmin
         .from("subscription_requests")
-        .update({ status: "rejected", admin_notes: admin_notes || null })
+        .update({ status: "rejected", admin_notes: reason })
         .eq("id", request_id)
         .eq("status", "pending")
         .select("id");
@@ -96,6 +107,7 @@ Deno.serve(async (req) => {
       if (!updated || updated.length === 0) {
         return json({ error: "Cette demande a déjà été traitée ou est introuvable" }, 409);
       }
+      await audit("admin_reject", "subscription_requests", request_id, { admin_notes: reason });
       return json({ success: true });
     }
 
@@ -107,6 +119,7 @@ Deno.serve(async (req) => {
       if (revError) {
         return json({ error: `Échec de la révocation : ${revError.message}` }, 500);
       }
+      await audit("admin_revoke", "subscriptions", null, { user_id: body.user_id });
       return json({ success: true });
     }
 

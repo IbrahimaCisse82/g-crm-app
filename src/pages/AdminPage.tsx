@@ -736,7 +736,7 @@ function RequestsSection({ requests, loading, userLabel, userEmail, onChanged }:
               )}
               <div>
                 <label className="block text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">
-                  {target.action === 'reject' ? 'Raison du rejet' : 'Note interne (optionnel)'}
+                  {target.action === 'reject' ? 'Raison du rejet (obligatoire)' : 'Note interne (optionnel)'}
                 </label>
                 <textarea
                   value={adminNotes}
@@ -757,7 +757,7 @@ function RequestsSection({ requests, loading, userLabel, userEmail, onChanged }:
             </button>
             <button
               onClick={handleAction}
-              disabled={submitting}
+              disabled={submitting || (target?.action === 'reject' && adminNotes.trim().length < 3)}
               className={`px-3 py-2 text-xs rounded-lg font-bold text-primary-foreground disabled:opacity-50 ${
                 target?.action === 'approve' ? 'gradient-primary' : 'bg-destructive'
               }`}
