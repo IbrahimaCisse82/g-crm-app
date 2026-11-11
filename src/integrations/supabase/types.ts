@@ -601,10 +601,12 @@ export type Database = {
       }
       profiles: {
         Row: {
+          account_closed_at: string | null
           address: string | null
           avatar_url: string | null
           company_name: string | null
           created_at: string
+          deletion_requested_at: string | null
           full_name: string
           id: string
           onboarding_completed: boolean
@@ -613,10 +615,12 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          account_closed_at?: string | null
           address?: string | null
           avatar_url?: string | null
           company_name?: string | null
           created_at?: string
+          deletion_requested_at?: string | null
           full_name?: string
           id?: string
           onboarding_completed?: boolean
@@ -625,10 +629,12 @@ export type Database = {
           user_id: string
         }
         Update: {
+          account_closed_at?: string | null
           address?: string | null
           avatar_url?: string | null
           company_name?: string | null
           created_at?: string
+          deletion_requested_at?: string | null
           full_name?: string
           id?: string
           onboarding_completed?: boolean
@@ -895,6 +901,8 @@ export type Database = {
         }
         Returns: Json
       }
+      cancel_account_deletion: { Args: never; Returns: undefined }
+      close_expired_accounts: { Args: never; Returns: number }
       get_user_plan: { Args: { _user: string }; Returns: string }
       has_role: {
         Args: {
@@ -926,6 +934,7 @@ export type Database = {
         Args: { _id: string; _table: string }
         Returns: undefined
       }
+      request_account_deletion: { Args: never; Returns: string }
       restore_archived: {
         Args: { _id: string; _table: string }
         Returns: undefined

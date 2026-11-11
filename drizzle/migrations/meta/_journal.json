@@ -8,6 +8,13 @@
       "when": 1794231520476,
       "tag": "0000_secure_subscriptions_and_atomic_approval",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1794413883514,
+      "tag": "0001_account_deletion",
+      "breakpoints": true
     }
   ]
 }
