@@ -22,7 +22,7 @@ export interface SubscriptionLimits {
 export const PROMO_END = new Date('2026-12-31T23:59:59Z');
 export const isPromoActive = () => Date.now() <= PROMO_END.getTime();
 
-const FREE_LIMITS: SubscriptionLimits = {
+export const FREE_LIMITS: SubscriptionLimits = {
   maxClients: 10,
   maxInvoicesPerMonth: 10,
   maxQuotesPerMonth: 10,
@@ -31,7 +31,7 @@ const FREE_LIMITS: SubscriptionLimits = {
   fullDashboard: false,
 };
 
-const PRO_LIMITS: SubscriptionLimits = {
+export const PRO_LIMITS: SubscriptionLimits = {
   maxClients: Infinity,
   maxInvoicesPerMonth: Infinity,
   maxQuotesPerMonth: Infinity,
